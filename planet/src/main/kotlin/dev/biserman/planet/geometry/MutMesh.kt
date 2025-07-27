@@ -21,9 +21,17 @@ data class MutMesh(
             PackedInt32Array(this.tris.flatMap { it.vertIndexes }.toIntArray())
         surfaceArray[Mesh.ArrayType.NORMAL.ordinal] = PackedVector3Array(this.verts.map { it.normal })
 
-        val arrayMesh = ArrayMesh()
-        arrayMesh.addSurfaceFromArrays(Mesh.PrimitiveType.TRIANGLES, surfaceArray)
-        return arrayMesh
+        return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.TRIANGLES, surfaceArray) }
+    }
+
+    fun toWireframe(): ArrayMesh {
+        val surfaceArray = VariantArray<Any?>()
+        surfaceArray.resize(Mesh.ArrayType.MAX.ordinal)
+
+        surfaceArray[Mesh.ArrayType.VERTEX.ordinal] =
+            PackedVector3Array(this.edges.flatMap { edge -> edge.vertIndexes.map { this.verts[it].position } })
+
+        return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.LINES, surfaceArray) }
     }
 
     fun nextTriIndex(vertIndex: Int, faceIndex: Int): Int {

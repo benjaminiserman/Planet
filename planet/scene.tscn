@@ -1,0 +1,35 @@
+[gd_scene load_steps=8 format=3 uid="uid://bqaovyiqpfql0"]
+
+[ext_resource type="Script" uid="uid://dyupem3cm3dom" path="res://src/main/kotlin/dev/biserman/planet/main.kt" id="1_nxogm"]
+[ext_resource type="Script" uid="uid://cldqmyshxcl07" path="res://src/main/kotlin/dev/biserman/planet/rotate.kt" id="2_3253y"]
+[ext_resource type="Script" uid="uid://c8ply6ualr7v8" path="res://src/main/kotlin/dev/biserman/planet/camera_gimbal.kt" id="3_3253y"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_u3cyc"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
+
+[sub_resource type="Sky" id="Sky_y2354"]
+sky_material = SubResource("ProceduralSkyMaterial_m7jmp")
+
+[sub_resource type="Environment" id="Environment_ni31j"]
+background_mode = 2
+background_energy_multiplier = 2.5
+sky = SubResource("Sky_y2354")
+
+[node name="Scene" type="Node3D"]
+script = ExtResource("1_nxogm")
+
+[node name="Cube" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.60698, 0, 0)
+mesh = SubResource("BoxMesh_u3cyc")
+script = ExtResource("2_3253y")
+
+[node name="CameraGimbal" type="Node3D" parent="."]
+script = ExtResource("3_3253y")
+
+[node name="InnerGimbal" type="Node3D" parent="CameraGimbal"]
+
+[node name="Camera3D" type="Camera3D" parent="CameraGimbal/InnerGimbal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.54772)
+environment = SubResource("Environment_ni31j")
+current = true

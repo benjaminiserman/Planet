@@ -102,11 +102,11 @@ fun makeIcosahedron(): MutMesh {
 
     for (i in 0..<tris.size) {
         for (j in 0..<(tris[i].vertIndexes.size)) {
-            verts[j].faceIndexes.add(i)
+            verts[j].triIndexes.add(i)
         }
 
         for (j in 0..<(tris[i].edgeIndexes.size)) {
-            edges[j].faceIndexes.add(i)
+            edges[j].triIndexes.add(i)
         }
     }
 
@@ -130,10 +130,10 @@ fun rotationPredicate(
     newVert0: MutVertex,
     newVert1: MutVertex
 ): Boolean {
-    if (newVert0.faceIndexes.size >= 7
-        || newVert1.faceIndexes.size >= 7
-        || oldVert0.faceIndexes.size <= 5
-        || oldVert1.faceIndexes.size <= 5
+    if (newVert0.triIndexes.size >= 7
+        || newVert1.triIndexes.size >= 7
+        || oldVert0.triIndexes.size <= 5
+        || oldVert1.triIndexes.size <= 5
     ) {
         return false
     }
@@ -229,12 +229,12 @@ fun (MutMesh).relaxMesh(multiplier: Double) {
 fun (MutMesh).reorderVerts() {
     for (i in 0..<this.verts.size) {
         val vert = this.verts[i]
-        var faceIndex = vert.faceIndexes[0]
-        for (j in 1..<(vert.faceIndexes.size - 1)) {
+        var faceIndex = vert.triIndexes[0]
+        for (j in 1..<(vert.triIndexes.size - 1)) {
             faceIndex = this.nextTriIndex(i, faceIndex)
-            val k = vert.faceIndexes.indexOf(faceIndex)
-            vert.faceIndexes[k] = vert.faceIndexes[j]
-            vert.faceIndexes[j] = faceIndex
+            val k = vert.triIndexes.indexOf(faceIndex)
+            vert.triIndexes[k] = vert.triIndexes[j]
+            vert.triIndexes[j] = faceIndex
         }
     }
 }
@@ -244,8 +244,8 @@ fun (MutMesh).conditionalRotateEdge(
     predicate: (MutVertex, MutVertex, MutVertex, MutVertex) -> Boolean
 ): Boolean {
     val edge = this.edges[edgeIndex]
-    val face0 = this.tris[edge.faceIndexes[0]]
-    val face1 = this.tris[edge.faceIndexes[1]]
+    val face0 = this.tris[edge.triIndexes[0]]
+    val face1 = this.tris[edge.triIndexes[1]]
     val farVertTriIndex0 = face0.oppositeVertIndex(edge)
     val farVertTriIndex1 = face1.oppositeVertIndex(edge)
     val newVertIndex0 = face0.vertIndexes[farVertTriIndex0]
@@ -273,15 +273,15 @@ fun (MutMesh).conditionalRotateEdge(
     edge.vertIndexes[0] = newVertIndex0
     edge.vertIndexes[1] = newVertIndex1
 
-    newEdge0.faceIndexes.remove(edge.faceIndexes[1])
-    newEdge1.faceIndexes.remove(edge.faceIndexes[0])
-    newEdge0.faceIndexes.add(edge.faceIndexes[0])
-    newEdge1.faceIndexes.add(edge.faceIndexes[1])
+    newEdge0.triIndexes.remove(edge.triIndexes[1])
+    newEdge1.triIndexes.remove(edge.triIndexes[0])
+    newEdge0.triIndexes.add(edge.triIndexes[0])
+    newEdge1.triIndexes.add(edge.triIndexes[1])
 
-    oldVert0.faceIndexes.remove(edge.faceIndexes[1])
-    oldVert1.faceIndexes.remove(edge.faceIndexes[0])
-    newVert0.faceIndexes.add(edge.faceIndexes[1])
-    newVert1.faceIndexes.add(edge.faceIndexes[0])
+    oldVert0.triIndexes.remove(edge.triIndexes[1])
+    oldVert1.triIndexes.remove(edge.triIndexes[0])
+    newVert0.triIndexes.add(edge.triIndexes[1])
+    newVert1.triIndexes.add(edge.triIndexes[0])
 
     face0.vertIndexes[(farVertTriIndex0 + 2) % 3] = newVertIndex1
     face1.vertIndexes[(farVertTriIndex1 + 2) % 3] = newVertIndex0
@@ -437,8 +437,8 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
                     mutableListOf(faceEdges0[edgeIndex], faceEdges1[edgeIndex], faceEdges2[edgeIndex])
                 )
                 (0..2).forEach {
-                    verts[subTri.vertIndexes[it]].faceIndexes.add(tris.size)
-                    edges[subTri.edgeIndexes[it]].faceIndexes.add(tris.size)
+                    verts[subTri.vertIndexes[it]].triIndexes.add(tris.size)
+                    edges[subTri.edgeIndexes[it]].triIndexes.add(tris.size)
                 }
                 tris.add(subTri)
                 vertIndex += 1
@@ -464,8 +464,8 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
                     )
                 )
                 (0..2).forEach {
-                    verts[subTri.vertIndexes[it]].faceIndexes.add(tris.size)
-                    edges[subTri.edgeIndexes[it]].faceIndexes.add(tris.size)
+                    verts[subTri.vertIndexes[it]].triIndexes.add(tris.size)
+                    edges[subTri.edgeIndexes[it]].triIndexes.add(tris.size)
                 }
                 tris.add(subTri)
                 vertIndex += 1
