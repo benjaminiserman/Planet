@@ -2,19 +2,21 @@ package dev.biserman.planet.topology
 
 import dev.biserman.planet.geometry.Ray
 import dev.biserman.planet.geometry.Sphere
+import dev.biserman.planet.geometry.triArea
 import godot.core.Plane
 import godot.core.Vector3
 
-data class MutTile(
-    var id: Int,
-    var position: Vector3,
-    var corners: MutableList<MutCorner> = mutableListOf(),
-    var borders: MutableList<MutBorder> = mutableListOf(),
-    var tiles: MutableList<MutTile> = mutableListOf(),
-    var boundingSphere: Sphere = Sphere.Companion.ZERO
-) {
-    val normal get() = Vector3.ZERO // $$$
-    val averagePosition get() = Vector3.ZERO // $$$
+interface Tile {
+    val id: Int
+    val position: Vector3
+    val corners: List<Corner>
+    val borders: List<Border>
+    val tiles: List<Tile>
+
+    val normal get() = position.normalized()
+    val averagePosition get() = corners.fold(Vector3.ZERO) { a, b -> a + b.position } / corners.size
+    val boundingSphere get() = Sphere(position, corners.maxOf { position.distanceTo(it.position) })
+    val area get() = borders.sumOf { triArea(position, it.corners[0].position, it.corners[1].position) }
 
     fun intersectRay(ray: Ray): Boolean {
         if (!ray.intersectsSphere(boundingSphere)) {
@@ -45,3 +47,11 @@ data class MutTile(
         return true
     }
 }
+
+data class MutTile(
+    override val id: Int,
+    override var position: Vector3,
+    override var corners: MutableList<MutCorner> = mutableListOf(),
+    override var borders: MutableList<MutBorder> = mutableListOf(),
+    override var tiles: MutableList<MutTile> = mutableListOf(),
+) : Tile

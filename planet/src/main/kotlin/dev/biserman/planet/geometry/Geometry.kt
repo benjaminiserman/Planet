@@ -1,7 +1,12 @@
 package dev.biserman.planet.geometry
 
+import godot.api.ArrayMesh
+import godot.api.Mesh
+import godot.core.PackedVector3Array
 import godot.core.Plane
 import godot.core.Quaternion
+import godot.core.VariantArray
+import godot.core.Vector2
 import godot.core.Vector3
 import kotlin.math.PI
 import kotlin.math.acos
@@ -54,6 +59,17 @@ fun (Random).randomQuaternion(): Quaternion {
         cos(gamma)
     )
 }
+
+fun (List<Vector3>).toMesh(): ArrayMesh {
+    val surfaceArray = VariantArray<Any?>()
+    surfaceArray.resize(Mesh.ArrayType.MAX.ordinal)
+    surfaceArray[Mesh.ArrayType.VERTEX.ordinal] = PackedVector3Array(this)
+
+    return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.POINTS, surfaceArray) }
+}
+
+fun (Vector3).copy() = Vector3(this)
+fun (Vector2).copy() = Vector2(this)
 
 fun (Double).adjustRange(oldRange: ClosedRange<Double>, newRange: ClosedRange<Double>): Double =
     (this - oldRange.start) / (oldRange.endInclusive - oldRange.start) * (newRange.endInclusive - newRange.start) + newRange.start
