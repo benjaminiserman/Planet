@@ -2,11 +2,13 @@ package dev.biserman.planet
 
 import godot.annotation.Export
 import godot.annotation.RegisterClass
+import godot.annotation.RegisterFunction
 import godot.annotation.RegisterProperty
 import godot.api.Input
 import godot.api.InputEvent
 import godot.api.InputEventMouseMotion
 import godot.api.Node3D
+import godot.core.MouseButton
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.PI
@@ -37,18 +39,11 @@ class CameraGimbal: Node3D() {
 
 	var zoom = 1.5f
 
-	val innerGimbal = findChild("InnerGimbal") as Node3D
+	val innerGimbal by lazy { findChild("InnerGimbal") as Node3D }
 
-	override fun _ready() {
-		GD.print("testing!!")
-	}
-
+	@RegisterFunction
 	override fun _unhandledInput(event: InputEvent?) {
 		if (event == null) {
-			return
-		}
-
-		if (Input.getMouseMode() != Input.MouseMode.CAPTURED) {
 			return
 		}
 
@@ -58,13 +53,13 @@ class CameraGimbal: Node3D() {
 			else -> 0f
 		}, minZoom, maxZoom)
 
-		if (mouseControl && event is InputEventMouseMotion) {
+		if (mouseControl && event is InputEventMouseMotion && Input.isMouseButtonPressed(MouseButton.LEFT)) {
 			if (event.relative.x != 0.0) {
-				rotateObjectLocal(Vector3.UP, event.relative.x.toFloat() * mouseSensitivity)
+				rotateObjectLocal(Vector3.UP, -event.relative.x.toFloat() * mouseSensitivity)
 			}
 
 			if (event.relative.y != 0.0) {
-				innerGimbal.rotateObjectLocal(Vector3.RIGHT, event.relative.y.toFloat() * mouseSensitivity)
+				innerGimbal.rotateObjectLocal(Vector3.RIGHT, -event.relative.y.toFloat() * mouseSensitivity)
 			}
 		}
 	}
@@ -85,10 +80,12 @@ class CameraGimbal: Node3D() {
 		innerGimbal.rotateObjectLocal(Vector3.RIGHT, xRotation * rotationSpeed * delta.toFloat())
 	}
 
+	@RegisterFunction
 	override fun _process(delta: Double) {
 		handleKeyboardInput(delta)
 		scale = GD.lerp(scale, Vector3.ONE * zoom, zoomSpeed)
 		globalTransform.origin = target
-		innerGimbal.rotation.x = GD.clamp(innerGimbal.rotation.x, -1.4, -0.01)
+		innerGimbal.rotation[Vector3.Axis.X] = GD.clamp(innerGimbal.rotation.x, -1.4, -0.01)
+
 	}
 }

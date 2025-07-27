@@ -48,7 +48,6 @@ class Main : Node() {
 
 
 	companion object {
-
 		val random = Random(0)
 	}
 }

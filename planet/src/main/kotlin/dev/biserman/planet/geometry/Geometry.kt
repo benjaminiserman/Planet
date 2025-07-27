@@ -18,7 +18,7 @@ fun calculateNormal(p1: Vector3, p2: Vector3, p3: Vector3): Vector3 {
     val a = p2 - p1
     val b = p3 - p1
 
-    return Vector3(
+    return -Vector3(
         a.y * b.z - a.z * b.y,
         a.z * b.x - a.x * b.z,
         a.x * b.y - a.y * b.x

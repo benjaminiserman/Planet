@@ -27,5 +27,6 @@ properties = [
 	zoom_speed
 ]
 functions = [
-    
+    _unhandled_input,
+	_process
 ]
