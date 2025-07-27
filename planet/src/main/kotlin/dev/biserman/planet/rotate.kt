@@ -1,18 +1,8 @@
 package dev.biserman.planet
 
-import godot.annotation.Export
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
-import godot.annotation.RegisterProperty
-import godot.api.ArrayMesh
-import godot.api.Mesh
 import godot.api.MeshInstance3D
-import godot.api.Node
-import godot.core.VariantArray
-import godot.core.Vector3
-import godot.core.toVariantArray
-import godot.global.GD
-import kotlin.math.sqrt
 
 // Adapted from Andy Gainey, original license below:
 // Copyright © 2014 Andy Gainey <andy@experilous.com>
@@ -25,7 +15,7 @@ import kotlin.math.sqrt
 
 
 @RegisterClass
-class Planet : MeshInstance3D() {
+class Rotate : MeshInstance3D() {
 	@RegisterFunction
 	override fun _process(delta: Double) {
 		rotation += delta / 10
