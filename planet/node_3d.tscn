@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://cxtm6qftefj3g"]
 
-[ext_resource type="Script" uid="uid://beqoucwd3npj4" path="res://src/main/kotlin/dev/biserman/planet/planet.kt" id="1_a202f"]
 [ext_resource type="Script" uid="uid://dyupem3cm3dom" path="res://src/main/kotlin/dev/biserman/planet/main.kt" id="1_noarx"]
+[ext_resource type="Script" uid="uid://cldqmyshxcl07" path="res://src/main/kotlin/dev/biserman/planet/rotate.kt" id="2_noarx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_noarx"]
 
@@ -21,7 +21,7 @@ script = ExtResource("1_noarx")
 
 [node name="Planet" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.912727, -0.0192131, -0.0722778)
-script = ExtResource("1_a202f")
+script = ExtResource("2_noarx")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000154495, 2.38419e-07, 2.00635)
@@ -31,4 +31,4 @@ current = true
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.81997, -0.0932685, -0.565056)
 mesh = SubResource("BoxMesh_a202f")
-script = ExtResource("1_a202f")
+script = ExtResource("2_noarx")
