@@ -2,24 +2,32 @@ package dev.biserman.planet.geometry
 
 import godot.api.ArrayMesh
 import godot.api.Mesh
+import godot.core.Color
+import godot.core.PackedColorArray
 import godot.core.PackedInt32Array
 import godot.core.PackedVector3Array
 import godot.core.VariantArray
+import godot.core.toVariantArray
 import kotlin.collections.flatMap
 
 data class MutMesh(
-    val verts: MutableList<MutVertex>,
-    val edges: MutableList<MutEdge>,
-    val tris: MutableList<MutTri>
+    val verts: MutableList<MutVertex> = mutableListOf(),
+    val edges: MutableList<MutEdge> = mutableListOf(),
+    val tris: MutableList<MutTri> = mutableListOf(),
+    val colors: MutableList<Color> = mutableListOf()
 ) {
     fun toArrayMesh(): ArrayMesh {
         val surfaceArray = VariantArray<Any?>()
         surfaceArray.resize(Mesh.ArrayType.MAX.ordinal)
 
-        surfaceArray[Mesh.ArrayType.VERTEX.ordinal] = PackedVector3Array(this.verts.map { it.position })
-        surfaceArray[Mesh.ArrayType.INDEX.ordinal] =
-            PackedInt32Array(this.tris.flatMap { it.vertIndexes }.toIntArray())
-        surfaceArray[Mesh.ArrayType.NORMAL.ordinal] = PackedVector3Array(this.verts.map { it.normal })
+        surfaceArray[Mesh.ArrayType.VERTEX.ordinal] =
+            PackedVector3Array(this.verts.map { it.position }.toVariantArray())
+        surfaceArray[Mesh.ArrayType.INDEX.ordinal] = PackedInt32Array(this.tris.flatMap { it.vertIndexes }.toIntArray())
+        surfaceArray[Mesh.ArrayType.NORMAL.ordinal] = PackedVector3Array(this.verts.map { it.normal }.toVariantArray())
+
+        if (colors != null) {
+            surfaceArray[Mesh.ArrayType.COLOR.ordinal] = PackedColorArray(colors.toVariantArray())
+        }
 
         return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.TRIANGLES, surfaceArray) }
     }
@@ -28,8 +36,11 @@ data class MutMesh(
         val surfaceArray = VariantArray<Any?>()
         surfaceArray.resize(Mesh.ArrayType.MAX.ordinal)
 
-        surfaceArray[Mesh.ArrayType.VERTEX.ordinal] =
-            PackedVector3Array(this.edges.flatMap { edge -> edge.vertIndexes.map { this.verts[it].position } })
+        surfaceArray[Mesh.ArrayType.VERTEX.ordinal] = PackedVector3Array(
+            this.edges.flatMap { edge ->
+                edge.vertIndexes.map { this.verts[it].position }
+            }.toVariantArray()
+        )
 
         return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.LINES, surfaceArray) }
     }
@@ -78,9 +89,3 @@ data class MutMesh(
         }
     }
 }
-
-
-
-
-
-

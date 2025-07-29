@@ -7,7 +7,7 @@ data class MutTri(
     val edgeIndexes: MutableList<Int> = mutableListOf()
 ) {
     fun centroid(mesh: MutMesh): Vector3 =
-        vertIndexes.map { mesh.verts[it].position }.fold(Vector3.ZERO) { a, b -> a + b } / vertIndexes.size
+        centroid(vertIndexes.map { mesh.verts[it].position })
 
     fun oppositeVertIndex(edge: MutEdge): Int = when {
         this.vertIndexes[0] != edge.vertIndexes[0] && this.vertIndexes[0] != edge.vertIndexes[1] -> 0

@@ -1,0 +1,7 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://c6tbxmnptsxhp"]
+
+[ext_resource type="Shader" uid="uid://b614w1xgiicv3" path="res://vertex_height.gdshader" id="1_euxcr"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_euxcr")

@@ -14,25 +14,31 @@ import godot.global.GD
 import kotlin.math.PI
 
 @RegisterClass
-class CameraGimbal: Node3D() {
+class CameraGimbal : Node3D() {
 	@Export
 	@RegisterProperty
 	var target = Vector3.ZERO
+
 	@Export
 	@RegisterProperty
 	var rotationSpeed = PI.toFloat() / 3
+
 	@Export
 	@RegisterProperty
 	var mouseControl = true
+
 	@Export
 	@RegisterProperty
 	var mouseSensitivity = 0.005f
+
 	@Export
 	@RegisterProperty
 	var maxZoom = 3.0f
+
 	@Export
 	@RegisterProperty
-	var minZoom = 0.4f
+	var minZoom = 0.5f
+
 	@Export
 	@RegisterProperty
 	var zoomSpeed = 0.09f
@@ -47,11 +53,13 @@ class CameraGimbal: Node3D() {
 			return
 		}
 
-		zoom = GD.clamp(zoom + when {
-			event.isActionPressed("cam_zoom_in") -> -zoomSpeed
-			event.isActionPressed("cam_zoom_out") -> +zoomSpeed
-			else -> 0f
-		}, minZoom, maxZoom)
+		zoom = GD.clamp(
+			zoom + when {
+				event.isActionPressed("cam_zoom_in") -> -zoomSpeed
+				event.isActionPressed("cam_zoom_out") -> +zoomSpeed
+				else -> 0f
+			}, minZoom, maxZoom
+		)
 
 		if (mouseControl && event is InputEventMouseMotion && Input.isMouseButtonPressed(MouseButton.LEFT)) {
 			if (event.relative.x != 0.0) {
@@ -85,7 +93,12 @@ class CameraGimbal: Node3D() {
 		handleKeyboardInput(delta)
 		scale = GD.lerp(scale, Vector3.ONE * zoom, zoomSpeed)
 		globalTransform.origin = target
-		innerGimbal.rotation[Vector3.Axis.X] = GD.clamp(innerGimbal.rotation.x, -1.4, -0.01)
-
+		innerGimbal.setRotation(
+			Vector3(
+				GD.clamp(innerGimbal.rotation.x, -PI.toDouble() / 2, PI.toDouble() / 2),
+				innerGimbal.rotation.y,
+				innerGimbal.rotation.z
+			)
+		)
 	}
 }
