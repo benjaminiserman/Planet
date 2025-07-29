@@ -3,7 +3,9 @@ package dev.biserman.planet.geometry
 import dev.biserman.planet.Main
 import godot.core.Plane
 import godot.core.Vector3
+import godot.global.GD
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
@@ -124,6 +126,26 @@ fun (MutMesh).distortTriangles(distortionRate: Double = 0.5, iterations: Int = 6
     }
 }
 
+fun (MutMesh).relaxRepeatedly(maxIterations: Int) {
+    val averageNodeRadius = sqrt(4 * Math.PI / this.verts.size);
+    val minShiftDelta = averageNodeRadius / 50000 * this.verts.size;
+
+    var priorShift = 0.0
+    var currentShift = this.relaxMesh(0.5)
+
+    (loop@{
+        (1..maxIterations).forEach {
+            priorShift = currentShift
+            currentShift = relaxMesh(0.5)
+            val shiftDelta = abs(currentShift - priorShift)
+            if (shiftDelta >= minShiftDelta) {
+                GD.print("Finished relaxing at $it")
+                return@loop
+            }
+        }
+    })()
+}
+
 fun rotationPredicate(
     oldVert0: MutVertex,
     oldVert1: MutVertex,
@@ -182,7 +204,7 @@ fun (MutMesh).distortMesh(degree: Int): Boolean {
     return true
 }
 
-fun (MutMesh).relaxMesh(multiplier: Double) {
+fun (MutMesh).relaxMesh(multiplier: Double): Double {
     val totalSurfaceArea = 4 * PI
     val idealTriArea = totalSurfaceArea / this.tris.size
     val idealEdgeLength = sqrt(idealTriArea * 4 / sqrt(3.0))
@@ -224,6 +246,8 @@ fun (MutMesh).relaxMesh(multiplier: Double) {
         verts[i].position = original.lerp(pointShifts[i], 1 - sqrt((rotationSuppressions[i]))).normalized()
         totalShift += (verts[i].position - original).length()
     }
+
+    return totalShift
 }
 
 fun (MutMesh).reorderVerts() {

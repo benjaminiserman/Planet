@@ -4,7 +4,9 @@ import dev.biserman.planet.geometry.MutEdge
 import dev.biserman.planet.geometry.MutMesh
 import dev.biserman.planet.geometry.MutTri
 import dev.biserman.planet.geometry.MutVertex
+import dev.biserman.planet.geometry.centroid
 import dev.biserman.planet.geometry.copy
+import godot.core.Color
 import godot.global.GD
 
 // Adapted from Andy Gainey, original license below:
@@ -18,23 +20,30 @@ import godot.global.GD
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
-	val mesh by lazy {
-		val verts = mutableListOf<MutVertex>()
-		val edges = mutableListOf<MutEdge>()
-		val tris = mutableListOf<MutTri>()
+	fun makeMesh(enrich: ((MutMesh, Tile) -> Unit)? = null): MutMesh {
+		val mutMesh = MutMesh(mutableListOf(), mutableListOf(), mutableListOf())
 
 		for (tile in tiles) {
-			val startVertIndex = verts.size
-			verts.addAll(tile.corners.map { MutVertex(it.position) })
-			edges.addAll((1..<tile.corners.size).map {
+			val startVertIndex = mutMesh.verts.size
+			mutMesh.verts.add(MutVertex(centroid(tile.corners.map { it.position })))
+			mutMesh.verts.addAll(tile.corners.map { MutVertex(it.position) })
+
+			mutMesh.edges.addAll((2..tile.corners.size).map {
 				MutEdge(
 					mutableListOf(
-						startVertIndex + it - 1,
-						startVertIndex + it
+						startVertIndex + it - 1, startVertIndex + it
 					)
 				)
 			})
-			tris.addAll((2..<tile.corners.size).map {
+			mutMesh.edges.add(
+				MutEdge(
+					mutableListOf(
+						startVertIndex + tile.corners.size, startVertIndex + 1
+					)
+				)
+			)
+
+			mutMesh.tris.addAll((2..tile.corners.size).map {
 				MutTri(
 					mutableListOf(
 						startVertIndex,
@@ -43,24 +52,32 @@ class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: Li
 					)
 				)
 			})
+			mutMesh.tris.add(
+				MutTri(
+					mutableListOf(
+						startVertIndex, startVertIndex + tile.corners.size, startVertIndex + 1
+					)
+				)
+			)
+
+			enrich?.invoke(mutMesh, tile)
 		}
 
-		return@lazy MutMesh(verts, edges, tris)
+		return mutMesh
 	}
 }
 
 fun (MutMesh).toTopology(): Topology {
 	val borders = this.edges.withIndex().map { (i, edge) -> MutBorder(i) }
 	val tiles = this.verts.withIndex().map { (i, tile) -> MutTile(i, tile.position.copy()) }
-	val corners = this.tris.withIndex()
-		.map { (i, tri) ->
-			MutCorner(
-				i,
-				tri.centroid(this),
-				borders = tri.edgeIndexes.map { borders[it] }.toMutableList(),
-				tiles = tri.vertIndexes.map { tiles[it] }.toMutableList()
-			)
-		}
+	val corners = this.tris.withIndex().map { (i, tri) ->
+		MutCorner(
+			i,
+			tri.centroid(this),
+			borders = tri.edgeIndexes.map { borders[it] }.toMutableList(),
+			tiles = tri.vertIndexes.map { tiles[it] }.toMutableList()
+		)
+	}
 
 	// link borders to corners and tiles
 	for (i in 0..<borders.size) {

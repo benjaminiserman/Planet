@@ -34,6 +34,9 @@ fun triArea(p0: Vector3, p1: Vector3, p2: Vector3): Double {
     return width * height * 0.5
 }
 
+fun centroid(verts: List<Vector3>): Vector3 =
+    verts.fold(Vector3.ZERO) { a, b -> a + b } / verts.size
+
 fun (Random).randomUnitVector(): Vector3 {
     val theta = this.nextDouble(0.0, PI * 2)
     val phi = acos(this.nextDouble(-1.0, 1.0))
@@ -81,6 +84,7 @@ data class Sphere(val center: Vector3, val radius: Double) {
         val ONE = Sphere(Vector3.ZERO, 1.0)
     }
 }
+
 data class Ray(val origin: Vector3, val direction: Vector3) {
     fun intersectsSphere(sphere: Sphere): Boolean {
         val v1 = sphere.center - origin
