@@ -1,6 +1,7 @@
 package dev.biserman.planet.utils
 
 import dev.biserman.planet.utils.WeightedBag.WeightedBagEntry
+import godot.global.GD
 import kotlin.collections.map
 import kotlin.random.Random
 
@@ -13,12 +14,12 @@ class WeightedBag<T>(val random: Random, private val entries: MutableList<Weight
 
     data class WeightedBagEntry<T>(val item: T, val weight: Int)
 
-    fun Add(item: T, weight: Int) {
+    fun add(item: T, weight: Int) {
         weightSum += weight
         entries.add(WeightedBagEntry(item, weight))
     }
 
-    fun Grab(): T? {
+    fun grab(): T? {
         val r = random.nextInt(weightSum)
         var runningSum = 0
         for (entry in entries) {
@@ -26,9 +27,11 @@ class WeightedBag<T>(val random: Random, private val entries: MutableList<Weight
                 return entry.item
             }
 
-            runningSum += r
+            runningSum += entry.weight
         }
 
         return null
     }
+
+    val size get() = entries.size
 }

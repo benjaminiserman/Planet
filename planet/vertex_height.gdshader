@@ -2,10 +2,7 @@ shader_type spatial;
 
 void vertex() {
 	// Called for every vertex the material is visible on.
-	float r = 2.0f * asin(VERTEX.y) / PI;
-	VERTEX *= 1.0f + (COLOR.a * 0.5f);
-	//float r = 2.0f * asin(VERTEX.y) / PI;
-	VERTEX *= (sin(r * 45.0f + TIME * 10.0f) * 0.1f) + 1.0f;
+	VERTEX *= 1.0f + pow(COLOR.a, 5.0f) * 0.05f;
 }
 
 void fragment() {

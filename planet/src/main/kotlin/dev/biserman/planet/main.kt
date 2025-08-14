@@ -6,8 +6,10 @@ import dev.biserman.planet.geometry.makeIcosahedron
 import dev.biserman.planet.geometry.relaxRepeatedly
 import dev.biserman.planet.geometry.reorderVerts
 import dev.biserman.planet.geometry.subdivideIcosahedron
+import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.topology.toTopology
+import dev.biserman.planet.utils.VectorWarpNoise
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.FastNoiseLite
@@ -17,7 +19,6 @@ import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.math.floor
 import kotlin.random.Random
 
 
@@ -27,9 +28,9 @@ class Main : Node() {
 	@RegisterFunction
 	override fun _ready() {
 		GD.print("Hello World!")
-		val planet = MeshInstance3D().also { it.setName("Planet") }
+		val planetMeshInstance = MeshInstance3D().also { it.setName("Planet") }
 		val planet2 = MeshInstance3D().also { it.setName("Planet2") }
-		addChild(planet, forceReadableName = true)
+		addChild(planetMeshInstance, forceReadableName = true)
 		addChild(planet2, forceReadableName = true)
 		val icos = makeIcosahedron()
 		val sub = icos.subdivideIcosahedron(30)
@@ -38,23 +39,47 @@ class Main : Node() {
 		sub.reorderVerts()
 		val topology = sub.toTopology()
 		GD.print("tiles: ${topology.tiles.size}")
-		planet.setMesh(topology.makeMesh(enrich = { mesh, tile ->
-			val level = PlanetTile(tile).elevation.toDouble().adjustRange(-1.0..1.0, 0.0..1.0)
-			val hue = random.nextDouble()
-			val color = Color.fromHsv(hue, 0.7, level, level)
+		val planet = Planet(topology)
+
+		fun levelIt(level: Double) = when{
+			level < 0.8 -> level * 0.5
+			level >= 1.0 -> 1.0
+			else -> level - 0.25
+		}
+
+		fun saturation(level: Double) = when {
+			level >= 1.0 -> 0.0
+			else -> 0.9
+		}
+
+		planetMeshInstance.setMesh(topology.makeMesh(enrich = { mesh, tile ->
+			val planetTile = planet.planetTiles[tile] ?: return@makeMesh
+			val level = planetTile.elevation.adjustRange(-0.5..0.5, 0.0..1.0)
+			val hue = planetTile.tectonicPlate?.debugColor?.h ?: 0.0
+//			val hue = noise.getNoise3dv(planetTile.tile.position * 100).toDouble()
+			var color = Color.fromHsv(hue, saturation(level), levelIt(level), level)
+			if (level < 0.8) {
+				color = Color.fromHsv(0.7, saturation(level), levelIt(level), level)
+			}
 			mesh.colors.add(color)
 
 			mesh.colors.addAll((0..<tile.corners.size).map {
 				val level =
-					(tile.corners[it].tiles.sumOf { PlanetTile(it).elevation.toDouble() } / tile.corners[it].tiles.size)
-						.adjustRange(-1.0..1.0, 0.0..1.0)
-				val color = Color.fromHsv(hue, 0.7, level, level)
+					(tile.corners[it].tiles.sumOf { tile -> planet.planetTiles[tile]!!.elevation } / tile.corners[it].tiles.size)
+						.adjustRange(-0.5..0.5, 0.0..1.0)
+				val color = Color.fromHsv(
+					color.h,
+					color.s,
+					levelIt(level),
+					level
+				)
+
 				color
 			})
 		}).apply {
 			this.recalculateNormals()
 		}.toArrayMesh())
-		planet.setSurfaceOverrideMaterial(0, GD.load<StandardMaterial3D>("res://planet_mat.tres"))
+		planetMeshInstance.setSurfaceOverrideMaterial(0, GD.load<StandardMaterial3D>("res://planet_mat.tres"))
 //        planet.setMesh(sub.toWireframe())
 
 		sub.duplicateSharedVerts()
@@ -68,9 +93,8 @@ class Main : Node() {
 //        })
 	}
 
-
 	companion object {
-		val random = Random(0)
-		val noise = FastNoiseLite().apply { this.setSeed(0) }
+		val noise = FastNoiseLite().apply { this.setSeed(2) }
+		var random = Random(2)
 	}
 }
