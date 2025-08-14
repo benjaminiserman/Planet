@@ -16,7 +16,7 @@ interface Border {
 
 }
 
-data class MutBorder(
+class MutBorder(
     override val id: Int,
     override val corners: MutableList<MutCorner> = mutableListOf(),
     override val borders: MutableList<MutBorder> = mutableListOf(),

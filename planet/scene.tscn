@@ -20,7 +20,7 @@ sky = SubResource("Sky_y2354")
 script = ExtResource("1_nxogm")
 
 [node name="Cube" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
+transform = Transform3D(0.99999, -0.00365493, 0.00241435, 0.00364704, 0.999988, 0.00326865, -0.00242625, -0.00325982, 0.999992, 3, 0, 0)
 mesh = SubResource("BoxMesh_u3cyc")
 script = ExtResource("2_3253y")
 

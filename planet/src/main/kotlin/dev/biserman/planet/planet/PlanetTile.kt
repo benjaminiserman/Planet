@@ -9,4 +9,12 @@ class PlanetTile(var tile: Tile) {
     var temperature = 0.0
     var moisture = 0.0
     var tectonicPlate: TectonicPlate? = null
+        set(value) {
+            if (value == null) {
+                field?.tiles?.remove(this)
+            } else {
+                value.tiles.add(this)
+            }
+            field = value
+        }
 }

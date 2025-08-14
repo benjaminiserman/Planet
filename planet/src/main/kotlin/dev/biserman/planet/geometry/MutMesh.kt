@@ -25,7 +25,7 @@ data class MutMesh(
         surfaceArray[Mesh.ArrayType.INDEX.ordinal] = PackedInt32Array(this.tris.flatMap { it.vertIndexes }.toIntArray())
         surfaceArray[Mesh.ArrayType.NORMAL.ordinal] = PackedVector3Array(this.verts.map { it.normal }.toVariantArray())
 
-        if (colors != null) {
+        if (colors.isNotEmpty()) {
             surfaceArray[Mesh.ArrayType.COLOR.ordinal] = PackedColorArray(colors.toVariantArray())
         }
 

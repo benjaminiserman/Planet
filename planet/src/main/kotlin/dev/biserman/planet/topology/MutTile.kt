@@ -48,7 +48,7 @@ interface Tile {
     }
 }
 
-data class MutTile(
+class MutTile(
     override val id: Int,
     override var position: Vector3,
     override var corners: MutableList<MutCorner> = mutableListOf(),

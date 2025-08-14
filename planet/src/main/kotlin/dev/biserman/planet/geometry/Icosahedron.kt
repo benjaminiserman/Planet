@@ -130,7 +130,7 @@ fun (MutMesh).relaxRepeatedly(maxIterations: Int) {
     val averageNodeRadius = sqrt(4 * Math.PI / this.verts.size);
     val minShiftDelta = averageNodeRadius / 50000 * this.verts.size;
 
-    var priorShift = 0.0
+    var priorShift: Double
     var currentShift = this.relaxMesh(0.5)
 
     (loop@{
@@ -178,7 +178,7 @@ fun rotationPredicate(
 
     val v3 = (newVert0.position - oldVert1.position).normalized()
     val v4 = (newVert1.position - oldVert1.position).normalized()
-    @Suppress("RedundantIf")
+    @Suppress("RedundantIf", "RedundantSuppression")
     if (-v0.dot(v3) < 0.2 || -v0.dot(v4) < 0.2) {
         return false
     }
@@ -187,7 +187,7 @@ fun rotationPredicate(
 }
 
 fun (MutMesh).distortMesh(degree: Int): Boolean {
-    (0..<degree).forEach {
+    (0..<degree).forEach { _ ->
         var consecutiveFailedAttempts = 0
         var edgeIndex = Main.random.nextInt(0, this.edges.size)
 
@@ -407,7 +407,7 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         val faceEdges0 = (0..<degree).map(getEdgeEdge0).toMutableList()
         var vertIndex = degree + 1
         for (i in 1..<degree) {
-            (0..<(degree - i)).forEach {
+            (0..<(degree - i)).forEach { _ ->
                 faceEdges0.add(edges.size)
                 val edge = MutEdge(mutableListOf(faceVerts[vertIndex], faceVerts[vertIndex + 1]))
                 verts[edge.vertIndexes[0]].edgeIndexes.add(edges.size)
@@ -421,7 +421,7 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         val faceEdges1 = mutableListOf<Int>()
         vertIndex = 1
         for (i in 0..<degree) {
-            (1..<(degree - i)).forEach {
+            (1..<(degree - i)).forEach { _ ->
                 faceEdges1.add(edges.size)
                 val edge = MutEdge(mutableListOf(faceVerts[vertIndex], faceVerts[vertIndex + degree - i]))
                 verts[edge.vertIndexes[0]].edgeIndexes.add(edges.size)
@@ -437,7 +437,7 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         vertIndex = 1
         for (i in 0..<degree) {
             faceEdges2.add(getEdgeEdge2(i))
-            (1..<(degree - i)).forEach {
+            (1..<(degree - i)).forEach { _ ->
                 faceEdges2.add(edges.size)
                 val edge = MutEdge(mutableListOf(faceVerts[vertIndex], faceVerts[vertIndex + degree - i + 1]))
                 verts[edge.vertIndexes[0]].edgeIndexes.add(edges.size)
@@ -451,7 +451,7 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         vertIndex = 0
         var edgeIndex = 0
         for (i in 0..<degree) {
-            (1..<(degree - i + 1)).forEach {
+            (1..<(degree - i + 1)).forEach { _ ->
                 val subTri = MutTri(
                     mutableListOf(
                         faceVerts[vertIndex],
@@ -474,7 +474,7 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         vertIndex = 1
         edgeIndex = 0
         for (i in 1..<degree) {
-            (1..<(degree - i + 1)).forEach {
+            (1..<(degree - i + 1)).forEach { _ ->
                 val subTri = MutTri(
                     mutableListOf(
                         faceVerts[vertIndex],
