@@ -1,7 +1,10 @@
 package dev.biserman.planet.geometry
 
+import dev.biserman.planet.topology.Border
+import dev.biserman.planet.topology.MutCorner
 import godot.api.ArrayMesh
 import godot.api.Mesh
+import godot.core.Color
 import godot.core.PackedVector3Array
 import godot.core.Plane
 import godot.core.Quaternion
@@ -77,6 +80,8 @@ fun (Vector2).copy() = Vector2(this)
 fun (Double).adjustRange(oldRange: ClosedRange<Double>, newRange: ClosedRange<Double>): Double =
     (this - oldRange.start) / (oldRange.endInclusive - oldRange.start) * (newRange.endInclusive - newRange.start) + newRange.start
 
+fun (Float).adjustRange(oldRange: ClosedRange<Float>, newRange: ClosedRange<Float>): Float =
+    (this - oldRange.start) / (oldRange.endInclusive - oldRange.start) * (newRange.endInclusive - newRange.start) + newRange.start
 
 data class Sphere(val center: Vector3, val radius: Double) {
     companion object {
@@ -92,3 +97,14 @@ data class Ray(val origin: Vector3, val direction: Vector3) {
         return v1.distanceTo(v2) <= sphere.radius
     }
 }
+
+data class DebugVector(val origin: Vector3, val vector: Vector3, val color: Color = Color.red)
+
+fun (List<DebugVector>).toMesh(): MutMesh {
+    val mutVerts = this.flatMap { listOf(it.origin, it.origin + it.vector) }.withIndex()
+        .map { (i, vertex) -> MutVertex(vertex, mutableListOf(i / 2)) }.toMutableList()
+    val mutEdges = this.withIndex().map { i -> MutEdge(mutableListOf(i.index * 2, i.index * 2 + 1)) }.toMutableList()
+
+    return MutMesh(mutVerts, mutEdges)
+}
+

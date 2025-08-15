@@ -14,6 +14,9 @@ interface Border {
     fun oppositeCorner(corner: Corner) = if (corner == corners[0]) corners[1] else corners[0]
     fun oppositeTile(tile: Tile) = if (tile == tiles[0]) tiles[1] else tiles[0]
 
+    companion object {
+
+    }
 }
 
 class MutBorder(

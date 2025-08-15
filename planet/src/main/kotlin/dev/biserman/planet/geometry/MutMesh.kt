@@ -7,6 +7,7 @@ import godot.core.PackedColorArray
 import godot.core.PackedInt32Array
 import godot.core.PackedVector3Array
 import godot.core.VariantArray
+import godot.core.Vector3
 import godot.core.toVariantArray
 import kotlin.collections.flatMap
 
@@ -86,6 +87,16 @@ data class MutMesh(
             for (vertIndex in tri.vertIndexes) {
                 this.verts[vertIndex].normal = normal
             }
+        }
+    }
+
+    companion object {
+        fun fromPath(edges: List<Pair<Vector3, Vector3>>) {
+            val mutVerts = mutableListOf<MutVertex>()
+            val mutEdges = mutableListOf<MutEdge>()
+            val mutTris = mutableListOf<MutTri>()
+
+
         }
     }
 }

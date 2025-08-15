@@ -46,6 +46,8 @@ interface Tile {
 
         return true
     }
+
+    fun borderFor(neighbor: Tile) = borders.first { neighbor.borders.contains(it) }
 }
 
 class MutTile(
