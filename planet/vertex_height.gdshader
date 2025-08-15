@@ -1,9 +1,9 @@
 shader_type spatial;
 
-void vertex() {
-	// Called for every vertex the material is visible on.
-	VERTEX *= 1.0f + pow(COLOR.a, 5.0f) * 0.05f;
-}
+//void vertex() {
+	//// Called for every vertex the material is visible on.
+	//VERTEX *= 1.0f + pow(COLOR.a, 5.0f) * 0.05f;
+//}
 
 void fragment() {
 	// Called for every pixel the material is visible on.

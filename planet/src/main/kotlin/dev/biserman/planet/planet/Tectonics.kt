@@ -3,18 +3,15 @@ package dev.biserman.planet.planet
 import dev.biserman.planet.Main
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
-import dev.biserman.planet.utils.withSeed
 import godot.api.FastNoiseLite
-import godot.global.GD
-import java.util.stream.Collectors.groupingBy
+import godot.common.util.lerp
 
 object Tectonics {
     val random by lazy { Main.random }
     val noise by lazy { Main.noise }
 
-
     fun seedPlates(planet: Planet, plateCount: Int): MutableList<TectonicPlate> {
-        val plates = (1..plateCount).map { TectonicPlate() }
+        val plates = (1..plateCount).map { TectonicPlate(planet) }
         val remainingTiles = planet.planetTiles.values.shuffled(random).toMutableList()
 
         for (plate in plates) {
@@ -127,8 +124,7 @@ object Tectonics {
         while (tiles.any { it.tectonicPlate == null }) {
             i += 1
             if (i > planet.planetTiles.size * 10) {
-//                throw IllegalStateException("Something went wrong, too many iterations $i with ${tiles.size} tiles remaining to assign")
-                break
+                throw IllegalStateException("Something went wrong, too many iterations $i with ${tiles.size} tiles remaining to assign")
             }
 
             for (planetTile in tiles.toList()) {
@@ -144,14 +140,14 @@ object Tectonics {
         }
     }
 
-    fun assignStartingElevation(planet: Planet) {
-        val elevationNoise = FastNoiseLite().apply {
-            setSeed(random.nextInt())
-            setFrequency(0.5f)
-        }
-
-        for (planetTile in planet.planetTiles.values) {
-            planetTile.elevation = elevationNoise.getNoise3dv(planetTile.tile.position).toDouble()
+    fun assignDensities(planet: Planet) {
+        planet.tectonicPlates.forEach { plate ->
+            val averageDensity = (plate.tiles.sumOf { it.density.toDouble() } / plate.tiles.size).toFloat()
+            val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.0, 1.0).toFloat(), 0.25f)
+            plate.tiles.forEach {
+                it.density = lerp(adjustedDensity, it.density, 0.1f)
+                it.elevation = lerp(it.elevation, -it.density, 0f)
+            }
         }
     }
 }

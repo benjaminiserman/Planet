@@ -1,7 +1,6 @@
 package dev.biserman.planet.utils
 
 import dev.biserman.planet.utils.WeightedBag.WeightedBagEntry
-import godot.global.GD
 import kotlin.collections.map
 import kotlin.random.Random
 
