@@ -1,5 +1,6 @@
 package dev.biserman.planet
 
+import dev.biserman.planet.rendering.PlanetRenderer
 import godot.annotation.Export
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
