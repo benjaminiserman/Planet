@@ -3,7 +3,7 @@
 
 registeredName = Rotate
 fqName = dev.biserman.planet.Rotate
-relativeSourcePath = src/main/kotlin/dev/biserman/planet/rotate.kt
+relativeSourcePath = src/main/kotlin/dev/biserman/planet/Rotate.kt
 baseType = MeshInstance3D
 supertypes = [
     godot.api.MeshInstance3D,

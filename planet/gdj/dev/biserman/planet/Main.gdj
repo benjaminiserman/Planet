@@ -3,7 +3,7 @@
 
 registeredName = Main
 fqName = dev.biserman.planet.Main
-relativeSourcePath = src/main/kotlin/dev/biserman/planet/main.kt
+relativeSourcePath = src/main/kotlin/dev/biserman/planet/Main.kt
 baseType = Node
 supertypes = [
     godot.api.Node,

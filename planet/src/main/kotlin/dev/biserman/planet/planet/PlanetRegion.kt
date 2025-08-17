@@ -6,6 +6,7 @@ import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.utils.TrackedMutableSet
 import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
+import godot.core.Vector3
 
 class PlanetRegion(
     val planet: Planet,
@@ -20,6 +21,10 @@ class PlanetRegion(
                 )] !in tiles
             }
         }
+    }
+
+    val center by memo({ tiles.mutationCount }) {
+        tiles.fold(Vector3.ZERO) { sum, tile -> sum + tile.tile.position }.normalized()
     }
 
     fun toTopology(): Topology = Topology(
