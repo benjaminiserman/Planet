@@ -77,6 +77,9 @@ fun (List<Vector3>).toMesh(): ArrayMesh {
 fun (Vector3).copy() = Vector3(this)
 fun (Vector2).copy() = Vector2(this)
 
+fun (Vector3).tangent(v: Vector3) = this - v * this.dot(v)
+
+
 fun (Double).adjustRange(oldRange: ClosedRange<Double>, newRange: ClosedRange<Double>): Double =
     (this - oldRange.start) / (oldRange.endInclusive - oldRange.start) * (newRange.endInclusive - newRange.start) + newRange.start
 
@@ -98,7 +101,17 @@ data class Ray(val origin: Vector3, val direction: Vector3) {
     }
 }
 
-data class DebugVector(val origin: Vector3, val vector: Vector3, val color: Color = Color.red)
+data class DebugVector(val origin: Vector3, val vector: Vector3, val color: Color = Color.red) {
+    fun crossOff(magnitude: Double) = crossOff(origin, vector, magnitude)
+
+    companion object {
+        fun crossOff(origin: Vector3, vector: Vector3, magnitude: Double) =
+            DebugVector(
+                origin + vector,
+                vector.cross(origin + vector) * magnitude
+            )
+    }
+}
 
 fun (List<DebugVector>).toMesh(): MutMesh {
     val mutVerts = this.flatMap { listOf(it.origin, it.origin + it.vector) }.withIndex()

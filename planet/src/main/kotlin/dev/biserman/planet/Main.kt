@@ -8,18 +8,17 @@ import dev.biserman.planet.geometry.makeIcosahedron
 import dev.biserman.planet.geometry.relaxRepeatedly
 import dev.biserman.planet.geometry.reorderVerts
 import dev.biserman.planet.geometry.subdivideIcosahedron
-import dev.biserman.planet.geometry.toMesh
+import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.rendering.DebugDraw.drawMesh
+import dev.biserman.planet.rendering.DebugDraw.drawRotVectorMesh
 import dev.biserman.planet.topology.toTopology
-import dev.biserman.planet.utils.VectorWarpNoise
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
-import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
-import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.abs
 import kotlin.random.Random
@@ -30,11 +29,6 @@ class Main : Node() {
 
 	@RegisterFunction
 	override fun _ready() {
-		GD.print("Hello World!")
-		val planetMeshInstance = MeshInstance3D().also { it.setName("Planet") }
-		val planet2 = MeshInstance3D().also { it.setName("Planet2") }
-		addChild(planetMeshInstance, forceReadableName = true)
-		addChild(planet2, forceReadableName = true)
 		val icos = makeIcosahedron()
 		val sub = icos.subdivideIcosahedron(30)
 		sub.distortTriangles(0.5)
@@ -55,7 +49,7 @@ class Main : Node() {
 			else -> 0.9f
 		}
 
-		planetMeshInstance.setMesh(topology.makeMesh(enrich = { mesh, tile ->
+		this.drawMesh("Planet", topology.makeMesh(enrich = { mesh, tile ->
 			val planetTile = planet.planetTiles[tile] ?: return@makeMesh
 			val level = planetTile.elevation.adjustRange(-0.5f..0.5f, 0.0f..1.0f)
 			val hue = planetTile.tectonicPlate?.biomeColor?.h ?: 0.0
@@ -82,65 +76,52 @@ class Main : Node() {
 			})
 		}).apply {
 			this.recalculateNormals()
-		}.toArrayMesh())
-		planetMeshInstance.setSurfaceOverrideMaterial(0, GD.load<StandardMaterial3D>("res://planet_mat.tres"))
+		}.toArrayMesh(), GD.load<StandardMaterial3D>("res://planet_mat.tres"))
 
-		sub.duplicateSharedVerts()
-		sub.recalculateNormals()
-//		planet2.setMesh(topology.makeMesh().apply { this.verts.forEach { it.position *= 1.005 } }.toWireframe())
-//		planet2.setPosition(Vector3(-3.0, 0.0, 0.0))
-//		planet2.setSurfaceOverrideMaterial(0, StandardMaterial3D().apply {
-//            this.setAlbedo(Color.red)
+//        this.drawMesh("tile_wireframe", topology.makeMesh().apply { this.verts.forEach { it.position *= 1.005 } }.toWireframe(), StandardMaterial3D().apply {
 //			this.usePointSize = true
 //			this.setPointSize(10f)
-//		})
-
-		val warpNoise = VectorWarpNoise(random.nextInt(), 0.1f)
+//        })
 
 		planet.tectonicPlates.withIndex().forEach { tuple ->
 			val (index, plate) = tuple
-			val borderMeshInstance = MeshInstance3D().also { it.setName("border_${index}") }
-			addChild(borderMeshInstance, forceReadableName = true)
-
 			val hashOffset = abs(plate.debugColor.hashCode() / Int.MAX_VALUE.toDouble())
 			val borderMesh = plate.region.border.toPath().toMesh().apply {
 				this.verts.forEach { it.position *= (1.001 + 0.005 * hashOffset) }
 			}
-			borderMeshInstance.setMesh(borderMesh.toWireframe())
 
-			borderMeshInstance.setSurfaceOverrideMaterial(0, StandardMaterial3D().apply {
+			this.drawMesh("border_$index", borderMesh.toWireframe(), StandardMaterial3D().apply {
 				this.setAlbedo(plate.debugColor)
 			})
 		}
 
 		planet.tectonicPlates.withIndex().forEach { tuple ->
 			val lift = 1.005
-			val (index, plate) = tuple
-			val vectorMeshInstance = MeshInstance3D().also { it.setName("vector_${index}") }
-			val vectorOriginMeshInstance = MeshInstance3D().also { it.setName("vector_origin_${index}") }
-			addChild(vectorMeshInstance, forceReadableName = true)
-			addChild(vectorOriginMeshInstance, forceReadableName = true)
+			val (_, plate) = tuple
 
-			val plateVectors = plate.tiles.map {
-				DebugVector(
-					it.tile.position * lift,
-//					it.tile.position.cross(warpNoise.warp(it.tile.position, 0.01) - it.tile.position)
-//						.normalized() * 0.01
-					it.getPlateBoundaryForces() * lift
+			val edgeVectors = plate.tiles.filter { it.plateBoundaryForces.length() > 0.005 }.flatMap {
+				listOf(
+					Pair(
+						DebugVector(
+							it.tile.position * lift,
+							it.plateBoundaryForces
+						), it.rotationalForce * 0.3
+					)
 				)
 			}
-			vectorMeshInstance.setMesh(plateVectors.toMesh().toWireframe())
-			vectorMeshInstance.setSurfaceOverrideMaterial(0, StandardMaterial3D().apply {
-				this.setAlbedo(plate.debugColor)
-			})
 
-			val origins = plate.tiles.map { it.tile.position * lift }
-			vectorOriginMeshInstance.setMesh(origins.toMesh())
-			vectorOriginMeshInstance.setSurfaceOverrideMaterial(0, StandardMaterial3D().apply {
-				this.setAlbedo(plate.debugColor)
-				this.usePointSize = true
-				this.setPointSize(3.5f)
-			})
+			this.drawRotVectorMesh("tile_movement", edgeVectors, plate.debugColor)
+
+			val overallMovementVectors = listOf(plate.averageForce).map {
+				Pair(
+					DebugVector(
+						plate.region.center * lift,
+						plate.averageForce.tangent(plate.region.center * lift) * 100,
+					), plate.averageRotation * 10
+				)
+			}
+
+			this.drawRotVectorMesh("plate_movement", overallMovementVectors, plate.debugColor)
 		}
 	}
 

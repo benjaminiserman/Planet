@@ -69,7 +69,7 @@ class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: Li
 
 fun (MutMesh).toTopology(): Topology {
 	val borders = this.edges.withIndex().map { (i, edge) -> MutBorder(i) }
-	val tiles = this.verts.withIndex().map { (i, tile) -> MutTile(i, tile.position.copy()) }
+	val tiles = this.verts.withIndex().map { (i, tile) -> MutTile(i) }
 	val corners = this.tris.withIndex().map { (i, tri) ->
 		MutCorner(
 			i,

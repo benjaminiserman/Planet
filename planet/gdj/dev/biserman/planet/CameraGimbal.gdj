@@ -3,7 +3,7 @@
 
 registeredName = CameraGimbal
 fqName = dev.biserman.planet.CameraGimbal
-relativeSourcePath = src/main/kotlin/dev/biserman/planet/camera_gimbal.kt
+relativeSourcePath = src/main/kotlin/dev/biserman/planet/CameraGimbal.kt
 baseType = Node3D
 supertypes = [
     godot.api.Node3D,

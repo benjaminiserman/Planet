@@ -3,6 +3,9 @@ package dev.biserman.planet.topology
 import dev.biserman.planet.geometry.Ray
 import dev.biserman.planet.geometry.Sphere
 import dev.biserman.planet.geometry.triArea
+import dev.biserman.planet.utils.TrackedMutableList
+import dev.biserman.planet.utils.TrackedMutableList.Companion.toTracked
+import dev.biserman.planet.utils.memo
 import godot.core.Plane
 import godot.core.Vector3
 
@@ -52,8 +55,9 @@ interface Tile {
 
 class MutTile(
     override val id: Int,
-    override var position: Vector3,
-    override var corners: MutableList<MutCorner> = mutableListOf(),
+    override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
     override var borders: MutableList<MutBorder> = mutableListOf(),
     override var tiles: MutableList<MutTile> = mutableListOf(),
-) : Tile
+) : Tile {
+    override val position by memo({ corners.mutationCount }) { averagePosition }
+}

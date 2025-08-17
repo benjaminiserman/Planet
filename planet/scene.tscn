@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://bqaovyiqpfql0"]
+[gd_scene load_steps=9 format=3 uid="uid://bqaovyiqpfql0"]
 
-[ext_resource type="Script" uid="uid://dyupem3cm3dom" path="res://src/main/kotlin/dev/biserman/planet/main.kt" id="1_nxogm"]
-[ext_resource type="Script" uid="uid://cldqmyshxcl07" path="res://src/main/kotlin/dev/biserman/planet/rotate.kt" id="2_3253y"]
-[ext_resource type="Script" uid="uid://c8ply6ualr7v8" path="res://src/main/kotlin/dev/biserman/planet/camera_gimbal.kt" id="3_3253y"]
+[ext_resource type="Script" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
+[ext_resource type="Script" path="res://src/main/kotlin/dev/biserman/planet/Rotate.kt" id="2_m7jmp"]
+[ext_resource type="Script" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
+[ext_resource type="Script" path="res://src/main/kotlin/dev/biserman/planet/Gui.kt" id="4_ni31j"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_u3cyc"]
 
@@ -17,15 +18,15 @@ background_energy_multiplier = 2.5
 sky = SubResource("Sky_y2354")
 
 [node name="Scene" type="Node3D"]
-script = ExtResource("1_nxogm")
+script = ExtResource("1_u3cyc")
 
 [node name="Cube" type="MeshInstance3D" parent="."]
 transform = Transform3D(0.99999, -0.00365493, 0.00241435, 0.00364704, 0.999988, 0.00326865, -0.00242625, -0.00325982, 0.999992, 3, 0, 0)
 mesh = SubResource("BoxMesh_u3cyc")
-script = ExtResource("2_3253y")
+script = ExtResource("2_m7jmp")
 
 [node name="CameraGimbal" type="Node3D" parent="."]
-script = ExtResource("3_3253y")
+script = ExtResource("3_y2354")
 
 [node name="InnerGimbal" type="Node3D" parent="CameraGimbal"]
 
@@ -33,3 +34,19 @@ script = ExtResource("3_3253y")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.54772)
 environment = SubResource("Environment_ni31j")
 current = true
+
+[node name="GUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_ni31j")
+
+[node name="CheckButton" type="CheckButton" parent="GUI"]
+layout_mode = 0
+offset_right = 44.0
+offset_bottom = 24.0
+text = "Show Settings"
