@@ -11,7 +11,6 @@ import godot.api.Node
 class TectonicForcesRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
     DebugRenderer<Planet>(parent) {
     override val name = "tectonic_forces"
-    override val displayName = "Tectonic Forces"
 
     override fun generateMeshes(input: Planet): List<MeshData> =
         input.tectonicPlates.flatMap { plate ->

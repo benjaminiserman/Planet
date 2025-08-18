@@ -2,52 +2,83 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.Planet
-import dev.biserman.planet.rendering.DebugDraw.drawMesh
+import dev.biserman.planet.rendering.colormodes.BiomeColorMode
+import dev.biserman.planet.rendering.colormodes.SimpleColorMode
+import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
+import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
+import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
+import godot.api.Mesh
+import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
+import kotlin.math.E
+import kotlin.math.pow
 
-class PlanetRenderer(val parent: Node) {
-    fun levelIt(level: Float) = when {
-        level < 0.8f -> level * 0.5f
-        level >= 1.0f -> 1.0f
-        else -> level - 0.25f
-    }
+class PlanetRenderer(parent: Node, var planet: Planet? = null) {
+    val planetDebugRenders = listOf(
+        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
+        CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
+        TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = true),
+    )
 
-    fun saturation(level: Float) = when {
-        level >= 1.0f -> 0.0f
-        else -> 0.9f
+    val planetColorModes = listOf(
+        BiomeColorMode(this, visibleByDefault = true),
+        SimpleColorMode(
+            this, "elevation", visibleByDefault = false,
+        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
+        SimpleColorMode(
+            this, "density", visibleByDefault = false
+        ) { it.density.toDouble().adjustRange(-0.5..0.5, 0.0..1.0) },
+        SimpleColorMode(
+            this, "temperature", visibleByDefault = false
+        ) { it.temperature },
+    )
+
+    val meshInstance = MeshInstance3D().also { it.setName("Planet") }
+
+    init {
+        parent.addChild(meshInstance, forceReadableName = true)
+        planetDebugRenders.forEach { it.init() }
+        planetColorModes.forEach { it.init() }
     }
 
     fun update(planet: Planet) {
-        parent.drawMesh("Planet", planet.topology.makeMesh(enrich = { mesh, tile ->
-            val planetTile = planet.planetTiles[tile] ?: return@makeMesh
-            val level = planetTile.elevation.adjustRange(-0.5f..0.5f, 0.0f..1.0f)
-            val hue = planetTile.tectonicPlate?.biomeColor?.h ?: 0.0
-//			val hue = noise.getNoise3dv(planetTile.tile.position * 100).toDouble()
-            var color = Color.fromHsv(hue, saturation(level).toDouble(), levelIt(level).toDouble(), level.toDouble())
-            if (level < 0.7) {
-                color = Color.fromHsv(0.7, saturation(level).toDouble(), levelIt(level).toDouble(), level.toDouble())
+        this.planet = planet
+        updateMesh()
+
+        planetDebugRenders.forEach {
+            it.update(planet)
+        }
+    }
+
+    fun updateMesh() {
+        val planet = planet ?: return
+
+        val colorModeResults = planetColorModes.filter { it.visible }.map { mode ->
+            planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.planetTiles[tile]!!) }
+        }
+
+        val colors = if (colorModeResults.isNotEmpty()) {
+            val resultsSize = colorModeResults.first().size
+            if (colorModeResults.any { it.size != resultsSize }) {
+                throw IllegalStateException("Color mode results don't match")
             }
-            mesh.colors.add(color)
 
-            mesh.colors.addAll((0..<tile.corners.size).map {
-                val level =
-                    (tile.corners[it].tiles.map { tile -> planet.planetTiles[tile]!!.elevation }.toFloatArray()
-                        .sum() / tile.corners[it].tiles.size)
-                        .adjustRange(-0.5f..0.5f, 0.0f..1.0f)
-                val color = Color.fromHsv(
-                    color.h,
-                    color.s,
-                    levelIt(level).toDouble(),
-                    level.toDouble()
-                )
+            (0..<resultsSize).map { i ->
+                colorModeResults.fold(
+                    Color(
+                        0.0, 0.0, 0.0, 0.0
+                    )
+                ) { acc, list -> acc + list[i] } / colorModeResults.size.toDouble()
+            }
+        } else listOf()
 
-                color
-            })
-        }).apply {
+        meshInstance.setMesh(planet.topology.makeMesh().apply {
             this.recalculateNormals()
-        }.toArrayMesh(), GD.load<StandardMaterial3D>("res://planet_mat.tres"))
+            this.colors.addAll(colors)
+        }.toArrayMesh())
+        meshInstance.setSurfaceOverrideMaterial(0, GD.load<StandardMaterial3D>("res://planet_mat.tres"))
     }
 }

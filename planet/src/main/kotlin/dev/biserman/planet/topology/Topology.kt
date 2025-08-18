@@ -20,7 +20,7 @@ import godot.global.GD
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
-	fun makeMesh(enrich: ((MutMesh, Tile) -> Unit)? = null): MutMesh {
+	fun makeMesh(): MutMesh {
 		val mutMesh = MutMesh(mutableListOf(), mutableListOf(), mutableListOf())
 
 		for (tile in tiles) {
@@ -59,8 +59,6 @@ class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: Li
 					)
 				)
 			)
-
-			enrich?.invoke(mutMesh, tile)
 		}
 
 		return mutMesh

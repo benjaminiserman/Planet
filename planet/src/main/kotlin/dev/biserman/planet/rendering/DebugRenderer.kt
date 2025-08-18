@@ -15,8 +15,17 @@ class MeshData(val mesh: Mesh, val material: Material? = null)
 abstract class DebugRenderer<T>(val parent: Node) {
     val meshInstances = mutableListOf<MeshInstance3D>()
     abstract val name: String
-    abstract val displayName: String
+
+    open val displayName: String
+        get() = name.split("_").joinToString(" ") { it.capitalize() }
+
+
     open val visibleByDefault: Boolean = false
+    var visible: Boolean = false
+        set(value) {
+            field = value
+            meshInstances.forEach { it.visible = value }
+        }
 
     fun init() {
         visible = visibleByDefault
@@ -42,12 +51,6 @@ abstract class DebugRenderer<T>(val parent: Node) {
     }
 
     abstract fun generateMeshes(input: T): List<MeshData>
-
-    var visible: Boolean = false
-        set(value) {
-            field = value
-            meshInstances.forEach { it.visible = value }
-        }
 }
 
 fun vectorMesh(
