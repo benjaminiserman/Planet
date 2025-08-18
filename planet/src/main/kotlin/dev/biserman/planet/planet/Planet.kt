@@ -10,7 +10,7 @@ class Planet(val topology: Topology) {
     val tectonicPlates: MutableList<TectonicPlate>
 
     init {
-        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(40, 50))
+        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(15, 20))
         Tectonics.voronoiPlates(this)
         Tectonics.assignDensities(this)
     }

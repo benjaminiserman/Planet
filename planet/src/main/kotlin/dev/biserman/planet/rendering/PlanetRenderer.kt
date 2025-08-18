@@ -1,5 +1,6 @@
 package dev.biserman.planet.rendering
 
+import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -7,7 +8,6 @@ import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
-import godot.api.Mesh
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
@@ -32,8 +32,13 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
             this, "density", visibleByDefault = false
         ) { it.density.toDouble().adjustRange(-0.5..0.5, 0.0..1.0) },
         SimpleColorMode(
-            this, "temperature", visibleByDefault = false
+            this, "temperature", visibleByDefault = false,
+            colorFn = { Color(it, 0.0, 0.0, 1.0) }
         ) { it.temperature },
+        SimpleColorMode(
+            this, "hotspots", visibleByDefault = false,
+            colorFn = { Color(it, it / 2.0, 0.0, 1.0) }
+        ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) }
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

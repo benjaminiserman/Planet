@@ -9,8 +9,10 @@ import godot.core.Color
 class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefault: Boolean) : PlanetColorMode(planetRenderer) {
     override val name = "biome"
 
+    val waterLevel = 0.6f
+
     fun levelIt(level: Float) = when {
-        level < 0.8f -> level * 0.5f
+        level < waterLevel -> level * 0.5f
         level >= 1.0f -> 1.0f
         else -> level - 0.25f
     }
@@ -26,7 +28,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         val hue = planetTile.tectonicPlate?.biomeColor?.h ?: 0.0
 
         var color = Color.fromHsv(hue, saturation(level).toDouble(), levelIt(level).toDouble(), level.toDouble())
-        if (level < 0.7) {
+        if (level < waterLevel) {
             color = Color.fromHsv(0.65, saturation(level).toDouble(), levelIt(level).toDouble(), level.toDouble())
         }
         yield(color)

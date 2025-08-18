@@ -7,7 +7,7 @@ import godot.core.Color
 import godot.core.Vector3
 import kotlin.math.absoluteValue
 
-class TectonicPlate(planet: Planet) {
+class TectonicPlate(val planet: Planet) {
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
     val region = PlanetRegion(planet)
@@ -23,5 +23,21 @@ class TectonicPlate(planet: Planet) {
 
     val averageRotation by memo({ tiles.mutationCount }) {
         tiles.fold(0.0) { sum, tile -> sum + tile.rotationalForce } / tiles.size
+    }
+
+    fun calculateNeighborLengths(): Map<TectonicPlate, Int> {
+        val neighbors = mutableMapOf<TectonicPlate, Int>()
+        for (tile in tiles) {
+            if (tile.tectonicPlate != this) {
+                continue
+            }
+        }
+
+        return neighbors
+    }
+
+    fun merge(other: TectonicPlate) {
+        other.tiles.forEach { it.tectonicPlate = this }
+        planet.tectonicPlates.remove(other)
     }
 }
