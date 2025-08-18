@@ -11,7 +11,6 @@ import kotlin.math.abs
 class TectonicPlateBoundaryRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
     DebugRenderer<Planet>(parent) {
     override val name = "tectonic_plate_boundary"
-    override val displayName = "Tectonic Plates Boundaries"
 
     override fun generateMeshes(input: Planet): List<MeshData> =
         input.tectonicPlates.withIndex().map { (index, plate) ->

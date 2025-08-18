@@ -9,7 +9,6 @@ import godot.api.StandardMaterial3D
 class CellWireframeRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
     DebugRenderer<Planet>(parent) {
     override val name = "cell_wireframe"
-    override val displayName = "Cell Wireframe"
 
     override fun generateMeshes(input: Planet): List<MeshData> = listOf(
         MeshData(

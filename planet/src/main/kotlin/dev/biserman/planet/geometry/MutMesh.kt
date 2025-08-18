@@ -9,6 +9,7 @@ import godot.core.PackedVector3Array
 import godot.core.VariantArray
 import godot.core.Vector3
 import godot.core.toVariantArray
+import godot.global.GD
 import kotlin.collections.flatMap
 
 data class MutMesh(
@@ -28,6 +29,7 @@ data class MutMesh(
 
         if (colors.isNotEmpty()) {
             surfaceArray[Mesh.ArrayType.COLOR.ordinal] = PackedColorArray(colors.toVariantArray())
+            GD.print("Color array added")
         }
 
         return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.TRIANGLES, surfaceArray) }

@@ -19,14 +19,6 @@ import kotlin.random.Random
 
 @RegisterClass
 class Main : Node() {
-    val planetRenderer = PlanetRenderer(this)
-
-	val planetDebugRenders = listOf(
-		TectonicForcesRenderer(this, lift = 1.005, visibleByDefault = true),
-		CellWireframeRenderer(this, lift = 1.005, visibleByDefault = false),
-		TectonicPlateBoundaryRenderer(this, lift = 1.005, visibleByDefault = true),
-	)
-
 	@RegisterFunction
 	override fun _ready() {
 		instance = this
@@ -40,12 +32,8 @@ class Main : Node() {
 		GD.print("tiles: ${topology.tiles.size}")
 		val planet = Planet(topology)
 
+		val planetRenderer = PlanetRenderer(this)
 		planetRenderer.update(planet)
-
-		planetDebugRenders.forEach {
-			it.init()
-			it.update(planet)
-		}
 	}
 
 	companion object {
