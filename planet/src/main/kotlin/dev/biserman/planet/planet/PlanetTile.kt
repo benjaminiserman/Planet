@@ -10,10 +10,10 @@ import kotlin.math.pow
 class PlanetTile(val planet: Planet, var tile: Tile) {
     //    var elevation = Main.noise.getNoise3dv(tile.averagePosition * 100)
     //    var elevation = sin(tile.averagePosition.y * 90)
-    var elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition)
+    var elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+    val density get() = -elevation / 1000
     var temperature = 0.0
     var moisture = 0.0
-    var density = -Main.noise.startingElevation.getNoise3dv(tile.averagePosition)
     var tectonicPlate: TectonicPlate? = null
         set(value) {
             if (value == null) {

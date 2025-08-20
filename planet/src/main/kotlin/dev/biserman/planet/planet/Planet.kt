@@ -9,6 +9,8 @@ class Planet(val topology: Topology) {
     @Suppress("JoinDeclarationAndAssignment")
     val tectonicPlates: MutableList<TectonicPlate>
 
+    val seaLevel: Double = 0.0
+
     init {
         tectonicPlates = Tectonics.seedPlates(this, random.nextInt(15, 20))
         Tectonics.voronoiPlates(this)
