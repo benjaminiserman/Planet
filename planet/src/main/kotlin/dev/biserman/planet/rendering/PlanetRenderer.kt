@@ -27,7 +27,8 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
         BiomeColorMode(this, visibleByDefault = true),
         SimpleColorMode(
             this, "elevation", visibleByDefault = false,
-        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
+//        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
+        ) { it.elevation.toDouble().adjustRange(-1000.0..1000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "density", visibleByDefault = false
         ) { it.density.toDouble().adjustRange(-0.5..0.5, 0.0..1.0) },

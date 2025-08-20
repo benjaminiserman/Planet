@@ -3,12 +3,10 @@ package dev.biserman.planet.planet
 import dev.biserman.planet.Main
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
-import godot.api.FastNoiseLite
 import godot.common.util.lerp
 
 object Tectonics {
     val random by lazy { Main.random }
-    val noise by lazy { Main.noise }
 
     fun seedPlates(planet: Planet, plateCount: Int): MutableList<TectonicPlate> {
         val plates = (1..plateCount).map { TectonicPlate(planet) }
@@ -143,10 +141,9 @@ object Tectonics {
     fun assignDensities(planet: Planet) {
         planet.tectonicPlates.forEach { plate ->
             val averageDensity = (plate.tiles.sumOf { it.density.toDouble() } / plate.tiles.size).toFloat()
-            val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.0, 1.0).toFloat(), 0.25f)
+            val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.0, 0.5).toFloat(), 0.75f)
             plate.tiles.forEach {
-                it.density = lerp(adjustedDensity, it.density, 0.1f)
-                it.elevation = lerp(it.elevation, -it.density, 0f)
+                it.elevation = lerp(it.elevation, adjustedDensity * 1000, 0.33f)
             }
         }
     }

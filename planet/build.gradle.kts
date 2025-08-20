@@ -6,6 +6,10 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("com.github.davidmoten:rtree-multi:0.1")
+}
+
 kotlin {
     jvmToolchain(17)
 }
