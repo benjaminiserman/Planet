@@ -25,7 +25,8 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun hue(biomeHue: Double, elevation: Float) = when (getMode(elevation)) {
-        RenderMode.BIOME -> biomeHue
+//        RenderMode.BIOME -> biomeHue
+        RenderMode.BIOME -> 0.25
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.65
     }

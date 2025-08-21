@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
@@ -36,22 +37,26 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
                 return@fold sum
             }
 
-            val rawScalar = ((neighborPlanetTile.density - density) / 2.0) * -100
+            val rawScalar = ((neighborPlanetTile.density - density) / 2.0) * -1
 
             // desmos: \frac{2}{1+e^{-20\left(x-1.2\right)}}-1
             // this scales between back-arc spreading and trench pull based on relative plate density
             val backArcSpreadingX = (neighborPlanetTile.density + 1) / (density + 1.001)
             val backArcSpreading = 2.0 / (1 + E.pow(-20 * (backArcSpreadingX - 1.15))) - 1
 
-            val finalScalar = if (rawScalar < 0.0) backArcSpreading * 5 else rawScalar
+            val finalScalar = if (rawScalar < 0.0) backArcSpreading * 0.05 else rawScalar
 
             return@fold sum + (neighborTile.position - tile.position) * finalScalar * border.length
         }
     }
 
-    val rotationalForce by memo({ tectonicPlate?.tiles?.mutationCount }) {
-        val rotationNormal =
-            tile.position.cross(tile.position - (tectonicPlate ?: return@memo 0.0).region.center).normalized()
-        rotationNormal.dot(plateBoundaryForces) * -100
+    var movement: Vector3 = Vector3.ZERO
+    fun updateMovement() {
+//        val idealMovement = plateBoundaryForces * 0.1 +
+//                tectonicPlate!!.averageForce +
+//                (tile.position - tectonicPlate!!.region.center).cross(tile.position) * tectonicPlate!!.averageRotation
+        val idealMovement = // plateBoundaryForces * 0.1 +
+            tectonicPlate!!.eulerPole.cross(tile.position)
+        movement = movement.lerp(idealMovement, 1.0).tangent(tile.position)
     }
 }
