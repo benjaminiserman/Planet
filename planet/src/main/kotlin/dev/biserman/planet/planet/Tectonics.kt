@@ -139,12 +139,19 @@ object Tectonics {
     }
 
     fun assignDensities(planet: Planet) {
-        planet.tectonicPlates.forEach { plate ->
+        planet.tectonicPlates.withIndex().forEach { (index, plate) ->
             val averageDensity = (plate.tiles.sumOf { it.density.toDouble() } / plate.tiles.size).toFloat()
             val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.0, 0.5).toFloat(), 0.75f)
+
             plate.tiles.forEach {
                 it.elevation = lerp(it.elevation, adjustedDensity * 1000, 0.33f)
             }
+        }
+    }
+
+    fun stepTectonicsSimulation(planet: Planet) {
+        planet.planetTiles.values.forEach {
+            it.updateMovement()
         }
     }
 }

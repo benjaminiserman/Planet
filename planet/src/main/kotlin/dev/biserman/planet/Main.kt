@@ -3,6 +3,7 @@ package dev.biserman.planet
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.Tectonics
 import dev.biserman.planet.rendering.DebugDraw.drawMesh
 import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
@@ -31,6 +32,8 @@ class Main : Node() {
 		val topology = sub.toTopology()
 		GD.print("tiles: ${topology.tiles.size}")
 		val planet = Planet(topology)
+
+		Tectonics.stepTectonicsSimulation(planet)
 
 		val planetRenderer = PlanetRenderer(this)
 		planetRenderer.update(planet)

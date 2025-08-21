@@ -5,22 +5,24 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
+import dev.biserman.planet.rendering.colormodes.SimpleColorMode.Companion.redOutsideRange
+import dev.biserman.planet.rendering.colormodes.SimpleColorMode.Companion.redWhenNull
 import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
+import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
-import kotlin.math.E
-import kotlin.math.pow
 
 class PlanetRenderer(parent: Node, var planet: Planet? = null) {
     val planetDebugRenders = listOf(
-        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
+        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
         TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = true),
+        TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false)
     )
 
     val planetColorModes = listOf(
@@ -30,15 +32,16 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
 //        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
         ) { it.elevation.toDouble().adjustRange(-1000.0..1000.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "density", visibleByDefault = false
-        ) { it.density.toDouble().adjustRange(-0.5..0.5, 0.0..1.0) },
+            this, "plate_density", visibleByDefault = false,
+            colorFn = redOutsideRange(0.0..1.0)
+        )  { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleColorMode(
             this, "temperature", visibleByDefault = false,
-            colorFn = { Color(it, 0.0, 0.0, 1.0) }
+            colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }
         ) { it.temperature },
         SimpleColorMode(
             this, "hotspots", visibleByDefault = false,
-            colorFn = { Color(it, it / 2.0, 0.0, 1.0) }
+            colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
         ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) }
     )
 
