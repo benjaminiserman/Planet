@@ -2,6 +2,7 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
@@ -11,6 +12,7 @@ import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.rendering.renderers.TileMovementRenderer
+import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
@@ -22,7 +24,15 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
         TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = true),
-        TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false)
+        TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false),
+        TileVectorRenderer(
+            parent,
+            "mantle_convection",
+            lift = 1.005,
+            getFn = { Main.noise.mantleConvection.sample4d(it.tile.position, 0.0) },
+            color = Color(1.0, 0.5, 0.0, 1.0),
+            visibleByDefault = false
+        ),
     )
 
     val planetColorModes = listOf(
@@ -34,7 +44,7 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
         SimpleColorMode(
             this, "plate_density", visibleByDefault = false,
             colorFn = redOutsideRange(0.0..1.0)
-        )  { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
+        ) { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleColorMode(
             this, "temperature", visibleByDefault = false,
             colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }

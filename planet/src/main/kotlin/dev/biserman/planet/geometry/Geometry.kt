@@ -2,6 +2,7 @@ package dev.biserman.planet.geometry
 
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.MutCorner
+import dev.biserman.planet.utils.memo
 import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.Color
@@ -119,5 +120,20 @@ fun (List<DebugVector>).toMesh(): MutMesh {
     val mutEdges = this.withIndex().map { i -> MutEdge(mutableListOf(i.index * 2, i.index * 2 + 1)) }.toMutableList()
 
     return MutMesh(mutVerts, mutEdges)
+}
+
+fun torque(forces: Iterable<Pair<Vector3, Vector3>>) = forces.fold(Vector3.ZERO) { sum, (position, force) ->
+    sum + position.cross(force)
+}
+
+fun eulerPole(torque: Vector3, points: Iterable<Pair<Vector3, Double>>): Vector3 {
+    var inertiaTensor = Mat3.zero()
+    for ((point, mass) in points) {
+        val outer = Mat3.fromOuter(point, point)
+        val contribution = Mat3.identity() - outer
+        inertiaTensor += contribution * mass
+    }
+
+    return inertiaTensor.inverse() * torque
 }
 

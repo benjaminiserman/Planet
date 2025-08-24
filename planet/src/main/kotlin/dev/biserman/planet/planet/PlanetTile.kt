@@ -2,6 +2,7 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.tangent
+import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
@@ -59,4 +60,6 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
             tectonicPlate!!.eulerPole.cross(tile.position)
         movement = movement.lerp(idealMovement, 1.0).tangent(tile.position)
     }
+
+    fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
 }

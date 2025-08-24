@@ -2,13 +2,14 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Mat3
+import dev.biserman.planet.geometry.eulerPole
+import dev.biserman.planet.geometry.torque
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.randomHsv
 import godot.core.Color
 import godot.core.Vector3
-import kotlin.math.absoluteValue
 
 class TectonicPlate(val planet: Planet) {
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
@@ -17,21 +18,23 @@ class TectonicPlate(val planet: Planet) {
     val tiles by region::tiles
     var density: Float? = null
 
-    val torque by memo({ tiles.mutationCount }) {
-        tiles.fold(Vector3.ZERO) { sum, tile ->
-            sum + tile.tile.position.cross(tile.plateBoundaryForces)
-        }
-    }
+    val basalDrag = 0.5
+    var lastTorque = Vector3.ZERO
+
+    val torque by memo({ tiles.mutationCount }) { torque(tiles.map { Pair(it.tile.position, it.plateBoundaryForces) }) }
 
     val eulerPole by memo({ tiles.mutationCount }) {
-        var inertiaTensor = Mat3.zero()
-        for (tile in tiles) {
-            val outer = Mat3.fromOuter(tile.tile.position, tile.tile.position)
-            val contribution = Mat3.identity() - outer
-            inertiaTensor += contribution * tile.tile.area
-        }
+        eulerPole(
+            torque,
+            tiles.map { tile -> tile.tile.position to tile.tile.area })
+    }
 
-        inertiaTensor.inverse() * torque
+    val edgeTiles by memo({ tiles.mutationCount }) {
+        tiles.filter { tile ->
+            tile.tile.borders.any { border ->
+                tile.oppositeTile(border)?.tectonicPlate != this
+            }
+        }
     }
 
     fun calculateNeighborLengths(): Map<TectonicPlate, Double> {
