@@ -15,12 +15,10 @@ class TectonicForcesRenderer(parent: Node, val lift: Double, override val visibl
 
     override fun generateMeshes(input: Planet): List<MeshData> =
         input.tectonicPlates.flatMap { plate ->
-            val edgeVectors = plate.tiles.filter { it.plateBoundaryForces.length() > 0.00005 }.flatMap {
-                listOf(
-                    DebugVector(
-                        it.tile.position * lift,
-                        it.plateBoundaryForces * 100
-                    )
+            val edgeVectors = plate.tiles.filter { it.plateBoundaryForces.length() > 0.00005 }.map {
+                DebugVector(
+                    it.tile.position * lift,
+                    it.plateBoundaryForces * 100
                 )
             }
 

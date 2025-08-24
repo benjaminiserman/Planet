@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.torque
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
 import godot.common.util.lerp
@@ -150,6 +151,31 @@ object Tectonics {
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
+        planet.tectonicPlates.forEach { plate ->
+            val oldTorqueWithDrag = plate.lastTorque * plate.basalDrag
+            val mantleConvectionTorque = torque(plate.tiles.map { tile ->
+                Pair(
+                    tile.tile.position,
+                    planet.noise.mantleConvection.sample4d(tile.tile.position, planet.tectonicAge.toDouble())
+                )
+            })
+            val slabPull = torque(planet.subductionZones.filter { it.tectonicPlate == plate }.map { tile ->
+                Pair(
+                    tile.tile.position,
+                    (tile.tile.position - tile.tectonicPlate!!.region.center).normalized() * tile.tile.area
+                )
+            })
+            val ridgePush = torque(planet.divergenceZones.filter { it.tectonicPlate == plate }.map { tile ->
+                Pair(
+                    tile.tile.position,
+                    (tile.tectonicPlate!!.region.center - tile.tile.position).normalized() * tile.tile.area
+                )
+            })
+
+
+        }
+
+
         planet.planetTiles.values.forEach {
             it.updateMovement()
         }

@@ -13,12 +13,10 @@ class TileMovementRenderer(parent: Node, val lift: Double, override val visibleB
 
     override fun generateMeshes(input: Planet): List<MeshData> =
         input.tectonicPlates.flatMap { plate ->
-            val movementVectors = plate.tiles.filter { it.movement.length() > 0.005 }.flatMap {
-                listOf(
-                    DebugVector(
-                        it.tile.position * lift,
-                        it.movement
-                    )
+            val movementVectors = plate.tiles.filter { it.movement.length() > 0.005 }.map {
+                DebugVector(
+                    it.tile.position * lift,
+                    it.movement
                 )
             }
 
