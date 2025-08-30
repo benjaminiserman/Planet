@@ -26,7 +26,7 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
             field = value
         }
 
-    val plateBoundaryForces by memo({ tectonicPlate?.tiles?.mutationCount }) {
+    val plateBoundaryForces by memo({ planet.tectonicAge }) {
         if (tectonicPlate == null) {
             return@memo Vector3.ZERO
         }
@@ -56,10 +56,42 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
 //        val idealMovement = plateBoundaryForces * 0.1 +
 //                tectonicPlate!!.averageForce +
 //                (tile.position - tectonicPlate!!.region.center).cross(tile.position) * tectonicPlate!!.averageRotation
+        if (tectonicPlate == null) {
+            return
+        }
+
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
         movement = movement.lerp(idealMovement, 1.0).tangent(tile.position)
     }
 
     fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
+
+    fun floodFill(filterFn: (PlanetTile) -> Boolean): Set<PlanetTile> {
+        val visited = mutableSetOf<PlanetTile>()
+        val found = mutableSetOf<PlanetTile>()
+        val queue = ArrayDeque<PlanetTile>()
+        queue.add(this)
+        visited.add(this)
+        if (filterFn(this)) {
+            found.add(this)
+        }
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            for (neighbor in current.tile.tiles) {
+                val neighborPlanetTile = planet.planetTiles[neighbor]!!
+                if (visited.contains(neighborPlanetTile)) {
+                    continue
+                }
+                if (filterFn(neighborPlanetTile)) {
+                    queue.addLast(neighborPlanetTile)
+                    visited.add(neighborPlanetTile)
+                    found.add(neighborPlanetTile)
+                }
+            }
+        }
+
+        return found
+    }
 }

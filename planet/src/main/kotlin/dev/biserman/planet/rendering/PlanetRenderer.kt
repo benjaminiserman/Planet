@@ -2,24 +2,21 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
-import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
-import dev.biserman.planet.rendering.colormodes.SimpleColorMode.Companion.redOutsideRange
-import dev.biserman.planet.rendering.colormodes.SimpleColorMode.Companion.redWhenNull
-import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
-import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
-import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
-import dev.biserman.planet.rendering.renderers.TileMovementRenderer
-import dev.biserman.planet.rendering.renderers.TileVectorRenderer
+import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
+import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redOutsideRange
+import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redWhenNull
+import dev.biserman.planet.rendering.renderers.*
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
+import kotlin.coroutines.EmptyCoroutineContext.fold
 
-class PlanetRenderer(parent: Node, var planet: Planet? = null) {
+class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
@@ -29,7 +26,7 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
             parent,
             "mantle_convection",
             lift = 1.005,
-            getFn = { Main.noise.mantleConvection.sample4d(it.tile.position, 0.0) },
+            getFn = { Main.noise.mantleConvection.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
             color = Color(1.0, 0.5, 0.0, 1.0),
             visibleByDefault = false
         ),
@@ -37,22 +34,28 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
-        SimpleColorMode(
+        SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
 //        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
         ) { it.elevation.toDouble().adjustRange(-1000.0..1000.0, 0.0..1.0) },
-        SimpleColorMode(
+        SimpleDoubleColorMode(
             this, "plate_density", visibleByDefault = false,
             colorFn = redOutsideRange(0.0..1.0)
         ) { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
-        SimpleColorMode(
+        SimpleDoubleColorMode(
             this, "temperature", visibleByDefault = false,
             colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }
         ) { it.temperature },
-        SimpleColorMode(
+        SimpleDoubleColorMode(
             this, "hotspots", visibleByDefault = false,
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
-        ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) }
+        ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) },
+        SimpleColorMode(
+            this, "subduction_zones", visibleByDefault = false,
+        ) { if (it in planet.subductionZones) Color.blue else null },
+        SimpleColorMode(
+            this, "divergence_zones", visibleByDefault = false,
+        ) { if (it in planet.divergenceZones) Color.red else null },
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
@@ -73,8 +76,6 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
     }
 
     fun updateMesh() {
-        val planet = planet ?: return
-
         val colorModeResults = planetColorModes.filter { it.visible }.map { mode ->
             planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.planetTiles[tile]!!) }
         }
@@ -86,11 +87,9 @@ class PlanetRenderer(parent: Node, var planet: Planet? = null) {
             }
 
             (0..<resultsSize).map { i ->
-                colorModeResults.fold(
-                    Color(
-                        0.0, 0.0, 0.0, 0.0
-                    )
-                ) { acc, list -> acc + list[i] } / colorModeResults.size.toDouble()
+                colorModeResults.filter { it[i] != null }
+                    .fold(Color.black) { acc, list -> acc + list[i]!! } /
+                        colorModeResults.filter { it[i] != null }.size.toDouble()
             }
         } else listOf()
 

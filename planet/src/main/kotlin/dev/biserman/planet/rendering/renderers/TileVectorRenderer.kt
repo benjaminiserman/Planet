@@ -3,13 +3,12 @@ package dev.biserman.planet.rendering.renderers
 import dev.biserman.planet.geometry.DebugVector
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.DebugRenderer
+import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.vectorMesh
 import godot.api.Node
 import godot.core.Color
 import godot.core.Vector3
-import kotlin.times
 
 class TileVectorRenderer(
     parent: Node,

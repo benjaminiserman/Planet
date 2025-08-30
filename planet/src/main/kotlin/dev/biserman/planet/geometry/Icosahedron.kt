@@ -4,12 +4,7 @@ import dev.biserman.planet.Main
 import godot.core.Plane
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.math.sqrt
+import kotlin.math.*
 
 // Adapted from Andy Gainey, original license below:
 // Copyright © 2014 Andy Gainey <andy@experilous.com>

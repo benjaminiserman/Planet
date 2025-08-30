@@ -1,13 +1,9 @@
 package dev.biserman.planet.topology
 
-import dev.biserman.planet.geometry.MutEdge
-import dev.biserman.planet.geometry.MutMesh
-import dev.biserman.planet.geometry.MutTri
-import dev.biserman.planet.geometry.MutVertex
-import dev.biserman.planet.geometry.centroid
-import dev.biserman.planet.geometry.copy
-import godot.core.Color
-import godot.global.GD
+import com.github.davidmoten.rtreemulti.Entry
+import com.github.davidmoten.rtreemulti.RTree
+import com.github.davidmoten.rtreemulti.geometry.Point
+import dev.biserman.planet.geometry.*
 
 // Adapted from Andy Gainey, original license below:
 // Copyright © 2014 Andy Gainey <andy@experilous.com>
@@ -19,6 +15,12 @@ import godot.global.GD
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
+	val rTree = RTree
+		.star()
+		.dimensions(3)
+		.create<Tile, Point>()
+		.add(tiles.map { Entry.entry(it, it.position.toPoint()) })
+
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
 	fun makeMesh(): MutMesh {
 		val mutMesh = MutMesh(mutableListOf(), mutableListOf(), mutableListOf())

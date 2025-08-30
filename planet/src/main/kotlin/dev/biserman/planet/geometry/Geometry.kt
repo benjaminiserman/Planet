@@ -1,17 +1,9 @@
 package dev.biserman.planet.geometry
 
-import dev.biserman.planet.topology.Border
-import dev.biserman.planet.topology.MutCorner
-import dev.biserman.planet.utils.memo
+import com.github.davidmoten.rtreemulti.geometry.Point
 import godot.api.ArrayMesh
 import godot.api.Mesh
-import godot.core.Color
-import godot.core.PackedVector3Array
-import godot.core.Plane
-import godot.core.Quaternion
-import godot.core.VariantArray
-import godot.core.Vector2
-import godot.core.Vector3
+import godot.core.*
 import kotlin.math.PI
 import kotlin.math.acos
 import kotlin.math.cos
@@ -135,5 +127,11 @@ fun eulerPole(torque: Vector3, points: Iterable<Pair<Vector3, Double>>): Vector3
     }
 
     return inertiaTensor.inverse() * torque
+}
+
+fun (Vector3).toPoint(): Point = Point.create(this.x, this.y, this.z)
+fun (Point).toVector3(): Vector3 {
+    val values = this.values()
+    return Vector3(values[0], values[1], values[2])
 }
 

@@ -2,15 +2,7 @@ package dev.biserman.planet.geometry
 
 import godot.api.ArrayMesh
 import godot.api.Mesh
-import godot.core.Color
-import godot.core.PackedColorArray
-import godot.core.PackedInt32Array
-import godot.core.PackedVector3Array
-import godot.core.VariantArray
-import godot.core.Vector3
-import godot.core.toVariantArray
-import godot.global.GD
-import kotlin.collections.flatMap
+import godot.core.*
 
 data class MutMesh(
     val verts: MutableList<MutVertex> = mutableListOf(),

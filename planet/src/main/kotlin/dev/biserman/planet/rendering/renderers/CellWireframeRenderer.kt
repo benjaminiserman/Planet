@@ -1,8 +1,8 @@
 package dev.biserman.planet.rendering.renderers
 
 import dev.biserman.planet.planet.Planet
-import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.DebugRenderer
+import dev.biserman.planet.rendering.MeshData
 import godot.api.Node
 import godot.api.StandardMaterial3D
 
