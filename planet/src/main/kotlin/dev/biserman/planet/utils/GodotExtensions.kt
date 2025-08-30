@@ -3,7 +3,6 @@ package dev.biserman.planet.utils
 import dev.biserman.planet.Main
 import godot.api.FastNoiseLite
 import godot.core.Color
-import godot.core.Vector3
 import kotlin.random.Random
 
 fun Color.Companion.randomRgb(a: Int = 255, random: Random = Main.random) =

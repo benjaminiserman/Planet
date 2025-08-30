@@ -8,28 +8,15 @@ import godot.core.Color
 class SimpleColorMode(
     planetRenderer: PlanetRenderer,
     override val name: String,
-    val colorFn: (Double?) -> Color = defaultColorFn,
     override val visibleByDefault: Boolean = false,
-    val getFn: (PlanetTile) -> Double?,
+    val getFn: (PlanetTile) -> Color?,
 ) : PlanetColorMode(planetRenderer) {
-    override fun colorsFor(planetTile: PlanetTile): Sequence<Color> = sequence {
-        yield(colorFn(getFn(planetTile)))
+    override fun colorsFor(planetTile: PlanetTile): Sequence<Color?> = sequence {
+        val tileColor = getFn(planetTile)
+        yield(tileColor)
 
         yieldAll((0..<planetTile.tile.corners.size).map {
-            val validTilesValues =
-                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.planetTiles[tile]!!) }
-            colorFn(validTilesValues.sum() / validTilesValues.size)
+            tileColor
         })
-    }
-
-    companion object {
-        val defaultColorFn = redWhenNull { Color(it, it, it, 1.0) }
-
-        fun redOutsideRange(range: ClosedRange<Double>, colorFn: (Double) -> Color = defaultColorFn) =
-            redWhenNull { if (it in range) colorFn(it) else Color.red }
-
-        fun redWhenNull(colorFn: (Double) -> Color) = { level: Double? ->
-            if (level == null) Color.red else colorFn(level)
-        }
     }
 }

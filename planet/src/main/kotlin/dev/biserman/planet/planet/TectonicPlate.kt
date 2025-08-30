@@ -1,9 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
-import dev.biserman.planet.geometry.Mat3
 import dev.biserman.planet.geometry.eulerPole
-import dev.biserman.planet.geometry.torque
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
@@ -19,17 +17,15 @@ class TectonicPlate(val planet: Planet) {
     var density: Float? = null
 
     val basalDrag = 0.5
-    var lastTorque = Vector3.ZERO
+    var torque = Vector3.ZERO
 
-    val torque by memo({ tiles.mutationCount }) { torque(tiles.map { Pair(it.tile.position, it.plateBoundaryForces) }) }
-
-    val eulerPole by memo({ tiles.mutationCount }) {
+    val eulerPole by memo({ torque }) {
         eulerPole(
             torque,
-            tiles.map { tile -> tile.tile.position to tile.tile.area })
+            tiles.map { tile -> tile.tile.position to 1.0 })
     }
 
-    val edgeTiles by memo({ tiles.mutationCount }) {
+    val edgeTiles by memo({ planet.tectonicAge }) {
         tiles.filter { tile ->
             tile.tile.borders.any { border ->
                 tile.oppositeTile(border)?.tectonicPlate != this

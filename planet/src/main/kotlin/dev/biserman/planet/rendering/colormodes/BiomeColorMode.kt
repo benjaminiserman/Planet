@@ -1,6 +1,5 @@
 package dev.biserman.planet.rendering.colormodes
 
-import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.PlanetColorMode
 import dev.biserman.planet.rendering.PlanetRenderer

@@ -1,11 +1,9 @@
 package dev.biserman.planet.rendering.renderers
 
 import dev.biserman.planet.geometry.DebugVector
-import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.planet.Planet
-import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.DebugRenderer
-import dev.biserman.planet.rendering.rotVectorMesh
+import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.vectorMesh
 import godot.api.Node
 

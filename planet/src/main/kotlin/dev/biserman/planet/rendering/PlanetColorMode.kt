@@ -20,5 +20,5 @@ abstract class PlanetColorMode(val planetRenderer: PlanetRenderer) {
         Gui.addToggle("$displayName Color Mode", defaultValue = visibleByDefault) { visible = it }
     }
 
-    abstract fun colorsFor(planetTile: PlanetTile): Sequence<Color>
+    abstract fun colorsFor(planetTile: PlanetTile): Sequence<Color?>
 }

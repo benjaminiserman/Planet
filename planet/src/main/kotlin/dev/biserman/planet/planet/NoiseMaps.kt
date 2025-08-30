@@ -4,9 +4,7 @@ import dev.biserman.planet.geometry.tangent
 import godot.api.FastNoiseLite
 import godot.core.Vector3
 import opensimplex2.OpenSimplex2S
-import kotlin.math.floor
 import kotlin.math.max
-import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 

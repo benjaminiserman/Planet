@@ -4,22 +4,22 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.Tectonics
-import dev.biserman.planet.rendering.DebugDraw.drawMesh
 import dev.biserman.planet.rendering.PlanetRenderer
-import dev.biserman.planet.rendering.renderers.TectonicForcesRenderer
-import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
-import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.topology.toTopology
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
+import godot.api.Input
+import godot.api.InputEvent
 import godot.api.Node
-import godot.api.StandardMaterial3D
-import godot.core.Color
+import godot.core.Key
 import godot.global.GD
 import kotlin.random.Random
 
 @RegisterClass
 class Main : Node() {
+	lateinit var planet: Planet
+	lateinit var planetRenderer: PlanetRenderer
+
 	@RegisterFunction
 	override fun _ready() {
 		instance = this
@@ -31,12 +31,24 @@ class Main : Node() {
 		sub.reorderVerts()
 		val topology = sub.toTopology()
 		GD.print("tiles: ${topology.tiles.size}")
-		val planet = Planet(topology)
+		planet = Planet(topology)
 
-		Tectonics.stepTectonicsSimulation(planet)
-
-		val planetRenderer = PlanetRenderer(this)
+		planetRenderer = PlanetRenderer(this, planet)
 		planetRenderer.update(planet)
+	}
+
+	@RegisterFunction
+	override fun _unhandledInput(event: InputEvent?) {
+		if (event == null) {
+			return
+		}
+
+		if (Input.isActionJustPressed("next")) {
+//			Tectonics.stepTectonicPlateForces(planet)
+			GD.print("Rtree: ${planet.topology.rTree.size()}")
+			Tectonics.stepTectonicsSimulation(planet)
+			planetRenderer.update(planet)
+		}
 	}
 
 	companion object {

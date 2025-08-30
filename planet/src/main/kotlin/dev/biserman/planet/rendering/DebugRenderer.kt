@@ -3,13 +3,9 @@ package dev.biserman.planet.rendering
 import dev.biserman.planet.geometry.DebugVector
 import dev.biserman.planet.geometry.toMesh
 import dev.biserman.planet.gui.Gui
-import dev.biserman.planet.planet.Planet
-import godot.api.Material
-import godot.api.Mesh
-import godot.api.MeshInstance3D
-import godot.api.Node
-import godot.api.StandardMaterial3D
+import godot.api.*
 import godot.core.Color
+import godot.global.GD
 
 class MeshData(val mesh: Mesh, val material: Material? = null)
 abstract class DebugRenderer<T>(val parent: Node) {
