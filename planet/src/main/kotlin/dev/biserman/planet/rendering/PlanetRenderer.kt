@@ -52,10 +52,13 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) },
         SimpleColorMode(
             this, "subduction_zones", visibleByDefault = false,
-        ) { if (it in planet.subductionZones) Color.blue else null },
+        ) { if (it.tile in planet.subductionTiles) Color.blue else null },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,
         ) { if (it in planet.divergenceZones) Color.red else null },
+        SimpleColorMode(
+            this, "tectonic_plates", visibleByDefault = false,
+        ) { it.tectonicPlate?.debugColor ?: Color.black }
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

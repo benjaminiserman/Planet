@@ -2,6 +2,7 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.topology.Topology
+import dev.biserman.planet.utils.memo
 
 class Planet(val topology: Topology) {
     val random by lazy { Main.random }
@@ -10,6 +11,7 @@ class Planet(val topology: Topology) {
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>
     var subductionZones: MutableSet<PlanetTile> = mutableSetOf()
+    val subductionTiles by memo({ tectonicAge }) { subductionZones.map { it.tile }}
     var divergenceZones: MutableSet<PlanetTile> = mutableSetOf()
     var tectonicAge = 4000 + random.nextInt(1000)
 

@@ -30,8 +30,11 @@ class Main : Node() {
 		sub.relaxRepeatedly(500)
 		sub.reorderVerts()
 		val topology = sub.toTopology()
+		GD.print("average radius: ${topology.averageRadius}")
 		GD.print("tiles: ${topology.tiles.size}")
 		planet = Planet(topology)
+
+		Tectonics.stepTectonicPlateForces(planet)
 
 		planetRenderer = PlanetRenderer(this, planet)
 		planetRenderer.update(planet)
@@ -44,10 +47,9 @@ class Main : Node() {
 		}
 
 		if (Input.isActionJustPressed("next")) {
-//			Tectonics.stepTectonicPlateForces(planet)
-			GD.print("Rtree: ${planet.topology.rTree.size()}")
 			Tectonics.stepTectonicsSimulation(planet)
 			planetRenderer.update(planet)
+			GD.print(planet.subductionTiles.size)
 		}
 	}
 
