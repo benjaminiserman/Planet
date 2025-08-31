@@ -49,7 +49,6 @@ class Main : Node() {
 		if (Input.isActionJustPressed("next")) {
 			Tectonics.stepTectonicsSimulation(planet)
 			planetRenderer.update(planet)
-			GD.print(planet.subductionTiles.size)
 		}
 	}
 
