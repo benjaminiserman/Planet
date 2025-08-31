@@ -9,6 +9,7 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
 import godot.common.util.lerp
+import godot.global.GD
 import kotlin.math.max
 
 object Tectonics {
@@ -189,21 +190,25 @@ object Tectonics {
             val mantleConvectionTorque = torque(plate.tiles.map { tile ->
                 Pair(
                     tile.tile.position,
-                    planet.noise.mantleConvection.sample4d(tile.tile.position, planet.tectonicAge.toDouble())
+                    planet.noise.mantleConvection.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * 0.0003
                 )
             })
-            val slabPull = torque(planet.subductionZones.filter { it.tectonicPlate == plate }.map { tile ->
-                Pair(
-                    tile.tile.position,
-                    (tile.tile.position - tile.tectonicPlate!!.region.center).normalized() * tile.tile.area
-                )
-            })
-            val ridgePush = torque(planet.divergenceZones.filter { it.tectonicPlate == plate }.map { tile ->
-                Pair(
-                    tile.tile.position,
-                    (tile.tectonicPlate!!.region.center - tile.tile.position).normalized() * tile.tile.area
-                )
-            })
+            val slabPull = torque(planet.subductionZones.filter { (_, subductingPlate) -> subductingPlate == plate }
+                .map { (tile, subductingPlate) ->
+                    Pair(
+                        tile.position,
+                        (tile.position - subductingPlate.region.center).normalized() * tile.area * 0.02
+                    )
+                })
+            val ridgePush = torque(planet.divergenceZones.filter { (_, divergingPlate) -> divergingPlate == plate }
+                .map { (tile, divergingPlate) ->
+                    Pair(
+                        tile.position,
+                        (divergingPlate.region.center - tile.position).normalized() * tile.area * 0.005
+                    )
+                })
+
+            GD.print("including: ${mantleConvectionTorque.length()} ${slabPull.length()} ${ridgePush.length()}")
 
             plate.torque = oldTorqueWithDrag + mantleConvectionTorque + slabPull + ridgePush
         }
@@ -221,7 +226,7 @@ object Tectonics {
                 tile.tile to tile.tile.position + tile.movement
             }
 
-        val subductedTiles = mutableSetOf<PlanetTile>()
+        val subductedTiles = mutableMapOf<Tile, TectonicPlate>()
         val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
         for ((tile, newPosition) in movedTiles) {
             val planetTile = planet.planetTiles[tile]!!
@@ -238,7 +243,9 @@ object Tectonics {
                 closestTiles.firstOrNull { newTileMap[it]?.tectonicPlate != planetTile.tectonicPlate }
             if (nearestOther != null) {
                 if (newTileMap[nearestOther] != null) {
-                    subductedTiles.add(planetTile)
+                    if (planetTile.tectonicPlate != null) {
+                        subductedTiles[tile] = planetTile.tectonicPlate!!
+                    }
                     newTileMap[nearestOther]!!.elevation += max(25f, planetTile.elevation * 0.1f)
                     planet.planetTiles[tile]?.tectonicPlate = null
                 } else {
@@ -250,7 +257,7 @@ object Tectonics {
         }
 
         val movedTilesRTree = movedTiles.keys.toRTree { movedTiles[it]!!.toPoint() }
-        val divergedTiles = mutableSetOf<Tile>()
+        val divergedTiles = mutableMapOf<Tile, TectonicPlate>()
         for ((tile, assignedPlanetTile) in newTileMap) {
             if (assignedPlanetTile != null) {
                 assignedPlanetTile.tile = tile
@@ -263,7 +270,9 @@ object Tectonics {
                     val planetTile = PlanetTile(planet, tile)
                     planetTile.elevation = -500f
                     newTileMap[tile] = planetTile
-                    divergedTiles.add(tile)
+                    if (planetTile.tectonicPlate != null) {
+                        divergedTiles[tile] = planetTile.tectonicPlate!!
+                    }
                 }
             }
         }
@@ -294,7 +303,7 @@ object Tectonics {
                     continue
                 }
                 val maxNeighbor = neighbors.maxByOrNull { it.value }
-                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * 0.5) {
+                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * 0.5 || region.tiles.size <= 5) {
                     region.tiles.forEach {
                         it.tectonicPlate = maxNeighbor?.key
                     }
@@ -307,7 +316,7 @@ object Tectonics {
         }
 
         planet.subductionZones = subductedTiles
-        planet.divergenceZones = divergedTiles.map { newTileMap[it]!! }.toMutableSet()
+        planet.divergenceZones = divergedTiles
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
         planet.tectonicAge += 1
 

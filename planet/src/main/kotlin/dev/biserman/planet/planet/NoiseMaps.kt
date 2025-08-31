@@ -40,6 +40,6 @@ class NoiseMaps(val seed: Int, val random: Random) {
     }
 
     val mantleConvection = object : VectorNoiseMap4D(random.nextLong()) {
-        override fun sample4d(v: Vector3, w: Double) = super.sample4d(v, w).tangent(v) * 0.1
+        override fun sample4d(v: Vector3, w: Double) = super.sample4d(v, w * 0.01).tangent(v) * 0.1
     }
 }

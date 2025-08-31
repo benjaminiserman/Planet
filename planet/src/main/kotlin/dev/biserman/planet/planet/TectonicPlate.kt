@@ -22,7 +22,7 @@ class TectonicPlate(val planet: Planet) {
     val eulerPole by memo({ torque }) {
         eulerPole(
             torque,
-            tiles.map { tile -> tile.tile.position to 1.0 })
+            tiles.map { tile -> tile.tile.position to tile.tile.area })
     }
 
     val edgeTiles by memo({ planet.tectonicAge }) {
@@ -32,6 +32,8 @@ class TectonicPlate(val planet: Planet) {
             }
         }
     }
+
+    val area by memo({ planet.tectonicAge }) { tiles.sumOf { it.tile.area } }
 
     fun calculateNeighborLengths(): Map<TectonicPlate, Double> {
         val neighborsBorderLengths = mutableMapOf<TectonicPlate, Double>()
