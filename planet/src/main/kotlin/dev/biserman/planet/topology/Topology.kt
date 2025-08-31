@@ -15,11 +15,11 @@ import dev.biserman.planet.geometry.*
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
-	val rTree = RTree
-		.star()
-		.dimensions(3)
-		.create<Tile, Point>()
-		.add(tiles.map { Entry.entry(it, it.position.toPoint()) })
+	val rTree = tiles.toRTree { it.position.toPoint() }
+	val averageRadius by lazy {
+		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
+		radii.average()
+	}
 
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
 	fun makeMesh(): MutMesh {

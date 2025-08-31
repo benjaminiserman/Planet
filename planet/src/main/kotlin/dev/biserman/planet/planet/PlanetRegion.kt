@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.topology.Border
+import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
@@ -28,4 +30,25 @@ class PlanetRegion(
         tiles.flatMap { it.tile.borders },
         tiles.flatMap { it.tile.corners }
     )
+
+    fun <T> calculateNeighborLengths(
+        planetTileFn: (Tile) -> PlanetTile = { planet.planetTiles[it]!! },
+        getFn: (PlanetTile) -> T
+    ): Map<T, Double> {
+        val neighborsBorderLengths = mutableMapOf<T, Double>()
+
+        fun Border.oppositeTile(tile: PlanetTile) = planetTileFn(this.oppositeTile(tile.tile))
+        val thisValue = getFn(tiles.first())
+
+        for (tile in tiles) {
+            val neighborBorders =
+                tile.tile.borders.filter { getFn(it.oppositeTile(tile)) != thisValue }
+            for (border in neighborBorders) {
+                val neighbor = getFn(border.oppositeTile(tile))
+                neighborsBorderLengths[neighbor] = (neighborsBorderLengths[neighbor] ?: 0.0) + border.length
+            }
+        }
+
+        return neighborsBorderLengths
+    }
 }

@@ -41,7 +41,7 @@ class TectonicPlate(val planet: Planet) {
 
         for (tile in tiles) {
             val neighborBorders =
-                tile.tile.borders.filter { it.oppositeTile(tile) != this }
+                tile.tile.borders.filter { it.oppositeTile(tile)!!.planetTile().tectonicPlate != this }
             for (border in neighborBorders) {
                 val neighbor = border.oppositeTile(tile)!!.planetTile().tectonicPlate!!
                 neighborsBorderLengths[neighbor] = (neighborsBorderLengths[neighbor] ?: 0.0) + border.length
@@ -54,5 +54,12 @@ class TectonicPlate(val planet: Planet) {
     fun merge(other: TectonicPlate) {
         other.tiles.forEach { it.tectonicPlate = this }
         planet.tectonicPlates.remove(other)
+    }
+
+    fun clean() {
+        val tilesToClean = region.tiles.filter { planet.planetTiles[it.tile] != it }
+        for (tile in tilesToClean) {
+            region.tiles.remove(tile)
+        }
     }
 }

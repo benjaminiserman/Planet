@@ -2,7 +2,10 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.toPoint
+import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
+import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
+import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
 import godot.common.util.lerp
@@ -212,6 +215,7 @@ object Tectonics {
 
     fun movePlanetTiles(planet: Planet) {
         val movedTiles = planet.planetTiles.values
+            .filter { it.tectonicPlate != null }
             .sortedByDescending { it.elevation }
             .associate { tile ->
                 tile.tile to tile.tile.position + tile.movement
@@ -220,46 +224,99 @@ object Tectonics {
         val subductedTiles = mutableSetOf<PlanetTile>()
         val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
         for ((tile, newPosition) in movedTiles) {
+            val planetTile = planet.planetTiles[tile]!!
             val moveDelta = newPosition - tile.position
             val closestTiles =
-                planet.topology.rTree.nearest(newPosition.toPoint(), max(0.1, moveDelta.length()), 8).map {
+                planet.topology.rTree.nearest(
+                    newPosition.toPoint(),
+                    max(2 * planet.topology.averageRadius, moveDelta.length()),
+                    4
+                ).map {
                     it.value()
                 }
             val nearestOther =
-                closestTiles.firstOrNull { newTileMap[it]?.tectonicPlate != planet.planetTiles[tile]!!.tectonicPlate }
+                closestTiles.firstOrNull { newTileMap[it]?.tectonicPlate != planetTile.tectonicPlate }
             if (nearestOther != null) {
                 if (newTileMap[nearestOther] != null) {
-                    subductedTiles.add(planet.planetTiles[tile]!!)
+                    subductedTiles.add(planetTile)
+                    newTileMap[nearestOther]!!.elevation += max(25f, planetTile.elevation * 0.1f)
                     planet.planetTiles[tile]?.tectonicPlate = null
                 } else {
-                    newTileMap[nearestOther] = planet.planetTiles[tile]
+                    newTileMap[nearestOther] = planetTile.copy()
                 }
             } else {
-                planet.planetTiles[tile]?.tectonicPlate = null
+                planetTile.tectonicPlate = null
             }
         }
 
-        val divergedTiles = mutableSetOf<PlanetTile>()
+        val movedTilesRTree = movedTiles.keys.toRTree { movedTiles[it]!!.toPoint() }
+        val divergedTiles = mutableSetOf<Tile>()
         for ((tile, assignedPlanetTile) in newTileMap) {
             if (assignedPlanetTile != null) {
                 assignedPlanetTile.tile = tile
             } else {
-                val planetTile = PlanetTile(planet, tile)
-                planetTile.elevation = -500f
-                newTileMap[tile] = planetTile
-                divergedTiles.add(planetTile)
+                val nearestMovedTiles =
+                    movedTilesRTree.nearest(tile.position.toPoint(), planet.topology.averageRadius, 1).toList()
+                if (nearestMovedTiles.isNotEmpty()) {
+                    newTileMap[tile] = planet.planetTiles[tile]!!.copy()
+                } else {
+                    val planetTile = PlanetTile(planet, tile)
+                    planetTile.elevation = -500f
+                    newTileMap[tile] = planetTile
+                    divergedTiles.add(tile)
+                }
+            }
+        }
+
+        val plateRegions = newTileMap.values
+            .filterNotNull()
+            .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate }
+            .toMutableMap()
+            .mapValues { (_, value) ->
+                value.map { PlanetRegion(planet, it.toMutableSet()) }
+                    .sortedByDescending { it.tiles.size }
+            }
+
+        for ((plate, regions) in plateRegions) {
+            val regionsToRemap = if (plate == null) regions else regions.drop(1)
+            for (region in regionsToRemap) {
+                val neighbors = region.calculateNeighborLengths(planetTileFn = { newTileMap[it]!! }) {
+                    val tectonicPlate = it.tectonicPlate
+                    if (tectonicPlate == null || it in plateRegions[tectonicPlate]!!.first().tiles) {
+                        tectonicPlate
+                    } else {
+                        null
+                    }
+                }
+
+                val edgeLength = neighbors.values.sum()
+                if (edgeLength == 0.0) {
+                    continue
+                }
+                val maxNeighbor = neighbors.maxByOrNull { it.value }
+                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * 0.5) {
+                    region.tiles.forEach {
+                        it.tectonicPlate = maxNeighbor?.key
+                    }
+                } else {
+                    region.tiles.forEach {
+                        it.tectonicPlate = null
+                    }
+                }
             }
         }
 
         planet.subductionZones = subductedTiles
-        planet.divergenceZones = divergedTiles
+        planet.divergenceZones = divergedTiles.map { newTileMap[it]!! }.toMutableSet()
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
         planet.tectonicAge += 1
+
+        planet.tectonicPlates.forEach { it.clean() }
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
-        stepTectonicPlateForces(planet)
         movePlanetTiles(planet)
         patchInteriorHoles(planet)
+        stepTectonicPlateForces(planet)
     }
 }

@@ -1,9 +1,13 @@
 package dev.biserman.planet.geometry
 
+import com.github.davidmoten.rtreemulti.Entry
+import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Point
+import dev.biserman.planet.topology.Tile
 import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.*
+import kotlin.collections.map
 import kotlin.math.PI
 import kotlin.math.acos
 import kotlin.math.cos
@@ -134,4 +138,10 @@ fun (Point).toVector3(): Vector3 {
     val values = this.values()
     return Vector3(values[0], values[1], values[2])
 }
+
+fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
+    .star()
+    .dimensions(3)
+    .create<T, Point>()
+    .add(this.map { Entry.entry(it, getFn(it)) })
 

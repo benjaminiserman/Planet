@@ -9,13 +9,15 @@ import godot.core.Vector3
 import kotlin.math.E
 import kotlin.math.pow
 
-class PlanetTile(val planet: Planet, var tile: Tile) {
-    //    var elevation = Main.noise.getNoise3dv(tile.averagePosition * 100)
-    //    var elevation = sin(tile.averagePosition.y * 90)
-    var elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+class PlanetTile(
+    val planet: Planet,
+    var tile: Tile,
+) {
     val density get() = -elevation / 1000
     var temperature = 0.0
     var moisture = 0.0
+    var elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+    var movement: Vector3 = Vector3.ZERO
     var tectonicPlate: TectonicPlate? = null
         set(value) {
             if (value == null) {
@@ -25,6 +27,19 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
             }
             field = value
         }
+
+    constructor(other: PlanetTile) : this(
+        other.planet,
+        other.tile
+    ) {
+        this.elevation = other.elevation
+        this.temperature = other.temperature
+        this.moisture = other.moisture
+        this.tectonicPlate = other.tectonicPlate
+        this.movement = other.movement
+    }
+
+    fun copy(): PlanetTile = PlanetTile(this)
 
     val plateBoundaryForces by memo({ planet.tectonicAge }) {
         if (tectonicPlate == null) {
@@ -51,7 +66,6 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
         }
     }
 
-    var movement: Vector3 = Vector3.ZERO
     fun updateMovement() {
 //        val idealMovement = plateBoundaryForces * 0.1 +
 //                tectonicPlate!!.averageForce +
@@ -62,12 +76,16 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
 
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
-        movement = movement.lerp(idealMovement, 1.0).tangent(tile.position)
+        movement = movement.lerp(idealMovement, 0.33).tangent(tile.position)
     }
 
     fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
 
-    fun floodFill(filterFn: (PlanetTile) -> Boolean): Set<PlanetTile> {
+    fun floodFill(
+        visited: MutableSet<PlanetTile> = mutableSetOf(),
+        planetTileFn: (Tile) -> PlanetTile = { planet.planetTiles[it]!! },
+        filterFn: (PlanetTile) -> Boolean
+    ): Set<PlanetTile> {
         val visited = mutableSetOf<PlanetTile>()
         val found = mutableSetOf<PlanetTile>()
         val queue = ArrayDeque<PlanetTile>()
@@ -80,7 +98,7 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
             for (neighbor in current.tile.tiles) {
-                val neighborPlanetTile = planet.planetTiles[neighbor]!!
+                val neighborPlanetTile = planetTileFn(neighbor)
                 if (visited.contains(neighborPlanetTile)) {
                     continue
                 }
@@ -93,5 +111,34 @@ class PlanetTile(val planet: Planet, var tile: Tile) {
         }
 
         return found
+    }
+
+    companion object {
+        fun <T> (Collection<PlanetTile>).floodFillGroupBy(
+            planetTileFn: ((Tile) -> PlanetTile)? = null,
+            keyFn: (PlanetTile) -> T
+        ): Map<T, List<Set<PlanetTile>>> {
+            val visited = mutableSetOf<PlanetTile>()
+            val results = mutableMapOf<T, List<Set<PlanetTile>>>()
+
+            for (tile in this) {
+                if (visited.contains(tile)) {
+                    continue
+                }
+                val tileValue = keyFn(tile)
+                val found =
+                    if (planetTileFn == null) {
+                        tile.floodFill { keyFn(it) == tileValue }
+                    } else {
+                        tile.floodFill(planetTileFn = planetTileFn) {
+                            keyFn(it) == tileValue
+                        }
+                    }
+                visited.addAll(found)
+                results[tileValue] = results[tileValue]?.plus(listOf(found)) ?: listOf(found)
+            }
+
+            return results
+        }
     }
 }
