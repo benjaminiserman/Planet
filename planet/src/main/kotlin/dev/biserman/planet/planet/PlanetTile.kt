@@ -133,12 +133,15 @@ class PlanetTile(
         return found
     }
 
+    fun (Double).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
+    fun (Float).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
+    fun (Vector3).formatDigits(digits: Int = 2) = "(%.${digits}f, %.${digits}f, %.${digits}f)".format(x, y, z)
     fun getInfoText(): String = """
-        elevation: $elevation
-        temperature: $temperature
-        moisture: $moisture
-        movement: $movement (${movement.length()})
-        position: ${tile.position}
+        elevation: ${elevation.formatDigits()}
+        temperature: ${temperature.formatDigits()}
+        moisture: ${moisture.formatDigits()}
+        movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
+        position: ${tile.position.formatDigits()}
     """.trimIndent()
 
     companion object {

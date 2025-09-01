@@ -35,13 +35,18 @@ class Gui() : Node() {
             } else {
                 MeshData(
                     tile.borders.toPaths().toMesh()
-                    .apply {
-                        this.verts.forEach { it.position *= 1.001 }
-                    }
-                    .toWireframe(), selectedTileMaterial)
+                        .apply {
+                            this.verts.forEach { it.position *= 1.001 }
+                        }
+                        .toWireframe(), selectedTileMaterial)
             }
         )
     }
+
+    fun updateInfobox() {
+        infoboxLabel.text = Main.instance.planet.planetTiles[selectedTile]?.getInfoText() ?: "null"
+    }
+
     var selectedTile: Tile? = null
         set(value) {
             field = value
@@ -50,7 +55,7 @@ class Gui() : Node() {
                 infoboxContainer.visible = false
                 selectedTileRenderer.visible = false
             } else {
-                infoboxLabel.text = Main.instance.planet.planetTiles[value]?.getInfoText() ?: "null"
+                updateInfobox()
                 infoboxContainer.visible = true
                 selectedTileRenderer.visible = true
             }
