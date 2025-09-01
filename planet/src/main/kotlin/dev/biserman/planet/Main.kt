@@ -3,6 +3,7 @@ package dev.biserman.planet
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.Tectonics
 import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.topology.toTopology
@@ -49,6 +50,7 @@ class Main : Node() {
 		if (Input.isActionJustPressed("next")) {
 			Tectonics.stepTectonicsSimulation(planet)
 			planetRenderer.update(planet)
+			GD.print("continental crust: ${(planet.planetTiles.values.filter { it.elevation >= planet.seaLevel }.size / planet.planetTiles.size.toFloat() * 100).toInt()}%")
 		}
 	}
 

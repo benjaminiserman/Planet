@@ -12,14 +12,17 @@ class Planet(val topology: Topology) {
 
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>
-    var subductionZones: MutableMap<Tile, TectonicPlate> = mutableMapOf()
-    var divergenceZones: MutableMap<Tile, TectonicPlate> = mutableMapOf()
+    var subductionZones: MutableMap<Tile, List<TectonicPlate>> = mutableMapOf()
+    var divergenceZones: MutableMap<Tile, List<TectonicPlate>> = mutableMapOf()
     var tectonicAge = 4000 + random.nextInt(1000)
 
     val seaLevel: Double = 0.0
 
     init {
-        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(35, 50))
+        planetTiles.values.forEach {
+            it.planetInit()
+        }
+        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(15, 20))
         Tectonics.voronoiPlates(this)
         Tectonics.assignDensities(this)
     }
