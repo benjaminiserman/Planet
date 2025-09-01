@@ -7,6 +7,7 @@ import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
 import dev.biserman.planet.geometry.weightedAverageInverse
+import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.Tectonics.movePlanetTiles
 import dev.biserman.planet.planet.Tectonics.patchInteriorHoles
@@ -22,6 +23,7 @@ import kotlin.math.E
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 object Tectonics {
     val random by lazy { Main.random }
@@ -440,8 +442,10 @@ object Tectonics {
 
                 if (random.nextFloat() >= 0.5f) {
                     val hotspot = planet.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble())
-                        .toFloat() * 50000f
-                    it.elevation += hotspot
+                        .toFloat() * 20000f.pow(2)
+                    if (hotspot > 0) {
+                        it.elevation = lerp(it.elevation, sqrt(hotspot), 0.5f)
+                    }
                 }
 
                 it.elevation.coerceIn(-12000f..12000f)
@@ -462,5 +466,6 @@ object Tectonics {
     fun stepTectonicsSimulation(planet: Planet) {
         movePlanetTiles(planet)
         stepTectonicPlateForces(planet)
+        Gui.instance.updateInfobox()
     }
 }
