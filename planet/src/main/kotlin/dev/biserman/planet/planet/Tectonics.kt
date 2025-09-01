@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
@@ -14,9 +15,11 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.toWeightedBag
 import godot.common.util.lerp
 import godot.core.Vector2
+import godot.core.plus
 import godot.global.GD
 import kotlin.math.E
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 
 object Tectonics {
@@ -242,6 +245,7 @@ object Tectonics {
             .associateWith { tile -> tile.tile.position + tile.movement }
 
         val subductedTiles = mutableMapOf<Tile, List<TectonicPlate>>()
+        val subductPulldown = mutableMapOf<Tile, Double>()
         val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
 //        for ((tile, newPosition) in movedTiles) {
 //            val moveDelta = newPosition - tile.tile.position
@@ -282,6 +286,8 @@ object Tectonics {
                     movedTilesRTree.nearest(tile.position.toPoint(), searchRadius, 5).toList()
                 if (nearestMovedTiles.isNotEmpty()) {
                     val nearestMovedTile = nearestMovedTiles.first().value().key
+                    val newPosition = nearestMovedTiles.first().value().value
+                    val moveDelta = newPosition - nearestMovedTile.tile.position
                     newTileMap[tile] = nearestMovedTile.copy().apply {
                         val groups =
                             nearestMovedTiles
@@ -297,17 +303,42 @@ object Tectonics {
                                 .average()
                                 .toFloat()
                         this.tile = tile
-                        this.movement += (tile.position - nearestMovedTile.tile.position)
+                        this.movement += (tile.position - nearestMovedTiles.first().value().value)
 
                         if (groups.size > 1) {
                             subductedTiles[tile] = groups.filter { it != overridingPlate }.keys.filterNotNull().toList()
                             // subduction elevation
-                            this.elevation += groups
+                            val speedScale = (moveDelta.length() / planet.topology.averageRadius).toFloat()
+                            val elevationDifference = groups
                                 .filter { it != overridingPlate }
                                 .entries
-                                .flatMap { list -> list.value.map { it.value().key.tile.position to 10.0 } }
+                                .flatMap { list ->
+                                    list.value.map {
+                                        it.value().key.tile.position to it.value().key.elevation.adjustRange(
+                                            -5000f..5000f,
+                                            0f..200f
+                                        ).toDouble()
+                                    }
+                                }
                                 .weightedAverageInverse(tile.position, searchRadius)
                                 .toFloat()
+                            this.elevation += elevationDifference * speedScale
+
+                            // subduction pulldown (or up for convergence)
+                            groups.filter { it != overridingPlate }.forEach { (plate, tiles) ->
+                                tiles.forEach { entry ->
+                                    val pulledTile = entry.value().key
+                                    val densityScale =
+                                        max(pulledTile.density, this.density).adjustRange(-1f..1f, 0.2f..1f)
+                                    val distanceScale =
+                                        pulledTile.tile.position.distanceTo(tile.position) / searchRadius
+                                    val direction = min(pulledTile.density, this.density)
+
+                                    val current = subductPulldown.computeIfAbsent(pulledTile.tile) { 0.0 }
+                                    subductPulldown[pulledTile.tile] =
+                                        current + densityScale * distanceScale * direction * 100
+                                }
+                            }
                         }
                     }
                 } else {
@@ -333,7 +364,7 @@ object Tectonics {
                         }.weightedAverageInverse(tile.position, searchDistance)
                     // divergence elevation
                     newPlanetTile.elevation =
-                        lerp(averageElevation + 10, -500.0, divergenceStrength.pow(1 / 10.0)).toFloat()
+                        lerp(averageElevation + 100, -2000.0, divergenceStrength.pow(1 / 10.0)).toFloat()
                     newTileMap[tile] = newPlanetTile
                     divergedTiles[tile] = nearestOldTiles.mapNotNull { it.tectonicPlate }
                 }
@@ -389,16 +420,19 @@ object Tectonics {
             plate.forEach { it.tectonicPlate = newPlate }
         }
 
-        fun oceanicSubsidence(elevation: Float) = 10 / (1 + E.pow(0.05 * elevation + 4).toFloat())
+        fun oceanicSubsidence(elevation: Float) = 75 / (1 + E.pow(0.05 * elevation + 4).toFloat())
 
-        // erosion elevation
-//        newTileMap.values.forEach {
-//            if (it != null) {
-//                it.elevation -=
-//                    oceanicSubsidence(it.elevation) +
-//                            2 * max(0f, it.elevation * 0.01f).pow(2)
-//            }
-//        }
+        // erosion elevation & subduction pulldown
+        newTileMap.values.forEach {
+            if (it != null) {
+                it.elevation -=
+                    oceanicSubsidence(it.elevation) +
+                            2 * max(0f, it.elevation * 0.01f).pow(2)
+
+                it.elevation += subductPulldown.getOrDefault(it.tile, 0.0).toFloat()
+            }
+        }
+
 
         planet.subductionZones = subductedTiles
         planet.divergenceZones = divergedTiles

@@ -1,5 +1,6 @@
 package dev.biserman.planet.rendering.colormodes
 
+import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.PlanetColorMode
 import dev.biserman.planet.rendering.PlanetRenderer
@@ -19,7 +20,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
 
     fun getMode(elevation: Float) = when {
         elevation < planetRenderer.planet.seaLevel -> RenderMode.WATER
-        elevation >= 300f -> RenderMode.SNOW
+        elevation >= 5000f -> RenderMode.SNOW
         else -> RenderMode.BIOME
     }
 
@@ -31,9 +32,14 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun value(elevation: Float) = when (getMode(elevation)) {
-        RenderMode.BIOME -> elevation / 1000.0 * 0.75 + 0.15
+        RenderMode.BIOME -> elevation.adjustRange(
+            planetRenderer.planet.seaLevel.toFloat()..5000f,
+            0.15f..0.9f
+        ).toDouble()
         RenderMode.SNOW -> 1.0
-        RenderMode.WATER -> max(elevation / 1000.0 + 0.5, 0.0) * 0.33 + 0.05
+        RenderMode.WATER -> elevation
+            .adjustRange(-6000f..planetRenderer.planet.seaLevel.toFloat(), 0.05f..0.2f)
+            .toDouble()
     }
 
     fun saturation(elevation: Float) = when (getMode(elevation)) {
