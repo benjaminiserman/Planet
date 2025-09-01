@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
@@ -50,5 +51,20 @@ class PlanetRegion(
         }
 
         return neighborsBorderLengths
+    }
+
+    fun voronoi(points: List<Vector3>, warp: (Vector3) -> Vector3 = { it }): List<PlanetRegion> {
+        val remainingTiles =
+            tiles.shuffled(random).toMutableList()
+
+        val regions = points.associateWith { PlanetRegion(planet) }
+
+        for (planetTile in remainingTiles) {
+            val warpedPosition = warp(planetTile.tile.position)
+            val closestRegion = regions.minBy { warpedPosition.distanceTo(warp(it.key)) }.value
+            closestRegion.tiles.add(planetTile)
+        }
+
+        return regions.values.toList()
     }
 }

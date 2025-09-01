@@ -2,12 +2,16 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
+import godot.global.GD
 import kotlin.math.E
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 
 class PlanetTile(
@@ -61,16 +65,23 @@ class PlanetTile(
                 return@fold sum
             }
 
-            val rawScalar = ((neighborPlanetTile.density - density) / 2.0) * -1
+//            val rawScalar = ((neighborPlanetTile.density - density) / 2.0) * -1
+//
+//            // desmos: \frac{2}{1+e^{-20\left(x-1.2\right)}}-1
+//            // this scales between back-arc spreading and trench pull based on relative plate density
+//            val backArcSpreadingX = (neighborPlanetTile.density + 1) / (density + 1.001)
+//            val backArcSpreading = 2.0 / (1 + E.pow(-20 * (backArcSpreadingX - 1.15))) - 1
+//
+//            val finalScalar = if (rawScalar < 0.0) backArcSpreading * 0.05 else rawScalar
+//
+//            return@fold sum + (neighborTile.position - tile.position) * finalScalar * border.length
 
-            // desmos: \frac{2}{1+e^{-20\left(x-1.2\right)}}-1
-            // this scales between back-arc spreading and trench pull based on relative plate density
-            val backArcSpreadingX = (neighborPlanetTile.density + 1) / (density + 1.001)
-            val backArcSpreading = 2.0 / (1 + E.pow(-20 * (backArcSpreadingX - 1.15))) - 1
-
-            val finalScalar = if (rawScalar < 0.0) backArcSpreading * 0.05 else rawScalar
-
-            return@fold sum + (neighborTile.position - tile.position) * finalScalar * border.length
+            // desmos: -\left(\left(\frac{1}{1+e^{\left(-3x-2\right)}}+\frac{1}{1+e^{\left(3x-2\right)}}\right)-1.38\right)
+            val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1f..1f, 0f..1f)
+            val densityDiff = (neighborPlanetTile.density - density)
+            val attraction =
+                -2 * (sigmoid(densityDiff, -60f, -2f) + sigmoid(densityDiff, 60f, -2f) - 1.2f) * (1 - minDensity).pow(2)
+            return@fold sum + (neighborTile.position - tile.position) * border.length * attraction
         }
     }
 
@@ -85,6 +96,9 @@ class PlanetTile(
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
         movement = (movement * (tectonicPlate?.basalDrag ?: 0.0) + idealMovement).tangent(tile.position)
+        if (movement.length() > 0.1) {
+            GD.printErr("movement is too big: ${movement.length()}")
+        }
     }
 
     fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]

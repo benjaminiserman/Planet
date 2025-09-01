@@ -42,8 +42,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 .adjustRange(-8000.0..8000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
+            this, "density", visibleByDefault = false,
+            colorFn = redOutsideRange(-1.0..1.0)
+        ) { it.density.toDouble().adjustRange(-1.0..1.0, 0.0..1.0) },
+        SimpleDoubleColorMode(
             this, "plate_density", visibleByDefault = false,
-            colorFn = redOutsideRange(0.0..1.0)
+            colorFn = redOutsideRange(-1.0..1.0)
         ) { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
             this, "temperature", visibleByDefault = false,
@@ -52,7 +56,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleDoubleColorMode(
             this, "hotspots", visibleByDefault = false,
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
-        ) { Main.noise.hotspots.sample4d(it.tile.position, 0.0) },
+        ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
             this, "subduction_zones", visibleByDefault = false,
         ) { if (it.tile in planet.subductionZones) Color.blue else null },
@@ -62,9 +66,6 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
         ) { it.tectonicPlate?.debugColor ?: Color.black },
-        SimpleColorMode(
-            this, "errored_plates", visibleByDefault = false,
-        ) { if (it.tectonicPlate?.errored == true) Color.red else null }
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

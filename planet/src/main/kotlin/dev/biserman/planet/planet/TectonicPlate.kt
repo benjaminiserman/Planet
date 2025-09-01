@@ -2,25 +2,24 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
+import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.randomHsv
 import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 
-class TectonicPlate(val planet: Planet, val age: Int = 0) {
+class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegion = PlanetRegion(planet)) {
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
-    val region = PlanetRegion(planet)
     val tiles by region::tiles
     var density: Float? = null
 
     val basalDrag = 0.33
     var torque = Vector3.ZERO
-
-    var errored = false
 
     val eulerPole by memo({ torque }) {
         try {
@@ -32,7 +31,6 @@ class TectonicPlate(val planet: Planet, val age: Int = 0) {
                 }
         } catch (e: Exception) {
             GD.print("Failed to calculate euler pole: ${tiles.size} ${torque.length()}")
-            errored = true
             throw e
         }
     }
@@ -76,5 +74,23 @@ class TectonicPlate(val planet: Planet, val age: Int = 0) {
         for (tile in tilesToClean) {
             region.tiles.remove(tile)
         }
+    }
+
+    fun rift(): List<TectonicPlate> {
+        planet.tectonicPlates.remove(this)
+
+        val warpNoise = VectorWarpNoise(random.nextInt(), 0.75f)
+        val warp: (Vector3) -> Vector3 = { warpNoise.warp(it, 0.5) }
+
+        val points = region.tiles.shuffled(random).take(random.nextInt(3, 5)).map { warp(it.tile.position) }
+        GD.print("Rifting $debugColor in ${points.size}")
+        val newPlates = region.voronoi(points, warp).map { region ->
+            val plate = TectonicPlate(planet, planet.tectonicAge, region)
+            plate.tiles.forEach { it.tectonicPlate = plate }
+            plate
+        }
+
+        planet.tectonicPlates.addAll(newPlates)
+        return newPlates
     }
 }
