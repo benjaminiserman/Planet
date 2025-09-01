@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
@@ -13,10 +14,10 @@ class PlanetTile(
     val planet: Planet,
     var tile: Tile,
 ) {
-    val density get() = -elevation / 1000
+    val density get() = -elevation.adjustRange(-5000f..5000f, -1f..1f)
     var temperature = 0.0
     var moisture = 0.0
-    var elevation = -10000f
+    var elevation = -100000f // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
     var tectonicPlate: TectonicPlate? = null
         set(value) {
@@ -37,7 +38,7 @@ class PlanetTile(
     }
 
     fun planetInit() {
-        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition).adjustRange(-1f..1f, -5000f..5000f)
     }
 
     val isTectonicBoundary by memo({ planet.tectonicAge }) {

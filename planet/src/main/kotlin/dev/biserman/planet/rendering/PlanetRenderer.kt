@@ -14,7 +14,7 @@ import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
-import kotlin.coroutines.EmptyCoroutineContext.fold
+import kotlin.math.pow
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
@@ -37,7 +37,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
 //        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
-        ) { it.elevation.toDouble().adjustRange(-1000.0..1000.0, 0.0..1.0) },
+        ) {
+            it.elevation.toDouble()
+                .adjustRange(-8000.0..8000.0, 0.0..1.0)
+        },
         SimpleDoubleColorMode(
             this, "plate_density", visibleByDefault = false,
             colorFn = redOutsideRange(0.0..1.0)
