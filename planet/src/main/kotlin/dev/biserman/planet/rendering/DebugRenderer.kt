@@ -55,10 +55,14 @@ abstract class DebugRenderer<T>(val parent: Node) {
     abstract fun generateMeshes(input: T): List<MeshData>
 }
 
+class SimpleDebugRenderer<T>(
+    parent: Node, override val name: String, val generateMesh: (T) -> List<MeshData>
+) : DebugRenderer<T>(parent) {
+    override fun generateMeshes(input: T): List<MeshData> = generateMesh(input)
+}
+
 fun vectorMesh(
-    vectors: List<DebugVector>,
-    color: Color = Color.red,
-    drawDot: Boolean = true
+    vectors: List<DebugVector>, color: Color = Color.red, drawDot: Boolean = true
 ): List<MeshData> {
     val meshData = mutableListOf<MeshData>()
     meshData.add(MeshData(vectors.toMesh().toWireframe(), StandardMaterial3D().apply {
@@ -77,9 +81,11 @@ fun vectorMesh(
 }
 
 fun rotVectorMesh(
-    vectors: List<Pair<DebugVector, Double>>,
-    color: Color = Color.red,
-    drawDot: Boolean = true
-): List<MeshData> =
-    vectorMesh(vectors.map { it.first }, color, drawDot)
-        .plus(vectorMesh(vectors.map { it.first.crossOff(it.second) }, color, drawDot = false))
+    vectors: List<Pair<DebugVector, Double>>, color: Color = Color.red, drawDot: Boolean = true
+): List<MeshData> = vectorMesh(vectors.map { it.first }, color, drawDot).plus(
+    vectorMesh(
+        vectors.map { it.first.crossOff(it.second) },
+        color,
+        drawDot = false
+    )
+)

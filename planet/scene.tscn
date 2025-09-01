@@ -51,3 +51,22 @@ offset_bottom = 30.0
 focus_mode = 0
 text = "Show Settings"
 script = ExtResource("5_y2354")
+
+[node name="InfoboxContainer" type="ScrollContainer" parent="GUI"]
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+horizontal_scroll_mode = 0
+
+[node name="Label" type="Label" parent="GUI/InfoboxContainer"]
+custom_minimum_size = Vector2(400, 500)
+layout_mode = 2
+autowrap_mode = 3

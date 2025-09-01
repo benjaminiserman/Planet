@@ -82,14 +82,4 @@ data class MutMesh(
             }
         }
     }
-
-    companion object {
-        fun fromPath(edges: List<Pair<Vector3, Vector3>>) {
-            val mutVerts = mutableListOf<MutVertex>()
-            val mutEdges = mutableListOf<MutEdge>()
-            val mutTris = mutableListOf<MutTri>()
-
-
-        }
-    }
 }
