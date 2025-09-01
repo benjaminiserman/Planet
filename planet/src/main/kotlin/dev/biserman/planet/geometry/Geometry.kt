@@ -8,9 +8,11 @@ import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.*
 import kotlin.collections.map
+import kotlin.math.E
 import kotlin.math.PI
 import kotlin.math.acos
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -166,3 +168,6 @@ fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
     .create<T, Point>()
     .add(this.map { Entry.entry(it, getFn(it)) })
 
+fun sigmoid(x: Double, xScalar: Double = -1.0, xOffset: Double = 0.0) = 1.0 / (1 + E.pow(xScalar * x + xOffset))
+fun sigmoid(x: Float, xScalar: Float = -1.0f, xOffset: Float = 0.0f) =
+    1f / (1 + E.toFloat().pow(xScalar * x + xOffset))

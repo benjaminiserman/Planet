@@ -2,6 +2,7 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
@@ -187,6 +188,7 @@ object Tectonics {
         planet.tectonicPlates.withIndex().forEach { (index, plate) ->
             val averageDensity = (plate.tiles.sumOf { it.density.toDouble() } / plate.tiles.size).toFloat()
             val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.0, 0.5).toFloat(), 0.75f)
+            plate.density = adjustedDensity
 
             plate.tiles.forEach {
                 it.elevation = lerp(it.elevation, adjustedDensity * 1000, 0.33f)
@@ -196,7 +198,7 @@ object Tectonics {
 
     fun stepTectonicPlateForces(planet: Planet) {
         planet.tectonicPlates.forEach { plate ->
-            val oldTorqueWithDrag = plate.torque * plate.basalDrag
+            val oldTorqueWithDrag = plate.torque * 0.9
             val mantleConvectionTorque = torque(plate.tiles.map { tile ->
                 Pair(
                     tile.tile.position,
@@ -230,7 +232,8 @@ object Tectonics {
 
 //            GD.print("including: ${mantleConvectionTorque.length()} ${slabPull.length()} ${ridgePush.length()}")
 
-            plate.torque = oldTorqueWithDrag + mantleConvectionTorque + slabPull + ridgePush + estimatedEdgeForces
+            plate.torque =
+                oldTorqueWithDrag + (mantleConvectionTorque + slabPull + ridgePush + estimatedEdgeForces) * 0.1
         }
 
         planet.planetTiles.values.forEach {
@@ -281,9 +284,9 @@ object Tectonics {
             if (assignedPlanetTile != null) {
                 assignedPlanetTile.tile = tile
             } else {
-                val searchRadius = planet.topology.averageRadius * 1.5
+                val searchRadius = planet.topology.averageRadius
                 val nearestMovedTiles =
-                    movedTilesRTree.nearest(tile.position.toPoint(), searchRadius, 5).toList()
+                    movedTilesRTree.nearest(tile.position.toPoint(), searchRadius, 3).toList()
                 if (nearestMovedTiles.isNotEmpty()) {
                     val nearestMovedTile = nearestMovedTiles.first().value().key
                     val newPosition = nearestMovedTiles.first().value().value
@@ -344,7 +347,7 @@ object Tectonics {
                 } else {
                     // divergence
                     val newPlanetTile = PlanetTile(planet, tile)
-                    val searchDistance = planet.topology.averageRadius * 2
+                    val searchDistance = planet.topology.averageRadius * 1.5
                     val nearestOldTiles =
                         planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, 10)
                             .map { planet.planetTiles[it.value()]!! }
@@ -355,6 +358,7 @@ object Tectonics {
                                 if (it.isTectonicBoundary) 1.0 else 0.0
                             )
                         }.weightedAverageInverse(tile.position, searchDistance)
+                            .pow(1 / 10.0)
                     val averageElevation =
                         nearestOldTiles.map {
                             Pair(
@@ -364,9 +368,11 @@ object Tectonics {
                         }.weightedAverageInverse(tile.position, searchDistance)
                     // divergence elevation
                     newPlanetTile.elevation =
-                        lerp(averageElevation + 100, -2000.0, divergenceStrength.pow(1 / 10.0)).toFloat()
+                        lerp(averageElevation + 100, -2000.0, divergenceStrength).toFloat()
                     newTileMap[tile] = newPlanetTile
-                    divergedTiles[tile] = nearestOldTiles.mapNotNull { it.tectonicPlate }
+                    if (divergenceStrength > 0.25) {
+                        divergedTiles[tile] = nearestOldTiles.mapNotNull { it.tectonicPlate }
+                    }
                 }
             }
         }
@@ -396,7 +402,7 @@ object Tectonics {
 
                 val edgeLength = neighbors.values.sum()
                 val maxNeighbor = neighbors.maxByOrNull { it.value }
-                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * 0.25 || region.tiles.size <= 5) {
+                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * 0.33 || region.tiles.size <= 5) {
                     region.tiles.forEach {
                         it.tectonicPlate = maxNeighbor?.key
                     }
@@ -420,19 +426,27 @@ object Tectonics {
             plate.forEach { it.tectonicPlate = newPlate }
         }
 
-        fun oceanicSubsidence(elevation: Float) = 75 / (1 + E.pow(0.05 * elevation + 4).toFloat())
+        fun oceanicSubsidence(elevation: Float) =
+            100 * (sigmoid(elevation, 0.003f, 5f) - sigmoid(elevation, 0.003f, 10f))
 
-        // erosion elevation & subduction pulldown
+        // erosion elevation & subduction pulldown & hotspots
         newTileMap.values.forEach {
             if (it != null) {
                 it.elevation -=
                     oceanicSubsidence(it.elevation) +
-                            2 * max(0f, it.elevation * 0.01f).pow(2)
+                            10 * max(0f, it.elevation * 0.0005f).pow(2)
 
                 it.elevation += subductPulldown.getOrDefault(it.tile, 0.0).toFloat()
+
+                if (random.nextFloat() >= 0.5f) {
+                    val hotspot = planet.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble())
+                        .toFloat() * 50000f
+                    it.elevation += hotspot
+                }
+
+                it.elevation.coerceIn(-12000f..12000f)
             }
         }
-
 
         planet.subductionZones = subductedTiles
         planet.divergenceZones = divergedTiles
@@ -440,6 +454,9 @@ object Tectonics {
         planet.tectonicAge += 1
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
+
+        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * 0.35 }
+        oversizedPlate?.rift()
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
