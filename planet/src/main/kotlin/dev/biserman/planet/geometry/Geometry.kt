@@ -14,6 +14,7 @@ import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 fun calculateNormal(p1: Vector3, p2: Vector3, p3: Vector3): Vector3 {
@@ -171,3 +172,19 @@ fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
 fun sigmoid(x: Double, xScalar: Double = -1.0, xOffset: Double = 0.0) = 1.0 / (1 + E.pow(xScalar * x + xOffset))
 fun sigmoid(x: Float, xScalar: Float = -1.0f, xOffset: Float = 0.0f) =
     1f / (1 + E.toFloat().pow(xScalar * x + xOffset))
+
+fun intersectRaySphere(
+    rayOrigin: Vector3,
+    rayDir: Vector3,
+    sphereCenter: Vector3,
+    sphereRadius: Double
+): Double? {
+    val oc = rayOrigin - sphereCenter
+    val a = rayDir.dot(rayDir)
+    val b = 2.0 * oc.dot(rayDir)
+    val c = oc.dot(oc) - sphereRadius * sphereRadius
+    val discriminant = b * b - 4 * a * c
+
+    return if (discriminant < 0) null
+    else (-b - sqrt(discriminant)) / (2f * a)
+}

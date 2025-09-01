@@ -9,9 +9,7 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.math.E
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.pow
 
 class PlanetTile(
@@ -134,6 +132,14 @@ class PlanetTile(
 
         return found
     }
+
+    fun getInfoText(): String = """
+        elevation: $elevation
+        temperature: $temperature
+        moisture: $moisture
+        movement: $movement (${movement.length()})
+        position: ${tile.position}
+    """.trimIndent()
 
     companion object {
         fun <T> (Collection<PlanetTile>).floodFillGroupBy(
