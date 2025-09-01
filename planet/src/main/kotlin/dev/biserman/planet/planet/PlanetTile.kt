@@ -16,15 +16,12 @@ class PlanetTile(
     val density get() = -elevation / 1000
     var temperature = 0.0
     var moisture = 0.0
-    var elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+    var elevation = -10000f
     var movement: Vector3 = Vector3.ZERO
     var tectonicPlate: TectonicPlate? = null
         set(value) {
-            if (value == null) {
-                field?.tiles?.remove(this)
-            } else {
-                value.tiles.add(this)
-            }
+            field?.tiles?.remove(this)
+            value?.tiles?.add(this)
             field = value
         }
 
@@ -37,6 +34,16 @@ class PlanetTile(
         this.moisture = other.moisture
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
+    }
+
+    fun planetInit() {
+        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition) * 1000
+    }
+
+    val isTectonicBoundary by memo({ planet.tectonicAge }) {
+        tile.borders.any { border ->
+            planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate != tectonicPlate
+        }
     }
 
     fun copy(): PlanetTile = PlanetTile(this)
@@ -76,7 +83,7 @@ class PlanetTile(
 
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
-        movement = movement.lerp(idealMovement, 0.33).tangent(tile.position)
+        movement = (movement * (tectonicPlate?.basalDrag ?: 0.0) + idealMovement).tangent(tile.position)
     }
 
     fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
@@ -119,7 +126,7 @@ class PlanetTile(
             keyFn: (PlanetTile) -> T
         ): Map<T, List<Set<PlanetTile>>> {
             val visited = mutableSetOf<PlanetTile>()
-            val results = mutableMapOf<T, List<Set<PlanetTile>>>()
+            val results = mutableMapOf<T, MutableList<Set<PlanetTile>>>()
 
             for (tile in this) {
                 if (visited.contains(tile)) {
@@ -135,7 +142,7 @@ class PlanetTile(
                         }
                     }
                 visited.addAll(found)
-                results[tileValue] = results[tileValue]?.plus(listOf(found)) ?: listOf(found)
+                results[tileValue] = (results[tileValue] ?: mutableListOf()).also { it.add(found) }
             }
 
             return results

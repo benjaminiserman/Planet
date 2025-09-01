@@ -38,6 +38,12 @@ abstract class DebugRenderer<T>(val parent: Node) {
             })
         }
 
+        while (meshInstances.size > meshData.size) {
+            meshInstances.removeLast().also {
+                it.queueFree()
+            }
+        }
+
         meshInstances.zip(meshData).forEach { (meshInstance, data) ->
             meshInstance.setMesh(data.mesh)
             if (data.material != null) {

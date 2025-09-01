@@ -122,8 +122,8 @@ fun torque(forces: Iterable<Pair<Vector3, Vector3>>) = forces.fold(Vector3.ZERO)
     sum + position.cross(force)
 }
 
-fun eulerPole(torque: Vector3, points: Iterable<Pair<Vector3, Double>>): Vector3 {
-    var inertiaTensor = Mat3.zero()
+fun eulerPole(torque: Vector3, points: Collection<Pair<Vector3, Double>>): Vector3 {
+    var inertiaTensor = Mat3.identity() * 1e-3
     for ((point, mass) in points) {
         val outer = Mat3.fromOuter(point, point)
         val contribution = Mat3.identity() - outer
@@ -131,6 +131,27 @@ fun eulerPole(torque: Vector3, points: Iterable<Pair<Vector3, Double>>): Vector3
     }
 
     return inertiaTensor.inverse() * torque
+}
+
+fun Collection<Vector3>.average(): Vector3 =
+    this.fold(Vector3.ZERO) { sum, v -> sum + v } / this.size
+
+fun (Iterable<Pair<Vector3, Double>>).weightedAverageInverse(reference: Vector3, maxDistance: Double) =
+    this.weightedAverage(reference) { 1 - (it.distanceTo(reference) / maxDistance) }
+
+fun (Iterable<Pair<Vector3, Double>>).weightedAverageInverse(reference: Vector3) =
+    this.weightedAverage(reference) { 1 / it.distanceTo(reference) }
+
+fun (Iterable<Pair<Vector3, Double>>).weightedAverage(
+    reference: Vector3,
+    contributionFn: (Vector3) -> Double = { point -> reference.distanceTo(point) }
+): Double {
+    val contributions = this.map { (point, value) -> Pair(value, contributionFn(point)) }
+    val contributionSum = contributions.sumOf { it.second }
+    if (contributionSum == 0.0) {
+        return 0.0
+    }
+    return contributions.sumOf { it.first * it.second } / contributionSum
 }
 
 fun (Vector3).toPoint(): Point = Point.create(this.x, this.y, this.z)

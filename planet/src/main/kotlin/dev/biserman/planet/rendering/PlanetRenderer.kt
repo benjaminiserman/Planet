@@ -58,7 +58,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { if (it.tile in planet.divergenceZones) Color.red else null },
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
-        ) { it.tectonicPlate?.debugColor ?: Color.black }
+        ) { it.tectonicPlate?.debugColor ?: Color.black },
+        SimpleColorMode(
+            this, "errored_plates", visibleByDefault = false,
+        ) { if (it.tectonicPlate?.errored == true) Color.red else null }
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

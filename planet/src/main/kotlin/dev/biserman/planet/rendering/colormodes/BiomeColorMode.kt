@@ -18,7 +18,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun getMode(elevation: Float) = when {
-        elevation < planetRenderer.planet!!.seaLevel -> RenderMode.WATER
+        elevation < planetRenderer.planet.seaLevel -> RenderMode.WATER
         elevation >= 300f -> RenderMode.SNOW
         else -> RenderMode.BIOME
     }
