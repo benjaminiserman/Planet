@@ -20,6 +20,8 @@ import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
 import godot.common.util.lerp
+import godot.core.Vector3
+import godot.global.GD
 import kotlin.math.max
 import kotlin.math.min
 
@@ -157,10 +159,29 @@ object Tectonics {
         }
     }
 
+    fun springAndDamp(tiles: Map<PlanetTile, Vector3>) = tiles.mapValues {
+        val (planetTile, newPosition) = it
+        val displacement = planetTile.tectonicSprings.fold(Vector3.ZERO) { sum, (otherTile, stiffness) ->
+            val restLength = (otherTile.position - planetTile.tile.position).length()
+            val currentDelta = (newPosition - tiles[planetTile.planet.planetTiles[otherTile]!!]!!)
+            sum + currentDelta * (currentDelta.length() - restLength) * -stiffness
+        }
+
+        newPosition.lerp(newPosition + displacement, 0.75)
+    }
+
+    fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
+        (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
+
     fun movePlanetTiles(planet: Planet) {
-        val movedTiles =
-            planet.planetTiles.values.filter { it.tectonicPlate != null }.sortedByDescending { it.elevation }
-                .associateWith { tile -> tile.tile.position + tile.movement }
+        val originalMovedTiles = planet.planetTiles.values
+            .filter { it.tectonicPlate != null }
+            .sortedByDescending { it.elevation }
+            .associateWith { tile -> tile.tile.position + tile.movement }
+        val movedTiles = springAndDamp(originalMovedTiles, 3)
+        planet.planetTiles.forEach { (_, planetTile) ->
+            planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
+        }
 
         val subductionZones = mutableMapOf<Tile, SubductionZone>()
         val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
@@ -227,6 +248,9 @@ object Tectonics {
             val regionsToRemap = regions.filter {
                 plate == null || it.tiles.size < regions.first().tiles.size || it.tiles.size <= minPlateSize
             }
+            if (regionsToRemap.isNotEmpty()) {
+                GD.print("remapping ${regionsToRemap.size} regions for plate $plate, total size: ${regionsToRemap.sumOf { it.tiles.size }}, max size: ${regionsToRemap.maxOfOrNull { it.tiles.size }}")
+            }
             for (region in regionsToRemap) {
                 val neighbors = region.calculateNeighborLengths(planetTileFn = { newTileMap[it]!! }) {
                     val tectonicPlate = it.tectonicPlate
@@ -256,6 +280,7 @@ object Tectonics {
 
         for (plate in newPlates) {
             val newPlate = TectonicPlate(planet, planet.tectonicAge)
+            GD.print("creating plate of size ${plate.size}")
             planet.tectonicPlates.add(newPlate)
             plate.forEach { it.tectonicPlate = newPlate }
         }

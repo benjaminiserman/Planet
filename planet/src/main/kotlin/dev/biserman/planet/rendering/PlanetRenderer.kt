@@ -18,7 +18,7 @@ import godot.global.GD
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
-        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = true),
+        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = false),
         TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = true),
         TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false),
         TileVectorRenderer(
@@ -29,6 +29,13 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             color = Color(1.0, 0.5, 0.0, 1.0),
             visibleByDefault = false
         ),
+        TileVectorRenderer(
+            parent,
+            "spring_displacement",
+            lift = 1.005,
+            getFn = { it.springDisplacement },
+            visibleByDefault = false
+        )
     )
 
     val planetColorModes = listOf(
@@ -57,10 +64,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
         ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
-            this, "subduction_zones", visibleByDefault = false,
+            this, "subduction_zones", visibleByDefault = true,
         ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.strength else null },
         SimpleColorMode(
-            this, "divergence_zones", visibleByDefault = false,
+            this, "divergence_zones", visibleByDefault = true,
         ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
