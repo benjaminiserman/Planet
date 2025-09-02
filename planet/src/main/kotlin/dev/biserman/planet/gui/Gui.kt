@@ -25,6 +25,8 @@ class Gui() : Node() {
     val infoboxContainer by lazy { findChild("InfoboxContainer") as ScrollContainer }
     val infoboxLabel by lazy { infoboxContainer.findChild("Label") as Label }
 
+    val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
+
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
     }

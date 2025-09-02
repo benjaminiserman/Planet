@@ -52,6 +52,27 @@ class Main : Node() {
 			planetRenderer.update(planet)
 			GD.print("continental crust: ${(planet.planetTiles.values.filter { it.elevation >= planet.seaLevel }.size / planet.planetTiles.size.toFloat() * 100).toInt()}%")
 		}
+
+		if (Input.isActionJustPressed("play")) {
+			timerActive = !timerActive
+			timerTime = 0.0
+		}
+	}
+
+	var timerActive = false
+	var timerTime = 0.0
+
+	@RegisterFunction
+	override fun _process(delta: Double) {
+		if (timerActive) {
+			timerTime += delta
+			if (timerTime >= 1.0) {
+				timerTime = 0.0
+				Tectonics.stepTectonicsSimulation(planet)
+				planetRenderer.update(planet)
+				GD.print("continental crust: ${(planet.planetTiles.values.filter { it.elevation >= planet.seaLevel }.size / planet.planetTiles.size.toFloat() * 100).toInt()}%")
+			}
+		}
 	}
 
 	companion object {

@@ -311,6 +311,8 @@ object Tectonics {
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
 
+        Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
+
         val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
         oversizedPlate?.rift()
     }
