@@ -21,13 +21,26 @@ class PlanetTile(
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
-    var isSubducted = false
+
+    var springDisplacement: Vector3 = Vector3.ZERO
+
     var tectonicPlate: TectonicPlate? = null
         set(value) {
             field?.tiles?.remove(this)
             value?.tiles?.add(this)
             field = value
         }
+
+    val continentalSpringCutoff = -250
+    val tectonicSprings by memo({ planet.tectonicAge }) {
+        tile.tiles.map {
+            val planetTile = planet.planetTiles[it]!!
+            val stiffness = if (elevation > continentalSpringCutoff ||
+                planetTile.elevation > continentalSpringCutoff
+            ) 4.0 else 0.1
+            planetTile.tile to stiffness
+        }
+    }
 
     constructor(other: PlanetTile) : this(
         other.planet,
@@ -38,6 +51,7 @@ class PlanetTile(
         this.moisture = other.moisture
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
+        this.springDisplacement = other.springDisplacement
     }
 
     fun planetInit() {

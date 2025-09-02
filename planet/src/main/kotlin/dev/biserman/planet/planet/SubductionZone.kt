@@ -7,6 +7,7 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.topology.Tile
+import kotlin.math.pow
 
 class SubductionZone(
     val tile: Tile,
@@ -24,17 +25,17 @@ class SubductionZone(
 
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
-            overridingPlate -> strength * 300 * (1 - planetTile.density
+            overridingPlate -> strength * 150 * (1 - planetTile.density
                 .adjustRange(-1.0..1.0, 0.0..1.0)
-                .coerceIn(0.0..1.0))
-            in subductingPlates -> strength * -300 * planetTile.density
-                .adjustRange(-1.0..1.0, 0.0..1.0)
-                .coerceIn(0.0..1.0)
+                .coerceIn(0.0..1.0)).pow(2)
+//            in subductingPlates -> strength * -150 * planetTile.density
+//                .adjustRange(-1.0..1.0, 0.0..1.0)
+//                .coerceIn(0.0..1.0).pow(2)
             else -> 0.0
         }
 
     companion object {
-        val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 3
+        val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 5
         fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<SubductionZone, Point>) =
             zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
                 .map { it.value().tile.position to it.value().unscaledElevationAdjustment(planetTile) }
