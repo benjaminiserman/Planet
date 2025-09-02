@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.planet.Tectonics.random
 import godot.common.util.lerp
@@ -19,6 +21,8 @@ object TectonicGlobals {
     val maxElevation = 12000.0
     val plateMergeCutoff = 0.33
     val minPlateSize = 5
+
+    val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 500.0, 5000.0)
 
     // desmos: f\left(x\right)\ =\ \frac{100}{1+e^{\left(0.003x+5\right)}}-\frac{100}{1+e^{\left(0.003x+10\right)}}
     fun oceanicSubsidence(elevation: Double) =

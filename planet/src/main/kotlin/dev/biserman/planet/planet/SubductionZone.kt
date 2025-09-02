@@ -35,7 +35,7 @@ class SubductionZone(
         }
 
     companion object {
-        val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 5
+        val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 3
         fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<SubductionZone, Point>) =
             zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
                 .map { it.value().tile.position to it.value().unscaledElevationAdjustment(planetTile) }

@@ -35,7 +35,7 @@ class PlanetTile(
     val tectonicSprings by memo({ planet.tectonicAge }) {
         tile.tiles.map {
             val planetTile = planet.planetTiles[it]!!
-            val stiffness = if (elevation > continentalSpringCutoff ||
+            val stiffness = if (elevation > continentalSpringCutoff &&
                 planetTile.elevation > continentalSpringCutoff
             ) 4.0 else 0.1
             planetTile.tile to stiffness
