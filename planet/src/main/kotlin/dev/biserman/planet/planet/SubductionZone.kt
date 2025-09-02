@@ -28,9 +28,9 @@ class SubductionZone(
             overridingPlate -> strength * 150 * (1 - planetTile.density
                 .adjustRange(-1.0..1.0, 0.0..1.0)
                 .coerceIn(0.0..1.0)).pow(2)
-//            in subductingPlates -> strength * -150 * planetTile.density
-//                .adjustRange(-1.0..1.0, 0.0..1.0)
-//                .coerceIn(0.0..1.0).pow(2)
+            in subductingPlates -> strength * -150 * planetTile.density
+                .adjustRange(-1.0..1.0, 0.0..1.0)
+                .coerceIn(0.0..1.0).pow(2)
             else -> 0.0
         }
 
