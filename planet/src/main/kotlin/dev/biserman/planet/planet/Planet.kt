@@ -13,9 +13,9 @@ class Planet(val topology: Topology) {
 
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>
-    var subductionZones: MutableMap<Tile, List<TectonicPlate>> = mutableMapOf()
+    var subductionZones: MutableMap<Tile, SubductionZone> = mutableMapOf()
     var subductedPoints: List<Triple<Vector3, TectonicPlate, Double>> = mutableListOf()
-    var divergenceZones: MutableMap<Tile, List<TectonicPlate>> = mutableMapOf()
+    var divergenceZones: MutableMap<Tile, DivergenceZone> = mutableMapOf()
     var tectonicAge = 4000 + random.nextInt(1000)
 
     val seaLevel: Double = 0.0

@@ -163,11 +163,17 @@ fun (Point).toVector3(): Vector3 {
     return Vector3(values[0], values[1], values[2])
 }
 
-fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
-    .star()
-    .dimensions(3)
-    .create<T, Point>()
-    .add(this.map { Entry.entry(it, getFn(it)) })
+fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>) =
+    RTree.star().dimensions(3).create<U, Point>().add(this.map {
+        val (point, value) = getFn(it)
+        Entry.entry(value, point)
+    })
+
+//fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
+//    .star()
+//    .dimensions(3)
+//    .create<T, Point>()
+//    .add(this.map { Entry.entry(it, getFn(it)) })
 
 fun sigmoid(x: Double, xScalar: Double = -1.0, xOffset: Double = 0.0) = 1.0 / (1 + E.pow(xScalar * x + xOffset))
 fun sigmoid(x: Float, xScalar: Float = -1.0f, xOffset: Float = 0.0f) =
