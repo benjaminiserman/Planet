@@ -16,7 +16,7 @@ class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegi
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
     val tiles by region::tiles
-    var density: Float? = null
+    var density: Double? = null
 
     val basalDrag = 0.33
     var torque = Vector3.ZERO

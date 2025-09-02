@@ -18,31 +18,30 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         WATER
     }
 
-    fun getMode(elevation: Float) = when {
+    fun getMode(elevation: Double) = when {
         elevation < planetRenderer.planet.seaLevel -> RenderMode.WATER
-        elevation >= 5000f -> RenderMode.SNOW
+        elevation >= 5000 -> RenderMode.SNOW
         else -> RenderMode.BIOME
     }
 
-    fun hue(biomeHue: Double, elevation: Float) = when (getMode(elevation)) {
+    fun hue(biomeHue: Double, elevation: Double) = when (getMode(elevation)) {
 //        RenderMode.BIOME -> biomeHue
         RenderMode.BIOME -> 0.25
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.65
     }
 
-    fun value(elevation: Float) = when (getMode(elevation)) {
+    fun value(elevation: Double) = when (getMode(elevation)) {
         RenderMode.BIOME -> elevation.adjustRange(
-            planetRenderer.planet.seaLevel.toFloat()..5000f,
-            0.15f..0.9f
-        ).toDouble()
+            planetRenderer.planet.seaLevel..5000.0,
+            0.15..0.9
+        )
         RenderMode.SNOW -> 1.0
         RenderMode.WATER -> elevation
-            .adjustRange(-6000f..planetRenderer.planet.seaLevel.toFloat(), 0.05f..0.2f)
-            .toDouble()
+            .adjustRange(-6000.0..planetRenderer.planet.seaLevel, 0.05..0.2)
     }
 
-    fun saturation(elevation: Float) = when (getMode(elevation)) {
+    fun saturation(elevation: Double) = when (getMode(elevation)) {
         RenderMode.BIOME -> 0.95
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.9

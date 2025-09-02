@@ -15,7 +15,7 @@ import dev.biserman.planet.geometry.*
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
-	val rTree = tiles.toRTree { it.position.toPoint() }
+	val rTree = tiles.toRTree { it.position.toPoint() to it }
 	val averageRadius by lazy {
 		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
 		radii.average()

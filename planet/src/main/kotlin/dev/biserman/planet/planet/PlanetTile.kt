@@ -16,11 +16,12 @@ class PlanetTile(
     val planet: Planet,
     var tile: Tile,
 ) {
-    val density get() = -elevation.adjustRange(-5000f..5000f, -1f..1f)
+    val density get() = -elevation.adjustRange(-5000.0..5000.0, -1.0..1.0).coerceIn(-1.0..1.0)
     var temperature = 0.0
     var moisture = 0.0
-    var elevation = -100000f // set it really low to make errors easier to see
+    var elevation = -100000.0 // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
+    var isSubducted = false
     var tectonicPlate: TectonicPlate? = null
         set(value) {
             field?.tiles?.remove(this)
@@ -40,7 +41,10 @@ class PlanetTile(
     }
 
     fun planetInit() {
-        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition).adjustRange(-1f..1f, -5000f..5000f)
+        elevation = Main.noise.startingElevation
+            .getNoise3dv(tile.averagePosition)
+            .toDouble()
+            .adjustRange(-1.0..1.0, -5000.0..5000.0)
     }
 
     val isTectonicBoundary by memo({ planet.tectonicAge }) {
@@ -75,18 +79,19 @@ class PlanetTile(
 //            return@fold sum + (neighborTile.position - tile.position) * finalScalar * border.length
 
             // desmos: -\left(\left(\frac{1}{1+e^{\left(-3x-2\right)}}+\frac{1}{1+e^{\left(3x-2\right)}}\right)-1.38\right)
-            val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1f..1f, 0f..1f)
+            val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1.0..1.0, 0.0..1.0)
             val densityDiff = (neighborPlanetTile.density - density)
             val attraction =
-                -2 * (sigmoid(densityDiff, -60f, -2f) + sigmoid(densityDiff, 60f, -2f) - 1.2f) * (1 - minDensity).pow(2)
+                -2 * (sigmoid(densityDiff, -60.0, -2.0) + sigmoid(
+                    densityDiff,
+                    60.0,
+                    -2.0
+                ) - 1.2f) * (1 - minDensity).pow(2)
             return@fold sum + (neighborTile.position - tile.position) * border.length * attraction
         }
     }
 
     fun updateMovement() {
-//        val idealMovement = plateBoundaryForces * 0.1 +
-//                tectonicPlate!!.averageForce +
-//                (tile.position - tectonicPlate!!.region.center).cross(tile.position) * tectonicPlate!!.averageRotation
         if (tectonicPlate == null) {
             return
         }
@@ -94,7 +99,7 @@ class PlanetTile(
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
         movement = (movement * (tectonicPlate?.basalDrag ?: 0.0) + idealMovement).tangent(tile.position)
-        if (movement.length() > 0.1) {
+        if (movement.length() > 0.15) {
             GD.printErr("movement is too big: ${movement.length()}")
         }
     }
@@ -142,6 +147,8 @@ class PlanetTile(
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()}
+        divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
+        subduction: ${planet.subductionZones[tile]?.strength?.formatDigits() ?: 0.0}
     """.trimIndent()
 
     companion object {

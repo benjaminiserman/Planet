@@ -134,7 +134,7 @@ class CameraGimbal : Node3D() {
 		globalTransform.origin = target
 		innerGimbal.setRotation(
 			Vector3(
-				GD.clamp(innerGimbal.rotation.x, -PI.toDouble() / 2, PI.toDouble() / 2),
+				GD.clamp(innerGimbal.rotation.x, -PI / 2, PI / 2),
 				innerGimbal.rotation.y,
 				innerGimbal.rotation.z
 			)

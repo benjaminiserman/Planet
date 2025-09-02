@@ -14,7 +14,6 @@ import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
-import kotlin.math.pow
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
@@ -38,17 +37,17 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "elevation", visibleByDefault = false,
 //        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
         ) {
-            it.elevation.toDouble()
+            it.elevation
                 .adjustRange(-8000.0..8000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
             this, "density", visibleByDefault = false,
             colorFn = redOutsideRange(-1.0..1.0)
-        ) { it.density.toDouble().adjustRange(-1.0..1.0, 0.0..1.0) },
+        ) { it.density.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
             this, "plate_density", visibleByDefault = false,
             colorFn = redOutsideRange(-1.0..1.0)
-        ) { it.tectonicPlate?.density?.toDouble()?.adjustRange(-1.0..1.0, 0.0..1.0) },
+        ) { it.tectonicPlate?.density?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
             this, "temperature", visibleByDefault = false,
             colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }
@@ -59,10 +58,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
             this, "subduction_zones", visibleByDefault = false,
-        ) { if (it.tile in planet.subductionZones) Color.blue else null },
+        ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.strength else null },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,
-        ) { if (it.tile in planet.divergenceZones) Color.red else null },
+        ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
         ) { it.tectonicPlate?.debugColor ?: Color.black },
