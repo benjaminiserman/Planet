@@ -1,7 +1,9 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
+import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
 import kotlin.math.pow
@@ -18,7 +20,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
     @Suppress("MayBeConstant")
     companion object {
         val divergenceStrength = 1.0
-        val divergenceCutoff = 0.0
+        val divergenceCutoff = 0.1
         val divergencePatchUplift = 100.0
         val oceanicRidgeHeight = -2000.0
         fun divergeTileOrFillGap(planet: Planet, tile: Tile): Pair<PlanetTile, DivergenceZone?> {
@@ -32,15 +34,16 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                     it.tile.position, if (it.isTectonicBoundary) 1.0 else 0.0
                 )
             }.weightedAverageInverse(tile.position, searchDistance).pow(1 / 2.0) * divergenceStrength
-            val averageElevation = nearestOldTiles.map {
-                Pair(
-                    it.tile.position, it.elevation
-                )
-            }.weightedAverageInverse(tile.position, searchDistance)
+
+            val krigingElevation = Kriging.interpolate(
+                nearestOldTiles.map { it.tile.position to it.elevation },
+                tile.position,
+                tectonicElevationVariogram
+            )
 
             // divergence elevation
             newPlanetTile.elevation = lerp(
-                averageElevation + divergencePatchUplift, oceanicRidgeHeight, divergenceStrength
+                krigingElevation + divergencePatchUplift, oceanicRidgeHeight, divergenceStrength
             )
 
             return Pair(

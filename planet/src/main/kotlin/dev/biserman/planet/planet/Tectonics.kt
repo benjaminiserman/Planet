@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
@@ -15,6 +16,7 @@ import dev.biserman.planet.planet.TectonicGlobals.minPlateSize
 import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
+import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tectonicErosion
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
@@ -22,8 +24,6 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.math.max
-import kotlin.math.min
 
 object Tectonics {
     val random by lazy { Main.random }
@@ -167,7 +167,7 @@ object Tectonics {
             sum + currentDelta * (currentDelta.length() - restLength) * -stiffness
         }
 
-        newPosition.lerp(newPosition + displacement, 0.75)
+        newPosition.lerp(newPosition + displacement, 0.9)
     }
 
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
@@ -178,7 +178,7 @@ object Tectonics {
             .filter { it.tectonicPlate != null }
             .sortedByDescending { it.elevation }
             .associateWith { tile -> tile.tile.position + tile.movement }
-        val movedTiles = springAndDamp(originalMovedTiles, 3)
+        val movedTiles = springAndDamp(originalMovedTiles, 5)
         planet.planetTiles.forEach { (_, planetTile) ->
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
@@ -198,15 +198,21 @@ object Tectonics {
                 assignedPlanetTile.tile = tile
             } else {
                 val searchRadius = planet.topology.averageRadius
-                val nearestMovedTiles = movedTilesRTree.nearest(tile.position.toPoint(), searchRadius, 3).toList()
-                if (nearestMovedTiles.isNotEmpty()) {
-                    val nearestMovedTile = nearestMovedTiles.first().value().tile
+                val nearestMovedTiles = movedTilesRTree.nearest(tile.position.toPoint(), searchRadius * 1.5, 8).toList()
+                val overlappingTiles =
+                    nearestMovedTiles.filter { it.value().newPosition.distanceTo(tile.position) < searchRadius }
+                if (overlappingTiles.isNotEmpty()) {
+                    val groups = overlappingTiles.map { it.value() }.groupBy { it.tile.tectonicPlate }
+                    val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
+                    val nearestMovedTile =
+                        overlappingTiles.first { it.value().tile.tectonicPlate == overridingPlate.key }.value().tile
                     newTileMap[tile] = nearestMovedTile.copy().apply {
-                        val groups = nearestMovedTiles.map { it.value() }.groupBy { it.tile.tectonicPlate }
-
-                        val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
-
-                        this.elevation = overridingPlate.value.map { it.tile.elevation }.average()
+                        this.elevation = Kriging.interpolate(
+                            nearestMovedTiles.filter { it.value().tile.tectonicPlate == overridingPlate.key }
+                                .map { it.value().newPosition to it.value().tile.elevation },
+                            tile.position,
+                            tectonicElevationVariogram
+                        )
                         this.tile = tile
                         this.movement += (tile.position - nearestMovedTiles.first().value().newPosition)
 
@@ -214,7 +220,7 @@ object Tectonics {
                         if (groups.size > 1) {
                             val subductionStrength = groups.filter { it != overridingPlate }.flatMap { (_, tiles) ->
                                 tiles.map { entry ->
-                                    val pulledTile = entry.tile
+//                                    val pulledTile = entry.tile
                                     val speedScale = entry.tile.movement.length() / searchRadius
                                     entry.tile.tile.position to speedScale
                                 }
