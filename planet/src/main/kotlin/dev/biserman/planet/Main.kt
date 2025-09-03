@@ -1,6 +1,7 @@
 package dev.biserman.planet
 
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
@@ -39,6 +40,10 @@ class Main : Node() {
 
 		planetRenderer = PlanetRenderer(this, planet)
 		planetRenderer.update(planet)
+
+		Gui.addToggle("Run Tectonics Simulation", defaultValue = false) {
+			timerActive = it
+		}
 	}
 
 	@RegisterFunction
@@ -57,20 +62,25 @@ class Main : Node() {
 			planetRenderer.update(planet)
 		}
 
-		if (Input.isActionJustPressed("play")) {
-			timerActive = !timerActive
-			timerTime = 0.33
-		}
+//        if (Input.isActionJustPressed("play")) {
+//            timerActive = !timerActive
+//            timerTime = 0.33
+//        }
 	}
 
+	val timerStep = 0.1
 	var timerActive = false
-	var timerTime = 0.0
+		set(value) {
+			field = value
+			timerTime = timerStep
+		}
+	var timerTime = timerStep
 
 	@RegisterFunction
 	override fun _process(delta: Double) {
 		if (timerActive) {
 			timerTime += delta
-			if (timerTime >= 0.33) {
+			if (timerTime >= timerStep) {
 				timerTime = 0.0
 				Tectonics.stepTectonicsSimulation(planet)
 				planetRenderer.update(planet)

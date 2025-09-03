@@ -4,6 +4,8 @@ import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
+import dev.biserman.planet.planet.TectonicGlobals.divergenceSearchRadius
+import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
@@ -33,9 +35,10 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
         ): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
             val newPlanetTile = PlanetTile(planet, tile)
-            val searchDistance = planet.topology.averageRadius * 1.5
-            val nearestOldTiles = planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, 10)
-                .map { planet.planetTiles[it.value()]!! }
+            val searchDistance = planet.topology.averageRadius * divergenceSearchRadius
+            val nearestOldTiles =
+                planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, searchMaxResults)
+                    .map { planet.planetTiles[it.value()]!! }
             val divergenceStrength = nearestOldTiles.map {
                 val strength = if (it.isTectonicBoundary) {
                     val averageBorder = it.tectonicBoundaries.map { border -> border.midpoint }.average()
