@@ -15,7 +15,7 @@ object TectonicGlobals {
     val ridgePushStrength = 0.005
     val mantleConvectionStrength = 0.0007
     val edgeForceStrength = 800.0
-    val springPlateContributionStrength = 0.01
+    val springPlateContributionStrength = 0.007
 
     val plateTorqueScalar = 0.1
     val riftCutoff = 0.35
@@ -29,10 +29,10 @@ object TectonicGlobals {
 
     // desmos: f\left(x\right)\ =\ \frac{100}{1+e^{\left(0.003x+5\right)}}-\frac{100}{1+e^{\left(0.003x+10\right)}}
     fun oceanicSubsidence(elevation: Double) =
-        100 * (sigmoid(elevation, 0.003, 5.0) - sigmoid(elevation, 0.003, 10.0))
+        100 * (sigmoid(elevation, 0.005, 7.0) - sigmoid(elevation, 0.005, 13.0))
 
-    fun tectonicErosion(tile: PlanetTile) =
-        oceanicSubsidence(tile.elevation) + 10 * max(0.0, tile.elevation * 0.0005).pow(2)
+//    fun tectonicErosion(tile: PlanetTile) =
+//        oceanicSubsidence(tile.elevation) + 10 * max(0.0, tile.elevation * 0.0005).pow(2)
 
     val hotspotEruptionChance = 0.5
     val hotspotStrength = 7500f.pow(2)

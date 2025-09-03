@@ -9,8 +9,10 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 import godot.global.GD
+import kotlin.compareTo
 import kotlin.math.max
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 class PlanetTile(
     val planet: Planet,
@@ -41,6 +43,16 @@ class PlanetTile(
             planetTile.tile to 0.0
         }
     }
+
+    val slope get() = sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average())
+    val prominence: Double
+        get() {
+            val computed = sqrt(neighbors.filter { it.elevation < elevation }
+                .map { (it.elevation - elevation).pow(2) }
+                .average())
+
+            return if (computed.isNaN()) 0.0 else computed
+        }
 
     val neighbors get() = tile.tiles.mapNotNull { planet.planetTiles[it] }
 
@@ -167,6 +179,9 @@ class PlanetTile(
         position: ${tile.position.formatDigits()}
         divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
         subduction: ${planet.subductionZones[tile]?.strength?.formatDigits() ?: 0.0}
+        erosion: ${erosionDelta.formatDigits()}
+        slope: ${slope.formatDigits()}
+        prominence: ${prominence.formatDigits()}
     """.trimIndent()
 
     companion object {
