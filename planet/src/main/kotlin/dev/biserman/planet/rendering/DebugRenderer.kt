@@ -19,8 +19,14 @@ abstract class DebugRenderer<T>(val parent: Node) {
     var visible: Boolean = false
         set(value) {
             field = value
+            if (visible && dirty && lastInput != null) {
+                update(lastInput!!)
+            }
             meshInstances.forEach { it.visible = value }
         }
+
+    var dirty = false
+    var lastInput: T? = null
 
     fun init() {
         visible = visibleByDefault
@@ -28,6 +34,12 @@ abstract class DebugRenderer<T>(val parent: Node) {
     }
 
     fun update(input: T) {
+        lastInput = input
+        if (!visible) {
+            dirty = true
+            return
+        }
+
         val meshData = generateMeshes(input)
         while (meshInstances.size < meshData.size) {
             meshInstances.add(MeshInstance3D().also {
@@ -49,6 +61,8 @@ abstract class DebugRenderer<T>(val parent: Node) {
                 meshInstance.setSurfaceOverrideMaterial(0, data.material)
             }
         }
+
+        dirty = false
     }
 
     abstract fun generateMeshes(input: T): List<MeshData>

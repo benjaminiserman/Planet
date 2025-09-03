@@ -8,6 +8,7 @@ repositories {
 
 dependencies {
     implementation("com.github.davidmoten:rtree-multi:0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
 
 kotlin {

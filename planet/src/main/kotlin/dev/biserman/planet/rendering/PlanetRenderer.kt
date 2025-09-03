@@ -20,6 +20,7 @@ import godot.core.Color
 import godot.global.GD
 import jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent
 import kotlin.math.absoluteValue
+import kotlin.time.measureTime
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
@@ -140,9 +141,13 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         this.planet = planet
         updateMesh()
 
-        planetDebugRenders.forEach {
-            it.update(planet)
+        val timeTaken = measureTime {
+            planetDebugRenders.forEach {
+                it.update(planet)
+            }
         }
+
+        GD.print("Updating renderers took ${timeTaken.inWholeMilliseconds}ms")
     }
 
     fun updateMesh() {
