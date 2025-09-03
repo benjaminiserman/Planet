@@ -21,6 +21,8 @@ class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegi
     val basalDrag = 0.33
     var torque = Vector3.ZERO
 
+    val formationTime = planet.tectonicAge
+
     val eulerPole by memo({ torque }) {
         try {
             eulerPole(

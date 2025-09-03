@@ -25,14 +25,11 @@ object TectonicGlobals {
     val minPlateSize = 5
     val continentElevationCutoff = -250.0
 
-    val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 500.0, 5000.0)
+    val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 1e10, 1e11)
 
-    // desmos: f\left(x\right)\ =\ \frac{100}{1+e^{\left(0.003x+5\right)}}-\frac{100}{1+e^{\left(0.003x+10\right)}}
+    // desmos: f\left(x\right)\ =\ \frac{80}{1+e^{\left(0.005x+7\right)}}-\frac{70}{1+e^{\left(0.0015x+7\right)}}
     fun oceanicSubsidence(elevation: Double) =
-        100 * (sigmoid(elevation, 0.005, 7.0) - sigmoid(elevation, 0.005, 13.0))
-
-//    fun tectonicErosion(tile: PlanetTile) =
-//        oceanicSubsidence(tile.elevation) + 10 * max(0.0, tile.elevation * 0.0005).pow(2)
+        80 * sigmoid(elevation, 0.005, 7.0) - 70 * sigmoid(elevation, 0.0015, 7.0)
 
     val hotspotEruptionChance = 0.5
     val hotspotStrength = 7500f.pow(2)

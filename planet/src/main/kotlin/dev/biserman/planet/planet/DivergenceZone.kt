@@ -24,7 +24,8 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
         val divergenceStrength = 1.0
         val divergenceCutoff = 0.5
         val divergencePatchUplift = 100.0
-        val oceanicRidgeHeight = -2000.0
+        val divergedCrustHeight = -2000.0
+        val divergedCrustLerp = 0.5
         fun divergeTileOrFillGap(
             planet: Planet,
             tile: Tile,
@@ -56,7 +57,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
 
             // divergence elevation
             newPlanetTile.elevation = lerp(
-                krigingElevation + divergencePatchUplift, oceanicRidgeHeight, divergenceStrength
+                krigingElevation + divergencePatchUplift, divergedCrustHeight, divergenceStrength * divergedCrustLerp
             )
             newPlanetTile.springDisplacement = planet.planetTiles[tile]!!.springDisplacement
 
