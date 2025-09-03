@@ -24,6 +24,8 @@ class PlanetTile(
     var elevation = -100000.0 // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
 
+    var formationTime = planet.tectonicAge
+
     var erosionDelta: Double = 0.0
     var springDisplacement: Vector3 = Vector3.ZERO
 
@@ -66,6 +68,8 @@ class PlanetTile(
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
         this.springDisplacement = other.springDisplacement
+        this.formationTime = other.formationTime
+        this.erosionDelta = other.erosionDelta
     }
 
     fun planetInit() {
@@ -182,6 +186,7 @@ class PlanetTile(
         erosion: ${erosionDelta.formatDigits()}
         slope: ${slope.formatDigits()}
         prominence: ${prominence.formatDigits()}
+        formation time: $formationTime
     """.trimIndent()
 
     companion object {
