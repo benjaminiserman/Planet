@@ -53,6 +53,11 @@ class Main : Node() {
 			GD.print("continental crust: ${(planet.planetTiles.values.filter { it.elevation >= planet.seaLevel }.size / planet.planetTiles.size.toFloat() * 100).toInt()}%")
 		}
 
+		if (Input.isActionJustPressed("erode")) {
+			Tectonics.performErosion(planet)
+			planetRenderer.update(planet)
+		}
+
 		if (Input.isActionJustPressed("play")) {
 			timerActive = !timerActive
 			timerTime = 0.0

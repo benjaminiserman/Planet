@@ -2,6 +2,7 @@ package dev.biserman.planet.geometry
 
 import com.github.davidmoten.rtreemulti.Entry
 import com.github.davidmoten.rtreemulti.RTree
+import com.github.davidmoten.rtreemulti.geometry.Geometry
 import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.topology.Tile
 import godot.api.ArrayMesh
@@ -194,3 +195,6 @@ fun intersectRaySphere(
     return if (discriminant < 0) null
     else (-b - sqrt(discriminant)) / (2f * a)
 }
+
+operator fun <T, S : Geometry> (Entry<T, S>).component1(): T = this.value()
+operator fun <T, S : Geometry> (Entry<T, S>).component2(): S = this.geometry()

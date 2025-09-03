@@ -9,7 +9,7 @@ interface Border {
     val tiles: List<Tile>
 
     val length get() = corners[0].position.distanceTo(corners[1].position)
-    val midpoint get() = corners.fold(Vector3.ZERO) { a, b -> a + b.position } / corners.size
+    val midpoint get() = (corners[0].position + corners[1].position) * 0.5
 
     fun oppositeCorner(corner: Corner) = if (corner == corners[0]) corners[1] else corners[0]
     fun oppositeTile(tile: Tile) = if (tile == tiles[0]) tiles[1] else tiles[0]

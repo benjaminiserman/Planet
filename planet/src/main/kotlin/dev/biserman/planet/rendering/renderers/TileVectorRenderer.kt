@@ -16,17 +16,20 @@ class TileVectorRenderer(
     val lift: Double,
     val getFn: (PlanetTile) -> Vector3,
     val color: Color = Color(1.0, 1.0, 1.0),
+    val cutoff: Double = 0.0,
     override val visibleByDefault: Boolean = false
 ) :
     DebugRenderer<Planet>(parent) {
 
     override fun generateMeshes(input: Planet): List<MeshData> {
-        val movementVectors = input.planetTiles.values.map {
-            DebugVector(
-                it.tile.position * lift,
-                getFn(it)
-            )
-        }
+        val movementVectors = input.planetTiles.values
+            .filter { getFn(it).length() > cutoff }
+            .map {
+                DebugVector(
+                    it.tile.position * lift,
+                    getFn(it)
+                )
+            }
 
         return vectorMesh(movementVectors, color)
     }

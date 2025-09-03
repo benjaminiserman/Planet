@@ -18,7 +18,6 @@ import godot.api.ScrollContainer
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.core.Vector2
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
 
 @RegisterClass
 class Gui() : Node() {

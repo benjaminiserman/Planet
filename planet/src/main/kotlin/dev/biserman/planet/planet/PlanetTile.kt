@@ -22,6 +22,7 @@ class PlanetTile(
     var elevation = -100000.0 // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
 
+    var erosionDelta: Double = 0.0
     var springDisplacement: Vector3 = Vector3.ZERO
 
     var tectonicPlate: TectonicPlate? = null
@@ -31,16 +32,17 @@ class PlanetTile(
             field = value
         }
 
-    val continentalSpringCutoff = -250
+    val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
+
     val tectonicSprings by memo({ planet.tectonicAge }) {
         tile.tiles.map {
             val planetTile = planet.planetTiles[it]!!
-            val stiffness = if (elevation > continentalSpringCutoff &&
-                planetTile.elevation > continentalSpringCutoff
-            ) 4.0 else 0.1
-            planetTile.tile to stiffness
+//            val stiffness = if (isContinental && planetTile.isContinental) 4.0 else 0.1
+            planetTile.tile to 0.0
         }
     }
+
+    val neighbors get() = tile.tiles.mapNotNull { planet.planetTiles[it] }
 
     constructor(other: PlanetTile) : this(
         other.planet,
@@ -61,11 +63,13 @@ class PlanetTile(
             .adjustRange(-1.0..1.0, -5000.0..5000.0)
     }
 
-    val isTectonicBoundary by memo({ planet.tectonicAge }) {
-        tile.borders.any { border ->
+    val tectonicBoundaries by memo({ planet.tectonicAge }) {
+        tile.borders.filter { border ->
             planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate != tectonicPlate
         }
     }
+
+    val isTectonicBoundary by memo({ planet.tectonicAge }) { tectonicBoundaries.isNotEmpty() }
 
     fun copy(): PlanetTile = PlanetTile(this)
 

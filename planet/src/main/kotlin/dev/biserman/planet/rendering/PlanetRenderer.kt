@@ -1,6 +1,9 @@
 package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.MutEdge
+import dev.biserman.planet.geometry.MutMesh
+import dev.biserman.planet.geometry.MutVertex
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -14,12 +17,13 @@ import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
+import jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = false),
-        TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = true),
+        TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = false),
         TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false),
         TileVectorRenderer(
             parent,
@@ -35,14 +39,40 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             lift = 1.005,
             getFn = { it.springDisplacement },
             visibleByDefault = false
-        )
+        ),
+        SimpleDebugRenderer(parent, "rivers") { planet ->
+            val pointElevations = planet.planetTiles.values
+                .flatMap { it.tile.corners }
+                .distinctBy { it.position }
+                .associateWith { it.tiles.map { tile -> planet.planetTiles[tile]!!.elevation }.average() }
+
+            val riverSegments = pointElevations.keys
+                .map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
+                .filter { pointElevations[it.first]!! > 0 || pointElevations[it.second]!! > 0 }
+
+            val verts = mutableListOf<MutVertex>()
+            val edges = mutableListOf<MutEdge>()
+
+            val lift = 1.001
+            for (segment in riverSegments) {
+                val length = verts.size
+                verts.add(MutVertex(segment.first.position * lift))
+                verts.add(MutVertex(segment.second.position * lift))
+                edges.add(MutEdge(mutableListOf(length, length + 1)))
+            }
+
+            listOf(
+                MeshData(
+                    MutMesh(verts, edges).toWireframe(),
+                    StandardMaterial3D().apply { this.albedoColor = Color.blue })
+            )
+        }
     )
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
-//        ) { 1.0 / (1 + E.pow((-it.elevation.toDouble() + 0.25) * 10)) },
         ) {
             it.elevation
                 .adjustRange(-8000.0..8000.0, 0.0..1.0)
@@ -64,10 +94,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
         ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
-            this, "subduction_zones", visibleByDefault = true,
+            this, "subduction_zones", visibleByDefault = false,
         ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.strength else null },
         SimpleColorMode(
-            this, "divergence_zones", visibleByDefault = true,
+            this, "divergence_zones", visibleByDefault = false,
         ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
