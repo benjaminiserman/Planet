@@ -5,11 +5,13 @@ import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.average
+import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
 import kotlin.math.pow
+import kotlin.math.sqrt
 
 data class SubductionInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
     constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
@@ -33,16 +35,17 @@ class SubductionZone(
             )
         }
 
+    val overridingElevationStrengthScale = 6000.0
+    val subductingElevationStrengthScale = -3000.0
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
-            overridingPlate.plate -> strength * 150 * overridingPlate.movement.length() * (
-                    1 - planetTile.density
-                        .adjustRange(-1.0..1.0, 0.0..1.0)
-                        .coerceIn(0.0..1.0)
-                    )
-            in subductingPlates -> strength * -150 * subductingPlates[planetTile.tectonicPlate]!!.movement.length() * planetTile.density
-                .adjustRange(-1.0..1.0, 0.0..1.0)
-                .coerceIn(0.0..1.0).pow(2)
+            overridingPlate.plate -> strength * overridingElevationStrengthScale * overridingPlate.movement.length() * sqrt(
+                1 - planetTile.density
+                    .scaleAndCoerceIn(-1.0..1.0, 0.0..1.0)
+            )
+            in subductingPlates -> strength * subductingElevationStrengthScale * subductingPlates[planetTile.tectonicPlate]!!.movement.length() * planetTile.density
+                .scaleAndCoerceIn(-1.0..1.0, 0.0..1.0)
+                .pow(2)
             else -> 0.0
         }
 

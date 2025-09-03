@@ -198,3 +198,6 @@ fun intersectRaySphere(
 
 operator fun <T, S : Geometry> (Entry<T, S>).component1(): T = this.value()
 operator fun <T, S : Geometry> (Entry<T, S>).component2(): S = this.geometry()
+
+fun (Double).scaleAndCoerceIn(expectedRange: ClosedRange<Double>, newRange: ClosedRange<Double>) =
+    this.adjustRange(expectedRange, newRange).coerceIn(newRange)

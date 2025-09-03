@@ -5,7 +5,6 @@ import dev.biserman.planet.geometry.toMesh
 import dev.biserman.planet.gui.Gui
 import godot.api.*
 import godot.core.Color
-import godot.global.GD
 
 class MeshData(val mesh: Mesh, val material: Material? = null)
 abstract class DebugRenderer<T>(val parent: Node) {

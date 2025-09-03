@@ -18,6 +18,7 @@ import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
 import jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent
+import kotlin.math.absoluteValue
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
@@ -102,6 +103,22 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
         ) { it.tectonicPlate?.debugColor ?: Color.black },
+        SimpleColorMode(
+            this, "slope", visibleByDefault = false,
+        ) { Color.white * it.slope.adjustRange(0.0..500.0, 0.0..1.0)},
+        SimpleColorMode(
+            this, "erosion", visibleByDefault = false,
+        ) {
+            val scaled = it.erosionDelta
+                .adjustRange(-50.0..50.0, -1.0..1.0)
+                .coerceIn(-1.0..1.0)
+                .absoluteValue
+            when {
+                it.erosionDelta < 0 -> Color.red * scaled
+                it.erosionDelta > 0 -> Color.blue * scaled
+                else -> Color.gray
+            }
+        }
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

@@ -5,6 +5,7 @@ import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.component1
 import dev.biserman.planet.geometry.component2
+import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
@@ -16,12 +17,12 @@ import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.TectonicGlobals.minElevation
 import dev.biserman.planet.planet.TectonicGlobals.minPlateSize
+import dev.biserman.planet.planet.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
-import dev.biserman.planet.planet.TectonicGlobals.tectonicErosion
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -327,7 +328,7 @@ object Tectonics {
         // erosion elevation & subduction pulldown & hotspots
         newTileMap.values.forEach {
             if (it != null) {
-                it.elevation -= tectonicErosion(it)
+                it.elevation -= oceanicSubsidence(it.elevation)
                 it.elevation += SubductionZone.adjustElevation(it, subductionZonesRTree)
                 it.elevation = tryHotspotEruption(it)
                 it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
@@ -337,23 +338,21 @@ object Tectonics {
         planet.subductionZones = subductionZones
         planet.divergenceZones = divergenceZones
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
-        planet.tectonicAge += 1
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
-
-        Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
-
-        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
-        oversizedPlate?.rift()
     }
 
-    val depositStrength = 0.15
+    val depositStrength = 0.50
     val erosionStrength = 0.05
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
+            val originalElevation = planetTile.elevation
+            val prominence = planetTile.prominence
+            val slopeScale = prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
-            val depositTaken = deposit * depositStrength
+            val depositTaken =
+                deposit * depositStrength * (1 - slopeScale)
             planetTile.elevation += depositTaken
 
             val depositeeTile = planetTile.neighbors.minBy { it.elevation }
@@ -363,12 +362,20 @@ object Tectonics {
                 planetTile.elevation -= depositProvided
                 deposits[depositeeTile] = deposit + depositProvided - depositTaken
             }
+            planetTile.erosionDelta = planetTile.elevation - originalElevation
         }
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
         movePlanetTiles(planet)
         stepTectonicPlateForces(planet)
+        performErosion(planet)
+
+        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
+        oversizedPlate?.rift()
+
+        planet.tectonicAge += 1
+        Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
     }
 }
