@@ -26,9 +26,16 @@ import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
+import godot.api.Thread
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
+import kotlin.time.measureTime
 
 object Tectonics {
     val random by lazy { Main.random }
@@ -210,7 +217,7 @@ object Tectonics {
             .filter { it.tectonicPlate != null }
             .sortedByDescending { it.elevation }
             .associateWith { tile -> tile.tile.position + tile.movement }
-        val movedTiles = springAndDamp(originalMovedTiles, 5)
+        val movedTiles = springAndDamp(originalMovedTiles, 2)
         planet.planetTiles.forEach { (_, planetTile) ->
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
@@ -367,15 +374,23 @@ object Tectonics {
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
-        movePlanetTiles(planet)
-        stepTectonicPlateForces(planet)
-        performErosion(planet)
+        val timeTaken = measureTime {
+            movePlanetTiles(planet)
+            stepTectonicPlateForces(planet)
+            performErosion(planet)
 
-        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
-        oversizedPlate?.rift()
+            val oversizedPlate =
+                planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
+            oversizedPlate?.rift()
+        }
 
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
+
+        val percentContinental =
+            planet.planetTiles.values.filter { it.elevation >= planet.seaLevel }.size / planet.planetTiles.size.toFloat()
+        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
+        GD.print("continental crust: ${(percentContinental * 100).toInt()}%")
     }
 }

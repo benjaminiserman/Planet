@@ -18,14 +18,14 @@ object TectonicGlobals {
     val springPlateContributionStrength = 0.007
 
     val plateTorqueScalar = 0.1
-    val riftCutoff = 0.35
+    val riftCutoff = 0.3
     val minElevation = -12000.0
     val maxElevation = 12000.0
-    val plateMergeCutoff = 0.33
+    val plateMergeCutoff = 0.4
     val minPlateSize = 5
     val continentElevationCutoff = -250.0
 
-    val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 1e10, 1e11)
+    val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 1e4, 1e5)
 
     // desmos: f\left(x\right)\ =\ \frac{80}{1+e^{\left(0.005x+7\right)}}-\frac{70}{1+e^{\left(0.0015x+7\right)}}
     fun oceanicSubsidence(elevation: Double) =
