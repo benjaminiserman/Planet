@@ -1,16 +1,20 @@
 package dev.biserman.planet.rendering.colormodes
 
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.PlanetColorMode
 import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.topology.Corner
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.memo
+import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector3
 import kotlin.math.absoluteValue
 import kotlin.math.max
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefault: Boolean) :
     PlanetColorMode(planetRenderer) {
@@ -22,25 +26,56 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         WATER
     }
 
-    val warpNoise by memo({ planetRenderer.planet.tectonicAge }) { VectorWarpNoise(planetRenderer.planet.tectonicAge, 3f) }
+    fun snowLine(tile: PlanetTile) = tile.temperature.pow(0.5) * 5000
+    val warpNoise by memo({ planetRenderer.planet.tectonicAge }) {
+        VectorWarpNoise(
+            planetRenderer.planet.tectonicAge,
+            3f
+        )
+    }
+
     fun getMode(tile: PlanetTile) = when {
-        tile.elevation >= 5000 -> RenderMode.SNOW
+        tile.elevation >= snowLine(tile) -> RenderMode.SNOW
         warpNoise.warp(tile.tile.position, 0.075).y.absoluteValue >= 0.9 -> RenderMode.SNOW
         tile.elevation < planetRenderer.planet.seaLevel -> RenderMode.WATER
         else -> RenderMode.BIOME
     }
 
+    fun slopeScale(tile: PlanetTile): Double {
+        val contiguousSlope = tile.contiguousSlope
+        val nonContiguousSlope = tile.nonContiguousSlope
+        return max(
+            if (contiguousSlope.isNaN()) 0.0
+            else contiguousSlope
+                .scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
+                .pow(2),
+            if (nonContiguousSlope.isNaN()) 0.0
+            else 1 - nonContiguousSlope
+                .scaleAndCoerceIn(0.0..200.0, 0.0..1.0)
+                .pow(2)
+        )
+    }
+
     fun hue(tile: PlanetTile) = when (getMode(tile)) {
 //        RenderMode.BIOME -> biomeHue
-        RenderMode.BIOME -> 0.25
+        RenderMode.BIOME -> lerp(0.25, 0.09, slopeScale(tile))
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.65
     }
 
     fun value(tile: PlanetTile) = when (getMode(tile)) {
-        RenderMode.BIOME -> tile.elevation.adjustRange(
-            planetRenderer.planet.seaLevel..5000.0,
-            0.15..0.9
+        RenderMode.BIOME -> lerp(
+            tile.elevation.adjustRange(
+                planetRenderer.planet.seaLevel..5000.0,
+                0.15..0.9
+            ),
+            0.8,
+            if (tile.nonContiguousSlope.isNaN()) 0.0 else {
+                1 - tile.nonContiguousSlope.scaleAndCoerceIn(
+                    0.0..200.0,
+                    0.0..1.0
+                ).pow(2)
+            },
         )
         RenderMode.SNOW -> 1.0
         RenderMode.WATER -> tile.elevation
@@ -48,7 +83,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun saturation(tile: PlanetTile) = when (getMode(tile)) {
-        RenderMode.BIOME -> 0.95
+        RenderMode.BIOME -> lerp(0.95, 0.5, slopeScale(tile))
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.9
     }
@@ -69,7 +104,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         yieldAll((0..<tile.corners.size).map {
             val corner = tile.corners[it]
             val color = Color.fromHsv(
-                hue,
+                averageAroundPoint(corner, planetTile) { tile -> hue(tile) },
                 averageAroundPoint(corner, planetTile) { tile -> saturation(tile) },
                 averageAroundPoint(corner, planetTile) { tile -> value(tile) },
                 1.0

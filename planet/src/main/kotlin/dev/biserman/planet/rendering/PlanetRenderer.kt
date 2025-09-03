@@ -18,7 +18,6 @@ import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
-import jdk.javadoc.internal.doclets.toolkit.util.DocPath.parent
 import kotlin.math.absoluteValue
 import kotlin.time.measureTime
 
@@ -78,7 +77,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "elevation", visibleByDefault = false,
         ) {
             it.elevation
-                .adjustRange(-8000.0..8000.0, 0.0..1.0)
+                .scaleAndCoerceIn(-5000.0..5000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
             this, "density", visibleByDefault = false,
@@ -107,13 +106,15 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { it.tectonicPlate?.debugColor ?: Color.black },
         SimpleColorMode(
             this, "slope", visibleByDefault = false,
-        ) { Color.white * it.slope.adjustRange(0.0..500.0, 0.0..1.0) },
+        ) { Color.white * it.slope.scaleAndCoerceIn(0.0..500.0, 0.0..1.0) },
+        SimpleColorMode(
+            this, "prominence", visibleByDefault = false,
+        ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..500.0, 0.0..1.0) },
         SimpleColorMode(
             this, "erosion", visibleByDefault = false,
         ) {
             val scaled = it.erosionDelta
-                .adjustRange(-50.0..50.0, -1.0..1.0)
-                .coerceIn(-1.0..1.0)
+                .scaleAndCoerceIn(-50.0..50.0, -1.0..1.0)
                 .absoluteValue
             when {
                 it.erosionDelta < 0 -> Color.red * scaled

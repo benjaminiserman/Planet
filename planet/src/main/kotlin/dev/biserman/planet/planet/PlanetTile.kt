@@ -9,7 +9,7 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.compareTo
+import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -19,7 +19,7 @@ class PlanetTile(
     var tile: Tile,
 ) {
     val density get() = -elevation.adjustRange(-5000.0..5000.0, -1.0..1.0).coerceIn(-1.0..1.0)
-    var temperature = 0.0
+    val temperature get() = 1 - tile.position.y.absoluteValue
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
     var movement: Vector3 = Vector3.ZERO
@@ -37,16 +37,19 @@ class PlanetTile(
         }
 
     val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
+    val isAboveWater get() = elevation > planet.seaLevel
 
-    val tectonicSprings by memo({ planet.tectonicAge }) {
-        tile.tiles.map {
-            val planetTile = planet.planetTiles[it]!!
-//            val stiffness = if (isContinental && planetTile.isContinental) 4.0 else 0.1
-            planetTile.tile to 0.0
-        }
+    val contiguousSlope by memo({ planet.tectonicAge }) {
+        sqrt(neighbors.filter { it.isAboveWater == isAboveWater }
+            .map { (it.elevation - elevation).pow(2) }
+            .average())
     }
-
-    val slope get() = sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average())
+    val nonContiguousSlope by memo({ planet.tectonicAge }) {
+        sqrt(neighbors.filter { it.isAboveWater != isAboveWater }
+            .map { (it.elevation - elevation).pow(2) }
+            .average())
+    }
+    val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
     val prominence: Double
         get() {
             val computed = sqrt(neighbors.filter { it.elevation < elevation }
@@ -63,7 +66,7 @@ class PlanetTile(
         other.tile
     ) {
         this.elevation = other.elevation
-        this.temperature = other.temperature
+//        this.temperature = other.temperature
         this.moisture = other.moisture
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
@@ -185,7 +188,7 @@ class PlanetTile(
         divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
         subduction: ${planet.subductionZones[tile]?.strength?.formatDigits() ?: 0.0}
         erosion: ${erosionDelta.formatDigits()}
-        slope: ${slope.formatDigits()}
+        slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
     """.trimIndent()

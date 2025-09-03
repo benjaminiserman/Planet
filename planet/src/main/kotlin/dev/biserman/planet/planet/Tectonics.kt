@@ -2,7 +2,6 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Kriging
-import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.component1
 import dev.biserman.planet.geometry.component2
 import dev.biserman.planet.geometry.scaleAndCoerceIn
@@ -12,6 +11,9 @@ import dev.biserman.planet.geometry.torque
 import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
+import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
+import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
+import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.TectonicGlobals.edgeForceStrength
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
@@ -21,20 +23,16 @@ import dev.biserman.planet.planet.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
+import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
+import dev.biserman.planet.planet.TectonicGlobals.subductionSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
-import godot.api.Thread
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.concurrent.Executors
-import kotlin.coroutines.CoroutineContext
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -184,7 +182,7 @@ object Tectonics {
 
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>): Map<PlanetTile, Vector3> {
         val continentalTilesRTree = tiles.filter { it.key.isContinental }.entries.toRTree { it.value.toPoint() to it }
-        val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * 2
+        val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
 
         return tiles.mapValues { entry ->
             val (planetTile, newPosition) = entry
@@ -192,18 +190,17 @@ object Tectonics {
                 continentalTilesRTree.nearest(planetTile.tile.position.toPoint(), searchRadius, 6)
                     .toList()
                     .filter { (entry, _) -> entry.key != planetTile }
-                    .map { (entry, _) -> entry.key.tile to 2.0 }
+                    .map { (entry, _) -> entry.key.tile to continentSpringStiffness }
             } else listOf()
 
-            val displacement = planetTile.tectonicSprings
-                .plus(nearbyContinentalCrust)
+            val displacement = nearbyContinentalCrust
                 .fold(Vector3.ZERO) { sum, (otherTile, stiffness) ->
                     val restLength = (otherTile.position - planetTile.tile.position).length()
                     val currentDelta = (newPosition - tiles[planetTile.planet.planetTiles[otherTile]!!]!!)
                     sum + currentDelta * (currentDelta.length() - restLength) * -stiffness
                 }
 
-            newPosition.lerp(newPosition + displacement, 0.9)
+            newPosition.lerp(newPosition + displacement, 1 - continentSpringDamping)
         }
     }
 
@@ -231,7 +228,11 @@ object Tectonics {
         val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
         for ((tile, _) in newTileMap) {
             val searchRadius = planet.topology.averageRadius
-            val nearestMovedTiles = movedTilesRTree.nearest(tile.position.toPoint(), searchRadius * 1.5, 8).toList()
+            val nearestMovedTiles = movedTilesRTree.nearest(
+                tile.position.toPoint(),
+                searchRadius * subductionSearchRadius,
+                searchMaxResults
+            ).toList()
             val overlappingTiles =
                 nearestMovedTiles.filter { it.value().newPosition.distanceTo(tile.position) < searchRadius }
             if (overlappingTiles.isNotEmpty()) {
@@ -349,8 +350,8 @@ object Tectonics {
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
     }
 
-    val depositStrength = 0.50
-    val erosionStrength = 0.05
+    val depositStrength = 0.66
+    val erosionStrength = 0.033
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
