@@ -5,6 +5,7 @@ import godot.api.FastNoiseLite
 import godot.core.Vector3
 import opensimplex2.OpenSimplex2S
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -36,7 +37,7 @@ class NoiseMaps(val seed: Int, val random: Random) {
     }
 
     val hotspots = object : NoiseMap4D(random.nextLong()) {
-        override fun sample4d(v: Vector3, w: Double) = max(0.0, super.sample4d(v * 15, w * 0.001) - 0.7) * 1.42
+        override fun sample4d(v: Vector3, w: Double) = (max(0.0, super.sample4d(v * 3, w * 0.001) - 0.5) * 1.9).pow(4)
     }
 
     val mantleConvection = object : VectorNoiseMap4D(random.nextLong()) {

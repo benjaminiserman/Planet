@@ -31,11 +31,11 @@ object TectonicGlobals {
     fun oceanicSubsidence(elevation: Double) =
         80 * sigmoid(elevation, 0.005, 7.0) - 70 * sigmoid(elevation, 0.0015, 7.0)
 
-    val hotspotEruptionChance = 0.5
+    val hotspotEruptionChance = 0.2
     val hotspotStrength = 7500f.pow(2)
     fun tryHotspotEruption(tile: PlanetTile): Double {
         val planet = tile.planet
-        if (random.nextFloat() >= hotspotEruptionChance) {
+        if (random.nextFloat() <= hotspotEruptionChance) {
             val hotspot =
                 planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
             if (hotspot > 0) {

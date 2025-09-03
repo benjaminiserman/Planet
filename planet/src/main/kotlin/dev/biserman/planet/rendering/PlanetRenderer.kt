@@ -5,6 +5,7 @@ import dev.biserman.planet.geometry.MutEdge
 import dev.biserman.planet.geometry.MutMesh
 import dev.biserman.planet.geometry.MutVertex
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
@@ -105,7 +106,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { it.tectonicPlate?.debugColor ?: Color.black },
         SimpleColorMode(
             this, "slope", visibleByDefault = false,
-        ) { Color.white * it.slope.adjustRange(0.0..500.0, 0.0..1.0)},
+        ) { Color.white * it.slope.adjustRange(0.0..500.0, 0.0..1.0) },
         SimpleColorMode(
             this, "erosion", visibleByDefault = false,
         ) {
@@ -118,6 +119,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 it.erosionDelta > 0 -> Color.blue * scaled
                 else -> Color.gray
             }
+        },
+        SimpleColorMode(
+            this, "crust_age", visibleByDefault = false,
+        ) {
+            Color.white * it.formationTime.toDouble()
+                .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
         }
     )
 

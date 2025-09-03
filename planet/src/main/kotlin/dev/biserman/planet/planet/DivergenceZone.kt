@@ -25,7 +25,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
         val divergenceCutoff = 0.5
         val divergencePatchUplift = 100.0
         val divergedCrustHeight = -2000.0
-        val divergedCrustLerp = 0.5
+        val divergedCrustLerp = 0.99
         fun divergeTileOrFillGap(
             planet: Planet,
             tile: Tile,

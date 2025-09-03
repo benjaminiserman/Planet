@@ -285,9 +285,9 @@ object Tectonics {
             val regionsToRemap = regions.filter {
                 plate == null || it.tiles.size < regions.first().tiles.size || it.tiles.size <= minPlateSize
             }
-            if (regionsToRemap.isNotEmpty()) {
-                GD.print("remapping ${regionsToRemap.size} regions for plate $plate, total size: ${regionsToRemap.sumOf { it.tiles.size }}, max size: ${regionsToRemap.maxOfOrNull { it.tiles.size }}")
-            }
+//            if (regionsToRemap.isNotEmpty()) {
+//                GD.print("remapping ${regionsToRemap.size} regions for plate $plate, total size: ${regionsToRemap.sumOf { it.tiles.size }}, max size: ${regionsToRemap.maxOfOrNull { it.tiles.size }}")
+//            }
             for (region in regionsToRemap) {
                 val neighbors = region.calculateNeighborLengths(planetTileFn = { newTileMap[it]!! }) {
                     val tectonicPlate = it.tectonicPlate
