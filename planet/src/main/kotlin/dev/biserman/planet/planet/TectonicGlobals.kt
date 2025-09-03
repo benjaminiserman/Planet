@@ -15,12 +15,15 @@ object TectonicGlobals {
     val ridgePushStrength = 0.005
     val mantleConvectionStrength = 0.0007
     val edgeForceStrength = 800.0
+    val springPlateContributionStrength = 0.01
+
     val plateTorqueScalar = 0.1
     val riftCutoff = 0.35
     val minElevation = -12000.0
     val maxElevation = 12000.0
     val plateMergeCutoff = 0.33
     val minPlateSize = 5
+    val continentElevationCutoff = -250.0
 
     val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 500.0, 5000.0)
 
@@ -32,14 +35,14 @@ object TectonicGlobals {
         oceanicSubsidence(tile.elevation) + 10 * max(0.0, tile.elevation * 0.0005).pow(2)
 
     val hotspotEruptionChance = 0.5
-    val hotspotStrength = 20000f.pow(2)
+    val hotspotStrength = 7500f.pow(2)
     fun tryHotspotEruption(tile: PlanetTile): Double {
         val planet = tile.planet
         if (random.nextFloat() >= hotspotEruptionChance) {
             val hotspot =
                 planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
             if (hotspot > 0) {
-                return lerp(tile.elevation, sqrt(hotspot), 0.5)
+                return lerp(tile.elevation, sqrt(hotspot), 0.66)
             }
         }
 

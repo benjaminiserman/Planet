@@ -4,31 +4,43 @@ import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.topology.Tile
+import godot.core.Vector3
 import kotlin.math.pow
+
+data class SubductionInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
+    constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
+        plateGroup.key,
+        plateGroup.value.map { it.newPosition - it.tile.tile.position }.average(),
+        plateGroup.value.map { it.tile.density }.average()
+    )
+}
 
 class SubductionZone(
     val tile: Tile,
     val strength: Double,
-    val overridingPlate: TectonicPlate,
-    val subductingPlates: List<TectonicPlate>,
+    val overridingPlate: SubductionInteraction,
+    val subductingPlates: Map<TectonicPlate, SubductionInteraction>,
 ) {
     val slabPull
-        get() = subductingPlates.map { subductingPlate ->
+        get() = subductingPlates.values.map { interaction ->
             Pair(
                 tile.position,
-                (tile.position - subductingPlate.region.center).normalized() * tile.area * TectonicGlobals.slabPullStrength
+                (tile.position - interaction.plate.region.center).normalized() * tile.area * TectonicGlobals.slabPullStrength
             )
         }
 
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
-            overridingPlate -> strength * 150 * (1 - planetTile.density
-                .adjustRange(-1.0..1.0, 0.0..1.0)
-                .coerceIn(0.0..1.0)).pow(2)
-            in subductingPlates -> strength * -150 * planetTile.density
+            overridingPlate.plate -> strength * 150 * overridingPlate.movement.length() * (
+                    1 - planetTile.density
+                        .adjustRange(-1.0..1.0, 0.0..1.0)
+                        .coerceIn(0.0..1.0)
+                    )
+            in subductingPlates -> strength * -150 * subductingPlates[planetTile.tectonicPlate]!!.movement.length() * planetTile.density
                 .adjustRange(-1.0..1.0, 0.0..1.0)
                 .coerceIn(0.0..1.0).pow(2)
             else -> 0.0
