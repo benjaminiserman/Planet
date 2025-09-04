@@ -42,13 +42,12 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun slopeScale(tile: PlanetTile): Double {
-        val contiguousSlope = tile.contiguousSlope
+        val contiguousSlope = tile.prominence
         val nonContiguousSlope = tile.nonContiguousSlope
         return max(
             if (contiguousSlope.isNaN()) 0.0
             else contiguousSlope
-                .scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
-                .pow(2),
+                .scaleAndCoerceIn(0.0..1000.0, 0.0..1.0),
             if (nonContiguousSlope.isNaN()) 0.0
             else 1 - nonContiguousSlope
                 .scaleAndCoerceIn(0.0..200.0, 0.0..1.0)
@@ -83,7 +82,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun saturation(tile: PlanetTile) = when (getMode(tile)) {
-        RenderMode.BIOME -> lerp(0.95, 0.5, slopeScale(tile))
+        RenderMode.BIOME -> lerp(0.9, 0.5, slopeScale(tile))
         RenderMode.SNOW -> 0.0
         RenderMode.WATER -> 0.9
     }

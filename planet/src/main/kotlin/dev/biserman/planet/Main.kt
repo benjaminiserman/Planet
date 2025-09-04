@@ -27,7 +27,7 @@ class Main : Node() {
 		instance = this
 
 		val icos = makeIcosahedron()
-		val sub = icos.subdivideIcosahedron(30)
+		val sub = icos.subdivideIcosahedron(35)
 		sub.distortTriangles(0.5)
 		sub.relaxRepeatedly(500)
 		sub.reorderVerts()
