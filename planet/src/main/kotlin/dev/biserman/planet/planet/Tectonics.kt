@@ -14,7 +14,9 @@ import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
+import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.edgeForceStrength
+import dev.biserman.planet.planet.TectonicGlobals.erosionStrength
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.TectonicGlobals.minElevation
@@ -350,8 +352,6 @@ object Tectonics {
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
     }
 
-    val depositStrength = 0.66
-    val erosionStrength = 0.033
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
