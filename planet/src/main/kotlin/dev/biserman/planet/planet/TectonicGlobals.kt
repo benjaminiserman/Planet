@@ -28,6 +28,8 @@ object TectonicGlobals {
     val divergenceSearchRadius = 1.5 // multiple of average tile radius
     val searchMaxResults = 7
 
+    val minSubductionSpeed = 0.01
+
     val continentSpringStiffness = 2.0
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
