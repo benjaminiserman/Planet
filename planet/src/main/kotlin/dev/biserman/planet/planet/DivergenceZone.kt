@@ -28,7 +28,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
     @Suppress("MayBeConstant")
     companion object {
         val divergenceCutoff = 0.3
-        val divergencePatchUplift = -250.0
+        val divergencePatchUplift = -25.0
         val divergedCrustHeight = -2000.0
         val divergedCrustLerp = 0.99
         fun divergeTileOrFillGap(
