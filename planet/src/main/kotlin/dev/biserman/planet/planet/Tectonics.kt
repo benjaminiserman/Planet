@@ -21,7 +21,6 @@ import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.TectonicGlobals.minElevation
 import dev.biserman.planet.planet.TectonicGlobals.minPlateSize
-import dev.biserman.planet.planet.TectonicGlobals.minSubductionSpeed
 import dev.biserman.planet.planet.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
@@ -229,7 +228,7 @@ object Tectonics {
         val movedTilesRTree = movedTiles.entries
             .map { MovedTile(it.key, it.value) }
             .toRTree { movedTiles[it.tile]!!.toPoint() to it }
-        val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
+        val possibleDivergenceZones = mutableListOf<Tile>()
         for ((tile, _) in newTileMap) {
             val searchRadius = planet.topology.averageRadius
             val nearestMovedTiles = movedTilesRTree.nearest(
@@ -265,7 +264,6 @@ object Tectonics {
                         subductionZones[tile] = SubductionZone(
                             tile,
                             subductionSpeed,
-//                            max(subductionSpeed, minSubductionSpeed),
                             SubductionInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
                                 .mapNotNull { SubductionInteraction(it) }
@@ -275,12 +273,17 @@ object Tectonics {
                     }
                 }
             } else {
-                // divergence & gap filling
-                val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(planet, tile, movedTiles)
-                newTileMap[tile] = newPlanetTile
-                if (divergenceZone != null) {
-                    divergenceZones[tile] = divergenceZone
-                }
+                possibleDivergenceZones.add(tile)
+            }
+        }
+
+        val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
+        possibleDivergenceZones.forEach { tile ->
+            // divergence & gap filling
+            val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(planet, tile, newTileMap, movedTiles)
+            newTileMap[tile] = newPlanetTile
+            if (divergenceZone != null) {
+                divergenceZones[tile] = divergenceZone
             }
         }
 
@@ -365,7 +368,6 @@ object Tectonics {
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
-
     }
 
     fun performErosion(planet: Planet) {
