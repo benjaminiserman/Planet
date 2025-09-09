@@ -47,7 +47,7 @@ class SubductionZone(
             .average()
             .pow(3)
 
-    val overridingElevationStrengthScale = 9000.0
+    val overridingElevationStrengthScale = 7500.0
     val subductingElevationStrengthScale = -3000.0
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
