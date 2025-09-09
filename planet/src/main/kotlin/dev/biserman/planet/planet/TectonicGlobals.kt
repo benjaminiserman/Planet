@@ -33,7 +33,7 @@ object TectonicGlobals {
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
     val depositStrength = 0.66
-    val erosionStrength = 0.005
+    val erosionStrength = 0.01
 
     val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 1e4, 1e5)
 
