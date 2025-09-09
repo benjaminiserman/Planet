@@ -65,9 +65,9 @@ class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegi
         return neighborsBorderLengths
     }
 
-    fun merge(other: TectonicPlate) {
-        other.tiles.forEach { it.tectonicPlate = this }
-        planet.tectonicPlates.remove(other)
+    fun mergeInto(other: TectonicPlate) {
+        tiles.toList().forEach { it.tectonicPlate = other }
+        planet.tectonicPlates.remove(this)
     }
 
     fun clean() {

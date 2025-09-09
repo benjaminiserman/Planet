@@ -5,11 +5,16 @@ import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.average
+import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
+import dev.biserman.planet.geometry.weightedAverage
 import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
+import godot.global.GD
+import java.time.temporal.TemporalQueries.zone
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -23,9 +28,10 @@ data class SubductionInteraction(val plate: TectonicPlate, val movement: Vector3
 
 class SubductionZone(
     val tile: Tile,
-    val strength: Double,
+    val speed: Double,
     val overridingPlate: SubductionInteraction,
     val subductingPlates: Map<TectonicPlate, SubductionInteraction>,
+    involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
 ) {
     val slabPull
         get() = subductingPlates.values.map { interaction ->
@@ -35,17 +41,18 @@ class SubductionZone(
             )
         }
 
-    val overridingElevationStrengthScale = 2500.0
-    val subductingElevationStrengthScale = -3600.0
+    val subductingMass =
+        involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
+            .map { 1 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.0..0.66) }
+            .average()
+            .pow(3)
+
+    val overridingElevationStrengthScale = 9000.0
+    val subductingElevationStrengthScale = -3000.0
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
-            overridingPlate.plate -> strength * overridingElevationStrengthScale * overridingPlate.movement.length() * sqrt(
-                1 - planetTile.density
-                    .scaleAndCoerceIn(-1.0..1.0, 0.0..1.0)
-            )
-            in subductingPlates -> strength * subductingElevationStrengthScale * subductingPlates[planetTile.tectonicPlate]!!.movement.length() * planetTile.density
-                .scaleAndCoerceIn(-1.0..1.0, 0.0..1.0)
-                .pow(2)
+            overridingPlate.plate -> speed * overridingElevationStrengthScale * subductingMass
+            in subductingPlates -> speed * subductingElevationStrengthScale * planetTile.density.scaleAndCoerce01(-1.0..1.0).pow(3)
             else -> 0.0
         }
 
@@ -53,8 +60,12 @@ class SubductionZone(
         val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 2
         fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<SubductionZone, Point>) =
             zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
-                .map { it.value().tile.position to it.value().unscaledElevationAdjustment(planetTile) }
-                .weightedAverageInverse(planetTile.tile.position, subductionZoneSearchRadius)
+                .map { it.value() to it.value().unscaledElevationAdjustment(planetTile) }
+                .weightedAverage(planetTile.tile.position) { zone ->
+                    (1 - min(1.0, (zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed))).pow(
+                        planetTile.movement.length()
+                    )
+                }
     }
 }
 

@@ -21,6 +21,7 @@ import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.TectonicGlobals.minElevation
 import dev.biserman.planet.planet.TectonicGlobals.minPlateSize
+import dev.biserman.planet.planet.TectonicGlobals.minSubductionSpeed
 import dev.biserman.planet.planet.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
@@ -35,6 +36,7 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
+import kotlin.math.max
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -254,21 +256,22 @@ object Tectonics {
 
                     // subduction
                     if (groups.size > 1) {
-                        val subductionStrength = groups.filter { it != overridingPlate }.flatMap { (_, tiles) ->
+                        val subductionSpeed = groups.flatMap { (_, tiles) ->
                             tiles.map { entry ->
-//                                    val pulledTile = entry.tile
-                                val speedScale = entry.tile.movement.length() / searchRadius
-                                entry.tile.tile.position to speedScale
+                                entry.tile.movement.dot(tile.position - entry.tile.tile.position) / searchRadius
                             }
-                        }.weightedAverageInverse(tile.position, searchRadius)
+                        }.average()
 
                         subductionZones[tile] = SubductionZone(
                             tile,
-                            subductionStrength,
+                            subductionSpeed,
+//                            max(subductionSpeed, minSubductionSpeed),
                             SubductionInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
                                 .mapNotNull { SubductionInteraction(it) }
-                                .associateBy { it.plate })
+                                .associateBy { it.plate },
+                            groups
+                        )
                     }
                 }
             } else {
@@ -345,11 +348,24 @@ object Tectonics {
             }
         }
 
+        val oversizedPlate =
+            planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
+        oversizedPlate?.rift()
+
+        val internalPlates = planet.tectonicPlates
+            .associateWith { it.calculateNeighborLengths() }
+            .filter { (_, neighbors) -> neighbors.size == 1 }
+
+        internalPlates.forEach { (plate, neighbors) ->
+            plate.mergeInto(neighbors.keys.first())
+        }
+
         planet.subductionZones = subductionZones
         planet.divergenceZones = divergenceZones
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
+
     }
 
     fun performErosion(planet: Planet) {
@@ -380,9 +396,7 @@ object Tectonics {
             stepTectonicPlateForces(planet)
             performErosion(planet)
 
-            val oversizedPlate =
-                planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
-            oversizedPlate?.rift()
+
         }
 
         planet.tectonicAge += 1

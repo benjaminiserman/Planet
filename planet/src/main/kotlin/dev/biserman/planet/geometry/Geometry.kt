@@ -146,9 +146,12 @@ fun (Iterable<Pair<Vector3, Double>>).weightedAverageInverse(reference: Vector3,
 fun (Iterable<Pair<Vector3, Double>>).weightedAverageInverse(reference: Vector3) =
     this.weightedAverage(reference) { 1 / it.distanceTo(reference) }
 
-fun (Iterable<Pair<Vector3, Double>>).weightedAverage(
+fun (Iterable<Pair<Vector3, Double>>).weightedAverage(reference: Vector3) =
+    this.weightedAverage(reference) { point -> reference.distanceTo(point) }
+
+fun <T> (Iterable<Pair<T, Double>>).weightedAverage(
     reference: Vector3,
-    contributionFn: (Vector3) -> Double = { point -> reference.distanceTo(point) }
+    contributionFn: (T) -> Double
 ): Double {
     val contributions = this.map { (point, value) -> Pair(value, contributionFn(point)) }
     val contributionSum = contributions.sumOf { it.second }
@@ -201,3 +204,6 @@ operator fun <T, S : Geometry> (Entry<T, S>).component2(): S = this.geometry()
 
 fun (Double).scaleAndCoerceIn(expectedRange: ClosedRange<Double>, newRange: ClosedRange<Double>) =
     this.adjustRange(expectedRange, newRange).coerceIn(newRange)
+
+fun (Double).scaleAndCoerce01(expectedRange: ClosedRange<Double>) = this.scaleAndCoerceIn(expectedRange, 0.0..1.0)
+fun (Double).scaleAndCoerceUnit(expectedRange: ClosedRange<Double>) = this.scaleAndCoerceIn(expectedRange, -1.0..1.0)

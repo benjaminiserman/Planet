@@ -5,6 +5,7 @@ import dev.biserman.planet.geometry.MutEdge
 import dev.biserman.planet.geometry.MutMesh
 import dev.biserman.planet.geometry.MutVertex
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -84,6 +85,10 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             colorFn = redOutsideRange(-1.0..1.0)
         ) { it.density.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
+            this, "mountain_elevation", visibleByDefault = false,
+            colorFn = redOutsideRange(-1.0..1.0)
+        ) { it.elevation.scaleAndCoerceIn(2000.0..12000.0, 0.0..1.0) },
+        SimpleDoubleColorMode(
             this, "plate_density", visibleByDefault = false,
             colorFn = redOutsideRange(-1.0..1.0)
         ) { it.tectonicPlate?.density?.adjustRange(-1.0..1.0, 0.0..1.0) },
@@ -97,7 +102,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
             this, "subduction_zones", visibleByDefault = false,
-        ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.strength else null },
+        ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.speed else null },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,
         ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },
@@ -127,8 +132,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) {
             Color.white * it.formationTime.toDouble()
                 .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
-        }
-    )
+        },
+
+        )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
 

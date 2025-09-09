@@ -2,6 +2,7 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Border
@@ -18,7 +19,7 @@ class PlanetTile(
     val planet: Planet,
     var tile: Tile,
 ) {
-    val density get() = -elevation.adjustRange(-5000.0..5000.0, -1.0..1.0).coerceIn(-1.0..1.0)
+    val density get() = -elevation.scaleAndCoerceUnit(-5000.0..5000.0)
     val temperature get() = 1 - tile.position.y.absoluteValue
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
@@ -40,21 +41,16 @@ class PlanetTile(
     val isAboveWater get() = elevation > planet.seaLevel
 
     val contiguousSlope by memo({ planet.tectonicAge }) {
-        sqrt(neighbors.filter { it.isAboveWater == isAboveWater }
-            .map { (it.elevation - elevation).pow(2) }
-            .average())
+        sqrt(neighbors.filter { it.isAboveWater == isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
     val nonContiguousSlope by memo({ planet.tectonicAge }) {
-        sqrt(neighbors.filter { it.isAboveWater != isAboveWater }
-            .map { (it.elevation - elevation).pow(2) }
-            .average())
+        sqrt(neighbors.filter { it.isAboveWater != isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
     val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
     val prominence: Double
         get() {
-            val computed = sqrt(neighbors.filter { it.elevation < elevation }
-                .map { (it.elevation - elevation).pow(2) }
-                .average())
+            val computed =
+                sqrt(neighbors.filter { it.elevation < elevation }.map { (it.elevation - elevation).pow(2) }.average())
 
             return if (computed.isNaN()) 0.0 else computed
         }
@@ -62,8 +58,7 @@ class PlanetTile(
     val neighbors get() = tile.tiles.mapNotNull { planet.planetTiles[it] }
 
     constructor(other: PlanetTile) : this(
-        other.planet,
-        other.tile
+        other.planet, other.tile
     ) {
         this.elevation = other.elevation
 //        this.temperature = other.temperature
@@ -76,8 +71,7 @@ class PlanetTile(
     }
 
     fun planetInit() {
-        elevation = Main.noise.startingElevation
-            .getNoise3dv(tile.averagePosition)
+        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition)
             .toDouble()
             .adjustRange(-1.0..1.0, -5000.0..5000.0)
 //        elevation = 0.0
@@ -119,12 +113,9 @@ class PlanetTile(
             // desmos: -\left(\left(\frac{1}{1+e^{\left(-3x-2\right)}}+\frac{1}{1+e^{\left(3x-2\right)}}\right)-1.38\right)
             val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1.0..1.0, 0.0..1.0)
             val densityDiff = (neighborPlanetTile.density - density)
-            val attraction =
-                -2 * (sigmoid(densityDiff, -60.0, -2.0) + sigmoid(
-                    densityDiff,
-                    60.0,
-                    -2.0
-                ) - 1.2f) * (1 - minDensity).pow(2)
+            val attraction = -2 * (sigmoid(densityDiff, -60.0, -2.0) + sigmoid(
+                densityDiff, 60.0, -2.0
+            ) - 1.2f) * (1 - minDensity).pow(2)
             return@fold sum + (neighborTile.position - tile.position) * border.length * attraction
         }
     }
@@ -186,17 +177,24 @@ class PlanetTile(
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()}
         divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${planet.subductionZones[tile]?.strength?.formatDigits() ?: 0.0}
+        subduction: ${planet.subductionZones[tile]?.speed?.formatDigits() ?: 0.0}
         erosion: ${erosionDelta.formatDigits()}
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
-    """.trimIndent()
+    """.trimIndent() + if (planet.subductionZones.contains(tile)) {
+        val subductionZone = planet.subductionZones[tile]!!
+        "\n" + """
+        SUBDUCTION
+        speed: ${subductionZone.speed.formatDigits()}
+        subducting plates: ${subductionZone.subductingPlates.size}
+        subducting mass: ${subductionZone.subductingMass.formatDigits()}
+        """.trimIndent()
+    } else ""
 
     companion object {
         fun <T> (Collection<PlanetTile>).floodFillGroupBy(
-            planetTileFn: ((Tile) -> PlanetTile)? = null,
-            keyFn: (PlanetTile) -> T
+            planetTileFn: ((Tile) -> PlanetTile)? = null, keyFn: (PlanetTile) -> T
         ): Map<T, List<Set<PlanetTile>>> {
             val visited = mutableSetOf<PlanetTile>()
             val results = mutableMapOf<T, MutableList<Set<PlanetTile>>>()
@@ -206,14 +204,13 @@ class PlanetTile(
                     continue
                 }
                 val tileValue = keyFn(tile)
-                val found =
-                    if (planetTileFn == null) {
-                        tile.floodFill { keyFn(it) == tileValue }
-                    } else {
-                        tile.floodFill(planetTileFn = planetTileFn) {
-                            keyFn(it) == tileValue
-                        }
+                val found = if (planetTileFn == null) {
+                    tile.floodFill { keyFn(it) == tileValue }
+                } else {
+                    tile.floodFill(planetTileFn = planetTileFn) {
+                        keyFn(it) == tileValue
                     }
+                }
                 visited.addAll(found)
                 results[tileValue] = (results[tileValue] ?: mutableListOf()).also { it.add(found) }
             }
