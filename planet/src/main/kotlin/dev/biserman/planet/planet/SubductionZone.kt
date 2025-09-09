@@ -45,14 +45,14 @@ class SubductionZone(
         involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
             .map { 1 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.0..0.66) }
             .average()
-            .pow(2)
+            .pow(3)
 
-    val overridingElevationStrengthScale = 3500.0
-    val subductingElevationStrengthScale = -4500.0
+    val overridingElevationStrengthScale = 5500.0
+    val subductingElevationStrengthScale = -5000.0
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
             overridingPlate.plate -> speed * overridingElevationStrengthScale * subductingMass
-            in subductingPlates -> speed * subductingElevationStrengthScale * planetTile.density.scaleAndCoerce01(-1.0..1.0).pow(2)
+            in subductingPlates -> speed * subductingElevationStrengthScale * planetTile.density.scaleAndCoerce01(-1.0..1.0).pow(3)
             else -> 0.0
         }
 

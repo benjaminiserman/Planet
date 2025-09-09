@@ -113,8 +113,8 @@ class PlanetTile(
             // desmos: -\left(\left(\frac{1}{1+e^{\left(-3x-2\right)}}+\frac{1}{1+e^{\left(3x-2\right)}}\right)-1.38\right)
             val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1.0..1.0, 0.0..1.0)
             val densityDiff = (neighborPlanetTile.density - density)
-            val attraction = -2 * (sigmoid(densityDiff, -60.0, -1.0 / 30.0) + sigmoid(
-                densityDiff, 60.0, -1.0 / 30.0
+            val attraction = -2 * (sigmoid(densityDiff, -60.0, 1.0 / 30.0) + sigmoid(
+                densityDiff, 60.0, 1.0 / 30.0
             ) - 1.2f) * (1 - minDensity).pow(2)
             return@fold sum + (neighborTile.position - tile.position) * border.length * attraction
         }
