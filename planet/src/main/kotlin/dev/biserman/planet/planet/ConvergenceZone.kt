@@ -3,22 +3,19 @@ package dev.biserman.planet.planet
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
-import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverage
-import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
-import godot.global.GD
-import java.time.temporal.TemporalQueries.zone
+import jdk.internal.org.jline.utils.Colors.s
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sqrt
+import kotlin.math.sign
 
-data class SubductionInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
+data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
     constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
         plateGroup.key,
         plateGroup.value.map { it.newPosition - it.tile.tile.position }.average(),
@@ -26,18 +23,19 @@ data class SubductionInteraction(val plate: TectonicPlate, val movement: Vector3
     )
 }
 
-class SubductionZone(
+class ConvergenceZone(
     val tile: Tile,
     val speed: Double,
-    val overridingPlate: SubductionInteraction,
-    val subductingPlates: Map<TectonicPlate, SubductionInteraction>,
+    val overridingPlate: ConvergenceInteraction,
+    val subductingPlates: Map<TectonicPlate, ConvergenceInteraction>,
     involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
 ) {
+    val subductionStrength = subductingPlates.values.maxOf { it.density } - overridingPlate.density - 0.5
     val slabPull
         get() = subductingPlates.values.map { interaction ->
             Pair(
                 tile.position,
-                (tile.position - interaction.plate.region.center).normalized() * tile.area * TectonicGlobals.slabPullStrength
+                (tile.position - interaction.plate.region.center).normalized() * tile.area * TectonicGlobals.slabPullStrength * subductionStrength.sign
             )
         }
 
@@ -47,18 +45,33 @@ class SubductionZone(
             .average()
             .pow(3)
 
-    val overridingElevationStrengthScale = 5500.0
-    val subductingElevationStrengthScale = -5000.0
+    val overridingElevationStrengthScale = 14000.0
+    val subductingElevationStrengthScale = -22000.0
+    val convergingElevationStrengthScale = 16000.0
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double =
         when (planetTile.tectonicPlate) {
-            overridingPlate.plate -> speed * overridingElevationStrengthScale * subductingMass
-            in subductingPlates -> speed * subductingElevationStrengthScale * planetTile.density.scaleAndCoerce01(-1.0..1.0).pow(3)
+            overridingPlate.plate -> {
+                val overridingMultiplier =
+                    speed * if (subductionStrength > 0) {
+                        overridingElevationStrengthScale
+                    } else {
+                        convergingElevationStrengthScale * -subductionStrength
+                    }
+                overridingMultiplier * subductingMass
+            }
+            in subductingPlates -> {
+                speed * if (subductionStrength > 0) {
+                    speed * subductingElevationStrengthScale
+                } else {
+                    speed * convergingElevationStrengthScale * -subductionStrength
+                }
+            }
             else -> 0.0
         }
 
     companion object {
         val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 1.5
-        fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<SubductionZone, Point>) =
+        fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<ConvergenceZone, Point>) =
             zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
                 .map { it.value() to it.value().unscaledElevationAdjustment(planetTile) }
                 .weightedAverage(planetTile.tile.position) { zone ->
