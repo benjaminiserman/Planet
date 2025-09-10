@@ -10,9 +10,9 @@ import kotlin.math.sqrt
 
 @Suppress("MayBeConstant")
 object TectonicGlobals {
-    val slabPullStrength = 0.02
-    val ridgePushStrength = 0.005
-    val mantleConvectionStrength = 0.0007
+    val slabPullStrength = 0.015
+    val ridgePushStrength = 0.003
+    val mantleConvectionStrength = 0.0005
     val edgeForceStrength = 800.0
     val springPlateContributionStrength = 0.007
 
@@ -24,7 +24,7 @@ object TectonicGlobals {
     val minPlateSize = 5
     val continentElevationCutoff = -250.0
 
-    val subductionSearchRadius = 1.5 // multiple of average tile radius
+    val convergenceSearchRadius = 1.5 // multiple of average tile radius
     val divergenceSearchRadius = 1.5 // multiple of average tile radius
     val searchMaxResults = 7
 
@@ -32,16 +32,16 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val depositStrength = 0.66
-    val erosionStrength = 0.01
+    val depositStrength = 0.5
+    val erosionStrength = 0.015
 
     val tectonicElevationVariogram = Kriging.variogram(Main.instance.planet.topology.averageRadius * 1.5, 1e4, 1e5)
 
-    // desmos: f\left(x\right)\ =\ \frac{80}{1+e^{0.005\left(x+1400\right)}}-\frac{70}{1+e^{0.0015\left(x+4700\right)}}
+    // desmos: f\left(x\right)\ =\ \frac{90}{1+e^{0.005\left(x+1400\right)}}-\frac{80}{1+e^{0.0015\left(x+4700\right)}}
     fun oceanicSubsidence(elevation: Double) =
-        80 * sigmoid(elevation, 0.005, 1400.0) - 70 * sigmoid(elevation, 0.0015, 4700.0)
+        90 * sigmoid(elevation, 0.005, 1400.0) - 80 * sigmoid(elevation, 0.0015, 4700.0)
 
-    val hotspotEruptionChance = 0.33
+    val hotspotEruptionChance = 0.45
     val hotspotStrength = 7500f.pow(2)
     fun tryHotspotEruption(tile: PlanetTile): Double {
         val planet = tile.planet

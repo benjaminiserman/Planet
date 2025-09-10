@@ -1,11 +1,11 @@
 package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.DebugVector
 import dev.biserman.planet.geometry.MutEdge
 import dev.biserman.planet.geometry.MutMesh
 import dev.biserman.planet.geometry.MutVertex
 import dev.biserman.planet.geometry.adjustRange
-import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -20,12 +20,21 @@ import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
 import kotlin.math.absoluteValue
+import kotlin.math.pow
 import kotlin.time.measureTime
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
-        TectonicForcesRenderer(parent, lift = 1.005, visibleByDefault = false),
+        SimpleDebugRenderer(parent, "tectonic_boundary_movement") { planet ->
+            planet.tectonicPlates.flatMap { plate ->
+                val edgeVectors = plate.tiles
+                    .filter { it.isTectonicBoundary }
+                    .filter { it.movement.length() > 0.00005 }
+                    .map { DebugVector(it.tile.position * 1.005, it.movement) }
+                vectorMesh(edgeVectors, plate.debugColor)
+            }
+        },
         TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = false),
         TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false),
         TileVectorRenderer(
@@ -101,8 +110,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
         ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
         SimpleColorMode(
-            this, "subduction_zones", visibleByDefault = false,
-        ) { if (it.tile in planet.subductionZones) Color.blue * planet.subductionZones[it.tile]!!.speed else null },
+            this, "convergence_zones", visibleByDefault = false,
+        ) {
+            val convergenceZone = planet.convergenceZones[it.tile] ?: return@SimpleColorMode null
+            val strengthFactor = (convergenceZone.speed * convergenceZone.subductionStrength.absoluteValue).pow(0.5)
+            (if (convergenceZone.subductionStrength > 0) Color.blue else Color.green) * strengthFactor
+        },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,
         ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },

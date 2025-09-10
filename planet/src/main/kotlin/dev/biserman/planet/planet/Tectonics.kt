@@ -8,7 +8,6 @@ import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.torque
-import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
@@ -27,7 +26,7 @@ import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
-import dev.biserman.planet.planet.TectonicGlobals.subductionSearchRadius
+import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
@@ -35,7 +34,6 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
-import kotlin.math.max
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -151,15 +149,10 @@ object Tectonics {
                     ) * mantleConvectionStrength
                 )
             })
-            val slabPull = torque(planet.subductionZones.filter { (_, zone) -> plate in zone.subductingPlates }
+            val slabPull = torque(planet.convergenceZones.filter { (_, zone) -> plate in zone.subductingPlates }
                 .flatMap { (_, zone) -> zone.slabPull })
             val ridgePush = torque(planet.divergenceZones.filter { (_, zone) -> plate in zone.divergingPlates }
                 .flatMap { (_, zone) -> zone.ridgePush })
-            val estimatedEdgeForces = torque(plate.tiles.map { tile ->
-                Pair(
-                    tile.tile.position, tile.plateBoundaryForces * tile.tile.area * edgeForceStrength
-                )
-            })
             val springForces = torque(plate.tiles.map { tile ->
                 Pair(
                     tile.tile.position,
@@ -173,7 +166,6 @@ object Tectonics {
                     mantleConvectionTorque +
                             slabPull +
                             ridgePush +
-                            estimatedEdgeForces +
                             springForces
                     ) * plateTorqueScalar
         }
@@ -222,7 +214,7 @@ object Tectonics {
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
 
-        val subductionZones = mutableMapOf<Tile, SubductionZone>()
+        val convergenceZones = mutableMapOf<Tile, ConvergenceZone>()
         val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
 
         val movedTilesRTree = movedTiles.entries
@@ -233,7 +225,7 @@ object Tectonics {
             val searchRadius = planet.topology.averageRadius
             val nearestMovedTiles = movedTilesRTree.nearest(
                 tile.position.toPoint(),
-                searchRadius * subductionSearchRadius,
+                searchRadius * convergenceSearchRadius,
                 searchMaxResults
             ).toList()
             val overlappingTiles =
@@ -261,12 +253,12 @@ object Tectonics {
                             }
                         }.average()
 
-                        subductionZones[tile] = SubductionZone(
+                        convergenceZones[tile] = ConvergenceZone(
                             tile,
                             subductionSpeed,
-                            SubductionInteraction(overridingPlate),
+                            ConvergenceInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
-                                .mapNotNull { SubductionInteraction(it) }
+                                .mapNotNull { ConvergenceInteraction(it) }
                                 .associateBy { it.plate },
                             groups
                         )
@@ -339,13 +331,13 @@ object Tectonics {
         }
 
         val subductionZonesRTree =
-            subductionZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
+            convergenceZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
 
         // erosion elevation & subduction pulldown & hotspots
         newTileMap.values.forEach {
             if (it != null) {
                 it.elevation -= oceanicSubsidence(it.elevation)
-                it.elevation += SubductionZone.adjustElevation(it, subductionZonesRTree)
+                it.elevation += ConvergenceZone.adjustElevation(it, subductionZonesRTree)
                 it.elevation = tryHotspotEruption(it)
                 it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
             }
@@ -363,7 +355,7 @@ object Tectonics {
             plate.mergeInto(neighbors.keys.first())
         }
 
-        planet.subductionZones = subductionZones
+        planet.convergenceZones = convergenceZones
         planet.divergenceZones = divergenceZones
         planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
         planet.tectonicPlates.forEach { it.clean() }

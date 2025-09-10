@@ -12,6 +12,7 @@ import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
 import godot.core.Vector3
+import godot.global.GD
 import kotlin.collections.average
 import kotlin.math.max
 import kotlin.math.pow
@@ -27,10 +28,9 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
 
     @Suppress("MayBeConstant")
     companion object {
-        val divergenceCutoff = 0.3
-        val divergencePatchUplift = 0.0
+        val divergenceCutoff = 0.25
         val divergedCrustHeight = -2000.0
-        val divergedCrustLerp = 0.99
+        val divergedCrustLerp = 1.0
         fun divergeTileOrFillGap(
             planet: Planet,
             tile: Tile,
@@ -38,6 +38,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
             movedTiles: Map<PlanetTile, Vector3>
         ): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
+            val divergencePatchUplift = -1000 / planet.topology.averageRadius
             val newPlanetTile = PlanetTile(planet, tile)
             val searchDistance = planet.topology.averageRadius * divergenceSearchRadius
             val nearestOldTiles =
@@ -55,7 +56,7 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                 }
             }
 
-            val divergenceStrength = (1 - mostOverlap).coerceIn(0.0, 1.0)
+            val divergenceStrength = (1 - mostOverlap).coerceIn(0.0, 1.0).pow(0.33)
 
             val krigingElevation = Kriging.interpolate(
                 nearestOldTiles.map { it.tile.position to it.elevation },
@@ -63,9 +64,13 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                 tectonicElevationVariogram
             )
 
+            val nearestTileDistance =
+                nearestOldTiles.firstOrNull()?.tile?.position?.distanceTo(tile.position) ?: searchDistance
             // divergence elevation
             newPlanetTile.elevation = lerp(
-                krigingElevation + divergencePatchUplift, divergedCrustHeight, divergenceStrength * divergedCrustLerp
+                krigingElevation + divergencePatchUplift * nearestTileDistance,
+                divergedCrustHeight,
+                divergenceStrength * divergedCrustLerp
             )
             newPlanetTile.springDisplacement = planet.planetTiles[tile]!!.springDisplacement
 
@@ -76,9 +81,9 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                 } else {
                     @Suppress("SimplifiableCallChain")
                     newPlanetTile.formationTime =
-                        tile.tiles.map {
-                            newTileMap[it]?.formationTime ?: planet.tectonicAge
-                        }.random()
+                        tile.tiles.map { newTileMap[it]?.formationTime }
+                            .groupBy { it }
+                            .maxByOrNull { it.value.size }?.key ?: planet.tectonicAge
                     null
                 }
             )

@@ -47,13 +47,12 @@ class PlanetTile(
         sqrt(neighbors.filter { it.isAboveWater != isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
     val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
-    val prominence: Double
-        get() {
-            val computed =
-                sqrt(neighbors.filter { it.elevation < elevation }.map { (it.elevation - elevation).pow(2) }.average())
+    val prominence by memo({ planet.tectonicAge }) {
+        val computed =
+            sqrt(neighbors.filter { it.elevation < elevation }.map { (it.elevation - elevation).pow(2) }.average())
 
-            return if (computed.isNaN()) 0.0 else computed
-        }
+        if (computed.isNaN()) 0.0 else computed
+    }
 
     val neighbors get() = tile.tiles.mapNotNull { planet.planetTiles[it] }
 
@@ -86,39 +85,6 @@ class PlanetTile(
     val isTectonicBoundary by memo({ planet.tectonicAge }) { tectonicBoundaries.isNotEmpty() }
 
     fun copy(): PlanetTile = PlanetTile(this)
-
-    val plateBoundaryForces by memo({ planet.tectonicAge }) {
-        if (tectonicPlate == null) {
-            return@memo Vector3.ZERO
-        }
-
-        tile.borders.fold(Vector3.ZERO) { sum, border ->
-            val neighborTile = border.oppositeTile(tile)
-            val neighborPlanetTile = planet.planetTiles[neighborTile]!!
-            if (neighborPlanetTile.tectonicPlate == tectonicPlate) {
-                return@fold sum
-            }
-
-//            val rawScalar = ((neighborPlanetTile.density - density) / 2.0) * -1
-//
-//            // desmos: \frac{2}{1+e^{-20\left(x-1.2\right)}}-1
-//            // this scales between back-arc spreading and trench pull based on relative plate density
-//            val backArcSpreadingX = (neighborPlanetTile.density + 1) / (density + 1.001)
-//            val backArcSpreading = 2.0 / (1 + E.pow(-20 * (backArcSpreadingX - 1.15))) - 1
-//
-//            val finalScalar = if (rawScalar < 0.0) backArcSpreading * 0.05 else rawScalar
-//
-//            return@fold sum + (neighborTile.position - tile.position) * finalScalar * border.length
-
-            // desmos: -\left(\left(\frac{1}{1+e^{\left(-3x-2\right)}}+\frac{1}{1+e^{\left(3x-2\right)}}\right)-1.38\right)
-            val minDensity = max(neighborPlanetTile.density, density).adjustRange(-1.0..1.0, 0.0..1.0)
-            val densityDiff = (neighborPlanetTile.density - density)
-            val attraction = -2 * (sigmoid(densityDiff, -60.0, 1.0 / 30.0) + sigmoid(
-                densityDiff, 60.0, 1.0 / 30.0
-            ) - 1.2f) * (1 - minDensity).pow(2)
-            return@fold sum + (neighborTile.position - tile.position) * border.length * attraction
-        }
-    }
 
     fun updateMovement() {
         if (tectonicPlate == null) {
@@ -177,18 +143,19 @@ class PlanetTile(
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()}
         divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${planet.subductionZones[tile]?.speed?.formatDigits() ?: 0.0}
+        subduction: ${planet.convergenceZones[tile]?.speed?.formatDigits() ?: 0.0}
         erosion: ${erosionDelta.formatDigits()}
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
-    """.trimIndent() + if (planet.subductionZones.contains(tile)) {
-        val subductionZone = planet.subductionZones[tile]!!
+    """.trimIndent() + if (planet.convergenceZones.contains(tile)) {
+        val convergenceZone = planet.convergenceZones[tile]!!
         "\n" + """
-        SUBDUCTION
-        speed: ${subductionZone.speed.formatDigits()}
-        subducting plates: ${subductionZone.subductingPlates.size}
-        subducting mass: ${subductionZone.subductingMass.formatDigits()}
+        CONVERGENCE
+        speed: ${convergenceZone.speed.formatDigits()}
+        strength: ${convergenceZone.subductionStrength.formatDigits()}
+        subducting plates: ${convergenceZone.subductingPlates.size}
+        subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()
     } else ""
 
