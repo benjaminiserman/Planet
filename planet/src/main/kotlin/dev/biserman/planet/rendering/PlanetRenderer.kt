@@ -83,6 +83,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
+        SimpleColorMode(
+            this,
+            "fast_biome",
+            visibleByDefault = false
+        ) { if (it.isAboveWater) Color.darkGreen else Color.darkBlue },
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
         ) {
@@ -113,8 +118,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "convergence_zones", visibleByDefault = false,
         ) {
             val convergenceZone = planet.convergenceZones[it.tile] ?: return@SimpleColorMode null
-            val strengthFactor = (convergenceZone.speed * convergenceZone.subductionStrength.absoluteValue).pow(0.5)
-            (if (convergenceZone.subductionStrength > 0) Color.blue else Color.green) * strengthFactor
+            val subductionStrength = convergenceZone.subductionStrengths.values.average()
+            val strengthFactor = (convergenceZone.speed * subductionStrength.absoluteValue).pow(0.5)
+            (if (subductionStrength > 0) Color.blue else Color.green) * strengthFactor
         },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,

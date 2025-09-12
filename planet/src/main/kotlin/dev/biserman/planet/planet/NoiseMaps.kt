@@ -37,7 +37,7 @@ class NoiseMaps(val seed: Int, val random: Random) {
     }
 
     val hotspots = object : NoiseMap4D(random.nextLong()) {
-        override fun sample4d(v: Vector3, w: Double) = (max(0.0, super.sample4d(v * 3, w * 0.001) - 0.5) * 1.9).pow(4)
+        override fun sample4d(v: Vector3, w: Double) = (max(0.0, super.sample4d(v * 7, w * 0.001) - 0.5) * 1.9).pow(5)
     }
 
     val mantleConvection = object : VectorNoiseMap4D(random.nextLong()) {

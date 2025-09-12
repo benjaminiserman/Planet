@@ -15,7 +15,6 @@ class Planet(val topology: Topology) {
     var convergenceZones: MutableMap<Tile, ConvergenceZone> = mutableMapOf()
     var divergenceZones: MutableMap<Tile, DivergenceZone> = mutableMapOf()
 
-    //    var tectonicAge = 4000 + random.nextInt(1000)
     var tectonicAge = 0
 
     val seaLevel: Double = 0.0
@@ -27,8 +26,11 @@ class Planet(val topology: Topology) {
         planetTiles.values.forEach {
             it.planetInit()
         }
-        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(15, 20))
+        tectonicPlates = Tectonics.seedPlates(this, random.nextInt(10, 15))
         Tectonics.voronoiPlates(this)
         Tectonics.assignDensities(this)
+        tectonicPlates.forEach { plate ->
+            plate.torque = noise.mantleConvection.sample4d(plate.region.tiles.first().tile.position, 0.0)
+        }
     }
 }

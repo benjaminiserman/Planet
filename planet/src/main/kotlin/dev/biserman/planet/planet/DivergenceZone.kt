@@ -6,6 +6,9 @@ import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverageInverse
+import dev.biserman.planet.planet.TectonicGlobals.divergedCrustHeight
+import dev.biserman.planet.planet.TectonicGlobals.divergedCrustLerp
+import dev.biserman.planet.planet.TectonicGlobals.divergenceCutoff
 import dev.biserman.planet.planet.TectonicGlobals.divergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
@@ -28,9 +31,6 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
 
     @Suppress("MayBeConstant")
     companion object {
-        val divergenceCutoff = 0.25
-        val divergedCrustHeight = -2000.0
-        val divergedCrustLerp = 1.0
         fun divergeTileOrFillGap(
             planet: Planet,
             tile: Tile,
@@ -45,16 +45,16 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                 planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, searchMaxResults)
                     .map { planet.planetTiles[it.value()]!! }
 
-            val mostOverlap = tile.tiles.maxOf { neighbor ->
-                val neighborPlanetTile = planet.planetTiles[neighbor]
-                @Suppress("IfThenToElvis")
-                if (neighborPlanetTile != null) {
-                    neighborPlanetTile.movement
-                        .dot((tile.position - neighborPlanetTile.tile.position).normalized()) / planet.topology.averageRadius
-                } else {
-                    0.0
-                }
-            }
+            val neighbors = tile.tiles
+                .mapNotNull { planet.planetTiles[it] }
+            val mostOverlap =
+                if (neighbors.all { it.tectonicPlate == neighbors.first().tectonicPlate }) 1.0
+                else neighbors
+                    .filter { it.isTectonicBoundary }
+                    .maxOfOrNull { neighbor ->
+                        neighbor.movement
+                            .dot((tile.position - neighbor.tile.position).normalized()) / planet.topology.averageRadius
+                    } ?: 1.0
 
             val divergenceStrength = (1 - mostOverlap).coerceIn(0.0, 1.0).pow(0.33)
 
