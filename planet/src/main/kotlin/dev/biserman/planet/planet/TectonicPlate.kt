@@ -12,13 +12,17 @@ import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 
-class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegion = PlanetRegion(planet)) {
+class TectonicPlate(
+    val planet: Planet,
+    val age: Int = 0,
+    val region: PlanetRegion = PlanetRegion(planet),
+    var name: String = DebugNameGenerator.generateName(planet.random)
+) {
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
     val tiles by region::tiles
     var density: Double? = null
 
-    val basalDrag = 0.33
     var torque = Vector3.ZERO
 
     val formationTime = planet.tectonicAge
@@ -29,7 +33,7 @@ class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegi
                 torque,
                 tiles.map { tile -> tile.tile.position to tile.tile.area })
                 .let {
-                    it.normalized() * it.length().coerceIn(0.03, 0.07)
+                    it.normalized() * it.length().coerceIn(0.02, 0.05)
                 }
         } catch (e: Exception) {
             GD.print("Failed to calculate euler pole: ${tiles.size} ${torque.length()}")
@@ -88,6 +92,7 @@ class TectonicPlate(val planet: Planet, val age: Int = 0, val region: PlanetRegi
         GD.print("Rifting $debugColor in ${points.size}")
         val newPlates = region.voronoi(points, warp).map { region ->
             val plate = TectonicPlate(planet, planet.tectonicAge, region)
+            plate.torque = this.torque
             plate.tiles.forEach { it.tectonicPlate = plate }
             plate
         }

@@ -57,7 +57,7 @@ class CameraGimbal : Node3D() {
 	val innerGimbal by lazy { findChild("InnerGimbal") as Node3D }
 	val camera by lazy { innerGimbal.findChild("Camera3D") as Camera3D }
 
-	lateinit var clickStartPosition: Vector2
+	var clickStartPosition: Vector2? = null
 
 	@RegisterFunction
 	override fun _unhandledInput(event: InputEvent?) {
@@ -87,9 +87,11 @@ class CameraGimbal : Node3D() {
 			}
 		}
 
+		val clickStart = clickStartPosition
 		if (event is InputEventMouse &&
 			Input.isActionJustReleased("click") &&
-			event.position.distanceTo(clickStartPosition) == 0.0
+			clickStart != null &&
+			event.position.distanceTo(clickStart) == 0.0
 		) {
 			val origin = camera.projectRayOrigin(event.position)
 			val normal = camera.projectRayNormal(event.position)

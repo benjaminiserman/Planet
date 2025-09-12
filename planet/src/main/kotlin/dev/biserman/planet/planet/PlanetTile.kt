@@ -5,6 +5,7 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.tangent
+import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.memo
@@ -23,6 +24,7 @@ class PlanetTile(
     val temperature get() = 1 - tile.position.y.absoluteValue
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
+    val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
     var movement: Vector3 = Vector3.ZERO
 
     var formationTime = planet.tectonicAge
@@ -49,7 +51,11 @@ class PlanetTile(
     val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
     val prominence by memo({ planet.tectonicAge }) {
         val computed =
-            sqrt(neighbors.filter { it.elevation < elevation }.map { (it.elevation - elevation).pow(2) }.average())
+            sqrt(
+                neighbors
+                    .filter { it.elevationAboveSeaLevel < elevationAboveSeaLevel }
+                    .map { (it.elevationAboveSeaLevel - elevationAboveSeaLevel).pow(2) }
+                    .average())
 
         if (computed.isNaN()) 0.0 else computed
     }
@@ -78,7 +84,8 @@ class PlanetTile(
 
     val tectonicBoundaries by memo({ planet.tectonicAge }) {
         tile.borders.filter { border ->
-            planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate != tectonicPlate
+            val otherPlate = planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate
+            otherPlate != tectonicPlate
         }
     }
 
@@ -93,10 +100,7 @@ class PlanetTile(
 
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
-        movement = (movement * (tectonicPlate?.basalDrag ?: 0.0) + idealMovement).tangent(tile.position)
-        if (movement.length() > 0.15) {
-            GD.printErr("movement is too big: ${movement.length()}")
-        }
+        movement = (movement * tileInertia + idealMovement).tangent(tile.position)
     }
 
     fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
@@ -148,12 +152,14 @@ class PlanetTile(
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
+        plate: ${tectonicPlate?.name ?: "null"}
+        hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
     """.trimIndent() + if (planet.convergenceZones.contains(tile)) {
         val convergenceZone = planet.convergenceZones[tile]!!
         "\n" + """
         CONVERGENCE
         speed: ${convergenceZone.speed.formatDigits()}
-        strength: ${convergenceZone.subductionStrength.formatDigits()}
+        strength: ${convergenceZone.subductionStrengths.values.average().formatDigits()}
         subducting plates: ${convergenceZone.subductingPlates.size}
         subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()
