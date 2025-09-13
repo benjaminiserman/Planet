@@ -29,8 +29,7 @@ class Gui() : Node() {
     val infoboxContainer by lazy { findChild("InfoboxContainer") as ScrollContainer }
     val infoboxLabel by lazy { infoboxContainer.findChild("Label") as Label }
     val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
-    val statsGraph by lazy { findChild("DebugGraph") as CanvasItem }
-    val graph2d by lazy { statsGraph.findChild("Graph2d") as CanvasItem }
+    val statsGraph by lazy { StatsGraph(findChild("DebugGraph") as CanvasItem) }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -73,17 +72,9 @@ class Gui() : Node() {
     override fun _ready() {
         instance = this
         buttons.forEach { addChild(it) }
-        addToggle("Show Stats", false) { statsGraph.setVisible(it) }
-        graph2d.set("x_label", "Million years")
-//        plot = graph2d.call("add_plot_item") as RefCounted
+        addToggle("Show Stats", defaultValue = statsGraph.visible) { statsGraph.visible = it }
+        addToggle("Track Stats", defaultValue = statsGraph.trackStats) { statsGraph.trackStats = it }
     }
-
-//    @RegisterFunction
-//    override fun _process(delta: Double) {
-////        addPoint.call(Vector2(x, sin(x)))
-////        x += 0.01
-////        GD.print((plot?.get("_points") as PackedVector2Array).toList())
-//    }
 
     companion object {
         lateinit var instance: Gui private set
