@@ -21,7 +21,7 @@ object TectonicGlobals {
     val riftCutoff = 0.5
     val minElevation = -12000.0
     val maxElevation = 12000.0
-    val plateMergeCutoff = 0.42
+    val plateMergeCutoff = 0.4
     val minPlateSize = 10
     val continentElevationCutoff = -250.0
 

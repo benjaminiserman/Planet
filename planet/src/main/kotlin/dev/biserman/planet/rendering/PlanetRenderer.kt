@@ -28,8 +28,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         SimpleDebugRenderer(parent, "tectonic_boundary_movement") { planet ->
             planet.tectonicPlates.flatMap { plate ->
-                val edgeVectors = plate.tiles
-                    .filter { it.isTectonicBoundary }
+                val edgeVectors = plate.tiles.filter { it.isTectonicBoundary }
                     .filter { it.movement.length() > 0.00005 }
                     .map { DebugVector(it.tile.position * 1.005, it.movement) }
                 vectorMesh(edgeVectors, plate.debugColor)
@@ -46,21 +45,16 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             visibleByDefault = false
         ),
         TileVectorRenderer(
-            parent,
-            "spring_displacement",
-            lift = 1.005,
-            getFn = { it.springDisplacement },
-            visibleByDefault = false
+            parent, "spring_displacement", lift = 1.005, getFn = { it.springDisplacement }, visibleByDefault = false
         ),
         SimpleDebugRenderer(parent, "rivers") { planet ->
-            val pointElevations = planet.planetTiles.values
-                .flatMap { it.tile.corners }
+            val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
                 .distinctBy { it.position }
                 .associateWith { it.tiles.map { tile -> planet.planetTiles[tile]!!.elevation }.average() }
 
-            val riverSegments = pointElevations.keys
-                .map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
-                .filter { pointElevations[it.first]!! > 0 || pointElevations[it.second]!! > 0 }
+            val riverSegments =
+                pointElevations.keys.map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
+                    .filter { pointElevations[it.first]!! > 0 || pointElevations[it.second]!! > 0 }
 
             val verts = mutableListOf<MutVertex>()
             val edges = mutableListOf<MutEdge>()
@@ -75,45 +69,44 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 
             listOf(
                 MeshData(
-                    MutMesh(verts, edges).toWireframe(),
-                    StandardMaterial3D().apply { this.albedoColor = Color.blue })
+                    MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
             )
-        }
-    )
+        })
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
         SimpleColorMode(
-            this,
-            "fast_biome",
-            visibleByDefault = false
+            this, "fast_biome", visibleByDefault = false
         ) { if (it.isAboveWater) Color.darkGreen else Color.darkBlue },
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
         ) {
-            it.elevation
-                .scaleAndCoerceIn(-5000.0..5000.0, 0.0..1.0)
+            it.elevation.scaleAndCoerceIn(-5000.0..5000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
-            this, "density", visibleByDefault = false,
-            colorFn = redOutsideRange(-1.0..1.0)
+            this, "density", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
         ) { it.density.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
-            this, "mountain_elevation", visibleByDefault = false,
-            colorFn = redOutsideRange(-1.0..1.0)
+            this, "mountain_elevation", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
         ) { it.elevation.scaleAndCoerceIn(2000.0..12000.0, 0.0..1.0) },
         SimpleDoubleColorMode(
-            this, "plate_density", visibleByDefault = false,
-            colorFn = redOutsideRange(-1.0..1.0)
+            this, "plate_density", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
         ) { it.tectonicPlate?.density?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
-            this, "temperature", visibleByDefault = false,
-            colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }
-        ) { it.temperature },
+            this,
+            "temperature",
+            visibleByDefault = false,
+            colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }) { it.temperature },
         SimpleDoubleColorMode(
-            this, "hotspots", visibleByDefault = false,
-            colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }
-        ) { Main.noise.hotspots.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
+            this,
+            "hotspots",
+            visibleByDefault = false,
+            colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }) {
+            Main.noise.hotspots.sample4d(
+                it.tile.position,
+                planet.tectonicAge.toDouble()
+            )
+        },
         SimpleColorMode(
             this, "convergence_zones", visibleByDefault = false,
         ) {
@@ -137,9 +130,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "erosion", visibleByDefault = false,
         ) {
-            val scaled = it.erosionDelta
-                .scaleAndCoerceIn(-50.0..50.0, -1.0..1.0)
-                .absoluteValue
+            val scaled = it.erosionDelta.scaleAndCoerceIn(-50.0..50.0, -1.0..1.0).absoluteValue
             when {
                 it.erosionDelta < 0 -> Color.red * scaled
                 it.erosionDelta > 0 -> Color.blue * scaled
@@ -151,9 +142,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) {
             Color.white * it.formationTime.toDouble()
                 .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
-        },
-
-        )
+        })
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
 
@@ -189,8 +178,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 
             (0..<resultsSize).map { i ->
                 colorModeResults.filter { it[i] != null }
-                    .fold(Color.black) { acc, list -> acc + list[i]!! } /
-                        colorModeResults.filter { it[i] != null }.size.toDouble()
+                    .fold(Color.black) { acc, list -> acc + list[i]!! } / colorModeResults.filter { it[i] != null }.size.toDouble()
             }
         } else listOf()
 

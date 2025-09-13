@@ -85,6 +85,7 @@ offset_bottom = 36.0
 grow_horizontal = 0
 
 [node name="DebugGraph" type="Control" parent="GUI"]
+visible = false
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -104,12 +105,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -250.0
-offset_top = -250.0
-offset_right = -242.0
-offset_bottom = -242.0
+offset_left = -240.0
+offset_top = -240.0
+offset_right = -133.0
+offset_bottom = -209.0
 grow_horizontal = 0
 grow_vertical = 0
+text = "Select Graph"
 
 [node name="Graph2d" type="Control" parent="GUI/DebugGraph"]
 custom_minimum_size = Vector2(400, 200)

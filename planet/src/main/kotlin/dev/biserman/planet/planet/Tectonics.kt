@@ -398,24 +398,11 @@ object Tectonics {
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
+        Gui.instance.statsGraph.update(planet)
 
         val percentContinental =
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
         GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
         GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
-        GD.print(
-            "average ocean depth: ${
-                planet.planetTiles.values.filter { !it.isAboveWater }
-                    .map { it.elevation }
-                    .average()
-            }m"
-        )
-        GD.print(
-            "average continental elevation: ${
-                planet.planetTiles.values.filter { it.isAboveWater }
-                    .map { it.elevation }
-                    .average()
-            }m"
-        )
     }
 }
