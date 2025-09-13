@@ -21,7 +21,7 @@ object TectonicGlobals {
     val riftCutoff = 0.5
     val minElevation = -12000.0
     val maxElevation = 12000.0
-    val plateMergeCutoff = 0.4
+    val plateMergeCutoff = 0.42
     val minPlateSize = 10
     val continentElevationCutoff = -250.0
 
@@ -33,9 +33,9 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 3500.0
+    val overridingElevationStrengthScale = 4500.0
     val subductingElevationStrengthScale = -9000.0
-    val convergingElevationStrengthScale = 2750.0
+    val convergingElevationStrengthScale = 3250.0
 
     val divergenceCutoff = 0.25
     val divergedCrustHeight = -2000.0
