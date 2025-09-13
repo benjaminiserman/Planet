@@ -62,7 +62,7 @@ class ConvergenceZone(
         }
 
     val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
-        .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.5..1.5) }
+        .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
         .average()
 
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double {

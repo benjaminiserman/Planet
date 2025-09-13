@@ -15,6 +15,10 @@ run/main_scene="uid://bqaovyiqpfql0"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/graph_2d/plugin.cfg")
+
 [input]
 
 cam_zoom_in={

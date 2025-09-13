@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://bqaovyiqpfql0"]
+[gd_scene load_steps=9 format=3 uid="uid://bqaovyiqpfql0"]
 
 [ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
 [ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
 [ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="4_m7jmp"]
+[ext_resource type="Script" uid="uid://bp2qgsh74bun4" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
 [ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_y2354"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
@@ -82,3 +83,47 @@ offset_top = 13.0
 offset_right = 3.0
 offset_bottom = 36.0
 grow_horizontal = 0
+
+[node name="DebugGraph" type="Control" parent="GUI"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+rotation = 0.0008698
+
+[node name="GraphOptions" type="MenuButton" parent="GUI/DebugGraph"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -250.0
+offset_right = -242.0
+offset_bottom = -242.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Graph2d" type="Control" parent="GUI/DebugGraph"]
+custom_minimum_size = Vector2(400, 200)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -400.0
+offset_top = -200.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("5_m7jmp")
+background_color = Color(0, 0, 0, 0.121569)
+grid_horizontal_visible = true
+metadata/_custom_type_script = "uid://bp2qgsh74bun4"
