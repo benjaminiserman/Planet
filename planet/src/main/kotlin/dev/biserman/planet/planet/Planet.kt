@@ -1,14 +1,28 @@
 package dev.biserman.planet.planet
 
+import com.esotericsoftware.kryo.DefaultSerializer
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.KryoSerializable
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer
+import com.esotericsoftware.kryo.serializers.FieldSerializer
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer
 import dev.biserman.planet.Main
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
+import dev.biserman.planet.utils.NoArg
 import dev.biserman.planet.utils.memo
 
-class Planet(val topology: Topology) {
-    val random by lazy { Main.random }
-    val noise by lazy { Main.noise }
+@NoArg
+@DefaultSerializer(CompatibleFieldSerializer::class)
+class Planet(@Transient val topology: Topology) {
+    @Transient
+    val random = Main.random
+    @Transient
+    val noise = Main.noise
     var planetTiles = topology.tiles.associateWith { PlanetTile(this, it) }
+    val planetStats = PlanetStats()
 
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>
@@ -18,9 +32,6 @@ class Planet(val topology: Topology) {
     var tectonicAge = 0
 
     val seaLevel: Double = 0.0
-
-    val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
-    val youngestCrust by memo({ tectonicAge }) { planetTiles.values.maxOf { it.formationTime } }
 
     init {
         planetTiles.values.forEach {

@@ -11,6 +11,7 @@ import dev.biserman.planet.planet.TectonicGlobals.convergingElevationStrengthSca
 import dev.biserman.planet.planet.TectonicGlobals.overridingElevationStrengthScale
 import dev.biserman.planet.planet.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.NoArg
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.collections.average
@@ -19,6 +20,7 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sign
 
+@NoArg
 data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
     constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
         plateGroup.key,
@@ -27,6 +29,7 @@ data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector
     )
 }
 
+@NoArg
 class ConvergenceZone(
     val tile: Tile,
     val speed: Double,
@@ -34,7 +37,6 @@ class ConvergenceZone(
     val subductingPlates: Map<TectonicPlate, ConvergenceInteraction>,
     involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
 ) {
-
     val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
     val subductionStrengths =
         involvedTiles.mapValues { tiles -> tiles.value.map { it.tile.density }.average() - overridingDensity - 0.5 }

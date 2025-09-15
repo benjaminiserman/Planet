@@ -1,6 +1,10 @@
 package dev.biserman.planet.gui
 
+import dev.biserman.planet.Main
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetStats
+import dev.biserman.planet.planet.Stat
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import godot.api.CanvasItem
 import godot.api.MenuButton
 import godot.api.Node
@@ -14,14 +18,6 @@ import kotlin.collections.withIndex
 import kotlin.math.max
 import kotlin.time.measureTime
 
-data class Stat(
-    val name: String,
-    val color: Color = Color.red,
-    val yLabel: String = "",
-    val values: MutableList<Pair<Double, Double>> = mutableListOf(),
-    val range: ClosedRange<Double>? = null,
-    val getter: (Planet) -> Double
-)
 
 class StatsGraph(val rootNode: CanvasItem) {
     val plot: RefCounted
@@ -33,41 +29,19 @@ class StatsGraph(val rootNode: CanvasItem) {
     val addPoint = ({ point: Vector2 -> (plot.get("add_point") as NativeCallable).call(point) as Unit })
     val menuButton = rootNode.findChild("GraphOptions") as MenuButton
 
-    val stats = listOf(
-        Stat(
-            "% tiles above water",
-            range = 0.0..100.0
-        ) { planet -> planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toDouble() * 100 },
-        Stat("average tile crust age", yLabel = "Million years") { planet ->
-            planet.planetTiles.values.map { planet.tectonicAge - it.formationTime }
-                .average()
-        },
-        Stat("oldest tile crust age", yLabel = "Million years") { planet ->
-            (planet.tectonicAge - planet.oldestCrust).toDouble()
-        },
-        Stat("average oceanic tile depth", yLabel = "Meters") { planet ->
-            planet.planetTiles.values.filter { !it.isAboveWater }.map { it.elevation }.average()
-        },
-        Stat("average continental tile height", yLabel = "Meters") { planet ->
-            planet.planetTiles.values.filter { it.isAboveWater }.map { it.elevation }.average()
-        },
-        Stat("tectonic plate count") { planet -> planet.tectonicPlates.size.toDouble() },
-        Stat("average tectonic plate torque") { planet -> planet.tectonicPlates.map { it.torque.length() }.average() },
-        Stat("subduction zone count") { planet -> planet.convergenceZones.filter { it.value.subductionStrengths.values.average() > 0 }.size.toDouble() },
-        Stat("convergent zone count") { planet -> planet.convergenceZones.filter { it.value.subductionStrengths.values.average() < 0 }.size.toDouble() },
-        Stat("divergent zone count") { planet -> planet.divergenceZones.size.toDouble() },
-        Stat("average slope") { planet -> planet.planetTiles.values.map { it.slope }.average() },
-        Stat("max elevation") { planet -> planet.planetTiles.values.maxOf { it.elevation } },
-        Stat("min elevation") { planet -> planet.planetTiles.values.minOf { it.elevation } },
-        Stat("hotspot activity") { planet ->
-            planet.planetTiles.values.sumOf {
-                planet.noise.hotspots.sample4d(
-                    it.tile.position,
-                    planet.tectonicAge.toDouble()
-                )
+    private lateinit var stats: PlanetStats
+    var planet: Planet? = null
+        set(value) {
+            field = value
+            if (value != null) {
+                stats = value.planetStats
+                menuButton.getPopup()!!.clear()
+                stats.tectonicStats.forEach { stat ->
+                    menuButton.getPopup()!!.addItem(stat.name)
+                }
+                shownStat = null
             }
-        },
-    )
+        }
 
     var visible = false
         set(value) {
@@ -78,11 +52,7 @@ class StatsGraph(val rootNode: CanvasItem) {
     var trackStats = true
 
     init {
-        stats.forEach { stat ->
-            menuButton.getPopup()!!.addItem(stat.name)
-        }
-
-        menuButton.getPopup()!!.idPressed.connect { shownStat = stats[it.toInt()] }
+        menuButton.getPopup()!!.idPressed.connect { shownStat = stats.tectonicStats[it.toInt()] }
     }
 
     var shownStat: Stat? = null
@@ -95,7 +65,8 @@ class StatsGraph(val rootNode: CanvasItem) {
                     addPoint(Vector2(x, y))
                 }
                 rescale(value)
-                menuButton.setText(value.name + " ▽")
+                rescale(value)
+                menuButton.setText("${value.name} ▽ (${value.values.last().second.formatDigits()})")
             } else {
                 graph2d.set("y_label", "")
                 menuButton.setText("Select Graph")
@@ -108,7 +79,7 @@ class StatsGraph(val rootNode: CanvasItem) {
         }
 
         val timeTaken = measureTime {
-            stats.forEach {
+            stats.tectonicStats.forEach {
                 it.values.add(planet.tectonicAge.toDouble() to it.getter(planet))
             }
         }
@@ -119,6 +90,7 @@ class StatsGraph(val rootNode: CanvasItem) {
             val (time, value) = shownStat!!.values.last()
             addPoint(Vector2(time, value))
             rescale(shownStat!!)
+            menuButton.setText("${shownStat!!.name} ▽ (${value.formatDigits()})")
         }
     }
 

@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet
 
+import com.esotericsoftware.kryo.DefaultSerializer
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
 import dev.biserman.planet.planet.Tectonics.random
@@ -27,6 +29,7 @@ class TectonicPlate(
 
     val formationTime = planet.tectonicAge
 
+    @delegate:Transient
     val eulerPole by memo({ torque }) {
         try {
             eulerPole(
@@ -41,6 +44,7 @@ class TectonicPlate(
         }
     }
 
+    @delegate:Transient
     val edgeTiles by memo({ planet.tectonicAge }) {
         tiles.filter { tile ->
             tile.tile.borders.any { border ->
@@ -49,6 +53,7 @@ class TectonicPlate(
         }
     }
 
+    @delegate:Transient
     val area by memo({ planet.tectonicAge }) { tiles.sumOf { it.tile.area } }
 
     fun calculateNeighborLengths(): Map<TectonicPlate, Double> {

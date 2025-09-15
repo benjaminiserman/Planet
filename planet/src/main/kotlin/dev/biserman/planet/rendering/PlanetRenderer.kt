@@ -14,6 +14,7 @@ import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redOutsideRange
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redWhenNull
 import dev.biserman.planet.rendering.renderers.*
+import dev.biserman.planet.utils.memo
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
@@ -72,6 +73,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
             )
         })
+
+    val oldestCrust by memo({ planet.tectonicAge }) { planet.planetTiles.values.minOf { it.formationTime }}
+    val youngestCrust by memo({ planet.tectonicAge }) { planet.planetTiles.values.maxOf { it.formationTime }}
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
@@ -141,7 +145,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "crust_age", visibleByDefault = false,
         ) {
             Color.white * it.formationTime.toDouble()
-                .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
+                .scaleAndCoerceIn(oldestCrust.toDouble()..youngestCrust.toDouble(), 0.0..1.0)
         })
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

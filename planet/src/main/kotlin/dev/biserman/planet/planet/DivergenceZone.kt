@@ -13,6 +13,7 @@ import dev.biserman.planet.planet.TectonicGlobals.divergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.NoArg
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
@@ -20,6 +21,7 @@ import kotlin.collections.average
 import kotlin.math.max
 import kotlin.math.pow
 
+@NoArg
 class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: List<TectonicPlate>) {
     val ridgePush
         get() = divergingPlates.map { divergingPlate ->

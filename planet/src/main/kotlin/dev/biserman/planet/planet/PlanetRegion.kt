@@ -4,14 +4,17 @@ import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
+import dev.biserman.planet.utils.NoArg
 import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 
+@NoArg
 class PlanetRegion(
     val planet: Planet,
     var tiles: MutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
 ) {
+    @delegate:Transient
     val border by memo({ planet.tectonicAge }) {
         tiles.flatMap { planetTile ->
             planetTile.tile.borders.filter { border ->
@@ -22,6 +25,7 @@ class PlanetRegion(
         }
     }
 
+    @delegate:Transient
     val center by memo({ planet.tectonicAge }) {
         tiles.fold(Vector3.ZERO) { sum, tile -> sum + tile.tile.position }.normalized()
     }

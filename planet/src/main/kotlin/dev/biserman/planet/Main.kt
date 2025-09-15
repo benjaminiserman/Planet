@@ -1,7 +1,9 @@
 package dev.biserman.planet
 
+import com.sun.tools.javac.code.TypeAnnotationPosition.field
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
+import dev.biserman.planet.gui.StatsGraph
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
@@ -20,6 +22,8 @@ import kotlin.random.Random
 @RegisterClass
 class Main : Node() {
 	lateinit var planet: Planet
+		private set
+
 	lateinit var planetRenderer: PlanetRenderer
 
 	@RegisterFunction
@@ -34,16 +38,16 @@ class Main : Node() {
 		val topology = sub.toTopology()
 		GD.print("average radius: ${topology.averageRadius}")
 		GD.print("tiles: ${topology.tiles.size}")
-		planet = Planet(topology)
+		val newPlanet = Planet(topology)
 
-		Tectonics.stepTectonicPlateForces(planet)
-
-		planetRenderer = PlanetRenderer(this, planet)
-		planetRenderer.update(planet)
+		Tectonics.stepTectonicPlateForces(newPlanet)
+		planetRenderer = PlanetRenderer(this, newPlanet)
 
 		Gui.addToggle("Run Tectonics Simulation", defaultValue = false) {
 			timerActive = it
 		}
+
+		updatePlanet(newPlanet)
 	}
 
 	@RegisterFunction
@@ -88,8 +92,15 @@ class Main : Node() {
 		}
 	}
 
+	fun updatePlanet(newPlanet: Planet) {
+		GD.print("updating planet: $newPlanet")
+		planet = newPlanet
+		planetRenderer.update(newPlanet)
+		Gui.instance.statsGraph.planet = newPlanet
+	}
+
 	companion object {
-		var random = Random(11)
+		var random = Random(12)
 		val noise = NoiseMaps(random.nextInt(), random)
 		lateinit var instance: Main
 	}

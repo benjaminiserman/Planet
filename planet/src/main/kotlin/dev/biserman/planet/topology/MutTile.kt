@@ -1,8 +1,11 @@
 package dev.biserman.planet.topology
 
+import com.esotericsoftware.kryo.DefaultSerializer
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer
 import dev.biserman.planet.geometry.Ray
 import dev.biserman.planet.geometry.Sphere
 import dev.biserman.planet.geometry.triArea
+import dev.biserman.planet.utils.NoArg
 import dev.biserman.planet.utils.TrackedMutableList
 import dev.biserman.planet.utils.TrackedMutableList.Companion.toTracked
 import dev.biserman.planet.utils.memo
@@ -53,11 +56,14 @@ interface Tile {
     fun borderFor(neighbor: Tile) = borders.first { neighbor.borders.contains(it) }
 }
 
+@NoArg
 class MutTile(
     override val id: Int,
-    override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
-    override var borders: MutableList<MutBorder> = mutableListOf(),
-    override var tiles: MutableList<MutTile> = mutableListOf(),
+    @Transient override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
+    @Transient override var borders: MutableList<MutBorder> = mutableListOf(),
+    @Transient override var tiles: MutableList<MutTile> = mutableListOf(),
 ) : Tile {
-    override val position by memo({ corners.mutationCount }) { averagePosition }
+    @Transient
+    private val positionDelegate = memo({ corners.mutationCount }) { averagePosition }
+    override val position by positionDelegate
 }

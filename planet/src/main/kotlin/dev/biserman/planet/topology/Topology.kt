@@ -1,6 +1,5 @@
 package dev.biserman.planet.topology
 
-import com.github.davidmoten.rtreemulti.Entry
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.geometry.*
@@ -15,7 +14,9 @@ import dev.biserman.planet.geometry.*
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 class Topology(val tiles: List<Tile>, val borders: List<Border>, val corners: List<Corner>) {
-	val rTree = tiles.toRTree { it.position.toPoint() to it }
+	@Transient
+	val rTree: RTree<Tile, Point> = tiles.toRTree { it.position.toPoint() to it }
+	@delegate:Transient
 	val averageRadius by lazy {
 		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
 		radii.average()

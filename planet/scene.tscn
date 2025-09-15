@@ -78,10 +78,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -37.0
-offset_top = 13.0
-offset_right = 3.0
-offset_bottom = 36.0
+offset_left = -47.0
+offset_top = 43.0
+offset_right = -7.0
+offset_bottom = 66.0
 grow_horizontal = 0
 
 [node name="DebugGraph" type="Control" parent="GUI"]
@@ -129,3 +129,28 @@ script = ExtResource("5_m7jmp")
 background_color = Color(0, 0, 0, 0.121569)
 grid_horizontal_visible = true
 metadata/_custom_type_script = "uid://bp2qgsh74bun4"
+
+[node name="SaveButton" type="Button" parent="GUI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -51.0
+offset_top = 7.0
+offset_right = -7.0
+offset_bottom = 38.0
+grow_horizontal = 0
+text = "Save"
+
+[node name="LoadButton" type="Button" parent="GUI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -101.0
+offset_top = 7.0
+offset_right = -55.0
+offset_bottom = 38.0
+grow_horizontal = 0
+text = "Load
+"

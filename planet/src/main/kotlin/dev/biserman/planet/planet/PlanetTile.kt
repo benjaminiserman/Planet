@@ -1,21 +1,25 @@
 package dev.biserman.planet.planet
 
+import com.esotericsoftware.kryo.DefaultSerializer
+import com.esotericsoftware.kryo.serializers.TaggedFieldSerializer
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
-import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.NoArg
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
-import godot.global.GD
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+@DefaultSerializer(TaggedFieldSerializer::class)
+@NoArg
 class PlanetTile(
     val planet: Planet,
     var tile: Tile,
@@ -42,13 +46,17 @@ class PlanetTile(
     val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
     val isAboveWater get() = elevation > planet.seaLevel
 
+    @delegate:Transient
     val contiguousSlope by memo({ planet.tectonicAge }) {
         sqrt(neighbors.filter { it.isAboveWater == isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
+    @delegate:Transient
     val nonContiguousSlope by memo({ planet.tectonicAge }) {
         sqrt(neighbors.filter { it.isAboveWater != isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
+    @delegate:Transient
     val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
+    @delegate:Transient
     val prominence by memo({ planet.tectonicAge }) {
         val computed =
             sqrt(
@@ -82,6 +90,7 @@ class PlanetTile(
 //        elevation = 0.0
     }
 
+    @delegate:Transient
     val tectonicBoundaries by memo({ planet.tectonicAge }) {
         tile.borders.filter { border ->
             val otherPlate = planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate
@@ -89,6 +98,7 @@ class PlanetTile(
         }
     }
 
+    @delegate:Transient
     val isTectonicBoundary by memo({ planet.tectonicAge }) { tectonicBoundaries.isNotEmpty() }
 
     fun copy(): PlanetTile = PlanetTile(this)
@@ -137,9 +147,6 @@ class PlanetTile(
         return found
     }
 
-    fun (Double).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
-    fun (Float).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
-    fun (Vector3).formatDigits(digits: Int = 2) = "(%.${digits}f, %.${digits}f, %.${digits}f)".format(x, y, z)
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}
         temperature: ${temperature.formatDigits()}

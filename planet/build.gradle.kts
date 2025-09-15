@@ -1,5 +1,10 @@
 plugins {
     id("com.utopia-rise.godot-kotlin-jvm") version "0.13.1-4.4.1"
+    kotlin("plugin.noarg") version "2.0.21"
+}
+
+noArg {
+    annotation("dev.biserman.planet.utils.NoArg")
 }
 
 repositories {
@@ -9,6 +14,7 @@ repositories {
 dependencies {
     implementation("com.github.davidmoten:rtree-multi:0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("com.esotericsoftware:kryo:5.6.2")
 }
 
 kotlin {
