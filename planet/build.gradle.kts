@@ -9,6 +9,8 @@ repositories {
 dependencies {
     implementation("com.github.davidmoten:rtree-multi:0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.2")
 }
 
 kotlin {

@@ -8,6 +8,7 @@ import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
+import godot.api.Button
 import godot.api.CanvasItem
 import godot.api.CheckButton
 import godot.api.Label
@@ -30,6 +31,9 @@ class Gui() : Node() {
     val infoboxLabel by lazy { infoboxContainer.findChild("Label") as Label }
     val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
     val statsGraph by lazy { StatsGraph(findChild("DebugGraph") as CanvasItem) }
+
+    val saveButton by lazy { findChild("SaveButton") as Button }
+    val loadButton by lazy { findChild("LoadButton") as Button }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -74,6 +78,17 @@ class Gui() : Node() {
         buttons.forEach { addChild(it) }
         addToggle("Show Stats", defaultValue = statsGraph.visible) { statsGraph.visible = it }
         addToggle("Track Stats", defaultValue = statsGraph.trackStats) { statsGraph.trackStats = it }
+
+//        saveButton.pressed.connect {
+//            Serialization.save(Main.instance.planet)
+//            GD.print("Saved!")
+//        }
+//        loadButton.pressed.connect {
+//            val loadedPlanet = Serialization.load()
+//            Main.instance.updatePlanet(loadedPlanet)
+//            GD.print("Loaded!")
+//            GD.print("Tectonic age: ${loadedPlanet.tectonicAge}")
+//        }
     }
 
     companion object {

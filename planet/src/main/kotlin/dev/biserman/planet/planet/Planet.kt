@@ -9,6 +9,7 @@ class Planet(val topology: Topology) {
     val random by lazy { Main.random }
     val noise by lazy { Main.noise }
     var planetTiles = topology.tiles.associateWith { PlanetTile(this, it) }
+    val planetStats = PlanetStats()
 
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>

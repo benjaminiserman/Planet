@@ -8,6 +8,7 @@ import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 import godot.global.GD
@@ -137,9 +138,6 @@ class PlanetTile(
         return found
     }
 
-    fun (Double).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
-    fun (Float).formatDigits(digits: Int = 2) = "%.${digits}f".format(this)
-    fun (Vector3).formatDigits(digits: Int = 2) = "(%.${digits}f, %.${digits}f, %.${digits}f)".format(x, y, z)
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}
         temperature: ${temperature.formatDigits()}
