@@ -5,14 +5,11 @@ import dev.biserman.planet.planet.PlanetStats
 import dev.biserman.planet.planet.Stat
 import godot.api.CanvasItem
 import godot.api.MenuButton
-import godot.api.Node
 import godot.api.RefCounted
-import godot.core.Color
 import godot.core.NativeCallable
 import godot.core.Vector2
 import godot.core.connect
 import godot.global.GD
-import kotlin.collections.withIndex
 import kotlin.math.max
 import kotlin.time.measureTime
 
@@ -40,6 +37,8 @@ class StatsGraph(val rootNode: CanvasItem) {
             }
         }
 
+    val statValues get() = planet!!.planetStats.tectonicStatValues
+
     var visible = false
         set(value) {
             rootNode.visible = value
@@ -58,7 +57,7 @@ class StatsGraph(val rootNode: CanvasItem) {
             plot.call("remove_all")
             if (value != null) {
                 graph2d.set("y_label", value.yLabel)
-                for ((x, y) in value.values) {
+                for ((x, y) in statValues[value.name]!!) {
                     addPoint(Vector2(x, y))
                 }
                 rescale(value)
@@ -76,14 +75,14 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         val timeTaken = measureTime {
             stats.tectonicStats.forEach {
-                it.values.add(planet.tectonicAge.toDouble() to it.getter(planet))
+                statValues[it.name]!!.add(planet.tectonicAge.toDouble() to it.getter(planet))
             }
         }
 
         GD.print("Updating stats graph took ${timeTaken.inWholeMilliseconds}ms")
 
         if (shownStat != null) {
-            val (time, value) = shownStat!!.values.last()
+            val (time, value) = statValues[shownStat!!.name]!!.last()
             addPoint(Vector2(time, value))
             rescale(shownStat!!)
         }
@@ -91,7 +90,7 @@ class StatsGraph(val rootNode: CanvasItem) {
 
     fun rescale(stat: Stat) {
         val minX = 0
-        val maxX = max(10, stat.values.size)
+        val maxX = max(10, statValues[stat.name]!!.size)
 
         graph2d.set("x_min", minX)
         graph2d.set("x_max", maxX)
@@ -101,9 +100,9 @@ class StatsGraph(val rootNode: CanvasItem) {
             graph2d.set("y_min", range.start)
             graph2d.set("y_max", range.endInclusive)
         } else {
-            val statMin = stat.values.minOfOrNull { it.second } ?: 0.0
+            val statMin = statValues[stat.name]!!.minOfOrNull { it.second } ?: 0.0
             val minY = statMin - 0.1 * statMin
-            val statMax = stat.values.maxOfOrNull { it.second } ?: 0.0
+            val statMax = statValues[stat.name]!!.maxOfOrNull { it.second } ?: 0.0
             val maxY = statMax + 0.1 * statMax
 
             graph2d.set("y_min", minY)

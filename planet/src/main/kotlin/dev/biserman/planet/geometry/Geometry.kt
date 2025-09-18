@@ -4,18 +4,10 @@ import com.github.davidmoten.rtreemulti.Entry
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Geometry
 import com.github.davidmoten.rtreemulti.geometry.Point
-import dev.biserman.planet.topology.Tile
 import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.*
-import kotlin.collections.map
-import kotlin.math.E
-import kotlin.math.PI
-import kotlin.math.acos
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
-import kotlin.math.sqrt
+import kotlin.math.*
 import kotlin.random.Random
 
 fun calculateNormal(p1: Vector3, p2: Vector3, p3: Vector3): Vector3 {

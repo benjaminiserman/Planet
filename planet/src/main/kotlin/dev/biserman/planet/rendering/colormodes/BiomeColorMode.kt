@@ -10,11 +10,9 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.memo
 import godot.common.util.lerp
 import godot.core.Color
-import godot.core.Vector3
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.pow
-import kotlin.math.sqrt
 
 class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefault: Boolean) :
     PlanetColorMode(planetRenderer) {
@@ -88,7 +86,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     }
 
     fun averageAroundPoint(corner: Corner, planetTile: PlanetTile, getFn: (PlanetTile) -> Double): Double {
-        val matchingTiles = corner.tiles.map { tile -> planetTile.planet.planetTiles[tile]!! }
+        val matchingTiles = corner.tiles.map { tile -> planetTile.planet.getTile(tile) }
             .filter { getMode(it) == getMode(planetTile) }
 
         return matchingTiles.sumOf { getFn(it) } / matchingTiles.size

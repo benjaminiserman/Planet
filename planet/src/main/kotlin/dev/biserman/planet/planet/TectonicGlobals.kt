@@ -1,6 +1,5 @@
 package dev.biserman.planet.planet
 
-import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.planet.Tectonics.random

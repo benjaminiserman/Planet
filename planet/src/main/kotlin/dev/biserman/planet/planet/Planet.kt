@@ -1,22 +1,36 @@
 package dev.biserman.planet.planet
 
-import dev.biserman.planet.Main
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
+import dev.biserman.planet.geometry.*
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
+import dev.biserman.planet.topology.toTopology
 import dev.biserman.planet.utils.memo
+import kotlin.random.Random
 
-class Planet(val topology: Topology) {
-    val random by lazy { Main.random }
-    val noise by lazy { Main.noise }
-    var planetTiles = topology.tiles.associateWith { PlanetTile(this, it) }
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    property = "id"
+)
+class Planet(val seed: Int, size: Int) {
+    @JsonIgnore val random = Random(seed)
+    @JsonIgnore val noise = NoiseMaps(seed, random)
+    @JsonIgnore val topology = makeTopology(size)
+    var planetTiles = topology.tiles.associate { it.id to PlanetTile(this, it.id) }
+
+    fun getTile(tile: Tile) = planetTiles[tile.id]!!
+
     val planetStats = PlanetStats()
 
     @Suppress("JoinDeclarationAndAssignment")
     var tectonicPlates: MutableList<TectonicPlate>
-    var convergenceZones: MutableMap<Tile, ConvergenceZone> = mutableMapOf()
-    var divergenceZones: MutableMap<Tile, DivergenceZone> = mutableMapOf()
+    var convergenceZones: MutableMap<Int, ConvergenceZone> = mutableMapOf()
+    var divergenceZones: MutableMap<Int, DivergenceZone> = mutableMapOf()
 
     var tectonicAge = 0
+    var nextPlateId = 0
 
     val seaLevel: Double = 0.0
 
@@ -33,5 +47,14 @@ class Planet(val topology: Topology) {
         tectonicPlates.forEach { plate ->
             plate.torque = noise.mantleConvection.sample4d(plate.region.tiles.first().tile.position, 0.0)
         }
+    }
+
+    fun makeTopology(degree: Int): Topology {
+        val icosahedron = makeIcosahedron()
+        val sub = icosahedron.subdivideIcosahedron(degree)
+        sub.distortTriangles(0.5)
+        sub.relaxRepeatedly(500)
+        sub.reorderVerts()
+        return sub.toTopology()
     }
 }

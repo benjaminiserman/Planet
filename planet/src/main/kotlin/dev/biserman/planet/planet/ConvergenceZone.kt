@@ -1,5 +1,8 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
@@ -12,12 +15,8 @@ import dev.biserman.planet.planet.TectonicGlobals.overridingElevationStrengthSca
 import dev.biserman.planet.planet.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
-import godot.global.GD
-import kotlin.collections.average
-import kotlin.collections.component1
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sign
 
 data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
     constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
@@ -27,13 +26,20 @@ data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector
     )
 }
 
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    property = "id"
+)
 class ConvergenceZone(
-    val tile: Tile,
+    val planet: Planet,
+    val tileId: Int,
     val speed: Double,
     val overridingPlate: ConvergenceInteraction,
     val subductingPlates: Map<TectonicPlate, ConvergenceInteraction>,
     involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
 ) {
+    @get:JsonIgnore
+    val tile get() = planet.topology.tiles[tileId]
 
     val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
     val subductionStrengths =

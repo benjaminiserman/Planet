@@ -1,7 +1,5 @@
 package dev.biserman.planet.topology
 
-import godot.core.Vector3
-
 interface Border {
     val id: Int
     val corners: List<Corner>

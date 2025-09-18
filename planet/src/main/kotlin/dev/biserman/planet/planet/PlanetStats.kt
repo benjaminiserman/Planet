@@ -1,17 +1,18 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import godot.core.Color
 
 data class Stat(
     val name: String,
     val color: Color = Color.red,
     val yLabel: String = "",
-    val values: MutableList<Pair<Double, Double>> = mutableListOf(),
     val range: ClosedRange<Double>? = null,
     val getter: (Planet) -> Double
 )
 
 class PlanetStats {
+    @JsonIgnore
     val tectonicStats = listOf(
         Stat(
             "% tiles above water",
@@ -47,4 +48,6 @@ class PlanetStats {
             }
         },
     )
+
+    val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Pair<Double, Double>>() }
 }

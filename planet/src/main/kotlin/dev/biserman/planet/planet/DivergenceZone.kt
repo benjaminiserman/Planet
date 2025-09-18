@@ -1,11 +1,10 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.Kriging
-import dev.biserman.planet.geometry.average
-import dev.biserman.planet.geometry.scaleAndCoerce01
-import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.toPoint
-import dev.biserman.planet.geometry.weightedAverageInverse
 import dev.biserman.planet.planet.TectonicGlobals.divergedCrustHeight
 import dev.biserman.planet.planet.TectonicGlobals.divergedCrustLerp
 import dev.biserman.planet.planet.TectonicGlobals.divergenceCutoff
@@ -15,12 +14,21 @@ import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
 import godot.core.Vector3
-import godot.global.GD
-import kotlin.collections.average
-import kotlin.math.max
 import kotlin.math.pow
 
-class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: List<TectonicPlate>) {
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    property = "id"
+)
+class DivergenceZone(
+    val planet: Planet,
+    val tileId: Int,
+    val strength: Double,
+    val divergingPlates: List<TectonicPlate>
+) {
+    @get:JsonIgnore
+    val tile get() = planet.topology.tiles[tileId]
+
     val ridgePush
         get() = divergingPlates.map { divergingPlate ->
             Pair(
@@ -39,14 +47,14 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
         ): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
             val divergencePatchUplift = -1000 / planet.topology.averageRadius
-            val newPlanetTile = PlanetTile(planet, tile)
+            val newPlanetTile = PlanetTile(planet, tile.id)
             val searchDistance = planet.topology.averageRadius * divergenceSearchRadius
             val nearestOldTiles =
                 planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, searchMaxResults)
-                    .map { planet.planetTiles[it.value()]!! }
+                    .map { planet.getTile(it.value()) }
 
             val neighbors = tile.tiles
-                .mapNotNull { planet.planetTiles[it] }
+                .map { planet.getTile(it) }
             val mostOverlap =
                 if (neighbors.all { it.tectonicPlate == neighbors.first().tectonicPlate }) 1.0
                 else neighbors
@@ -72,12 +80,12 @@ class DivergenceZone(val tile: Tile, val strength: Double, val divergingPlates: 
                 divergedCrustHeight,
                 divergenceStrength * divergedCrustLerp
             )
-            newPlanetTile.springDisplacement = planet.planetTiles[tile]!!.springDisplacement
+            newPlanetTile.springDisplacement = planet.getTile(tile).springDisplacement
 
             return Pair(
                 newPlanetTile,
                 if (divergenceStrength >= divergenceCutoff) {
-                    DivergenceZone(tile, divergenceStrength, nearestOldTiles.mapNotNull { it.tectonicPlate })
+                    DivergenceZone(planet, tile.id, divergenceStrength, nearestOldTiles.mapNotNull { it.tectonicPlate })
                 } else {
                     @Suppress("SimplifiableCallChain")
                     newPlanetTile.formationTime =

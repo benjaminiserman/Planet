@@ -1,9 +1,11 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
-import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
@@ -11,20 +13,31 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
 import godot.core.Vector3
-import godot.global.GD
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    property = "id"
+)
 class PlanetTile(
     val planet: Planet,
-    var tile: Tile,
+    var tileId: Int
 ) {
+    @get:JsonIgnore
+    var tile
+        get() = planet.topology.tiles[tileId]
+        set(value) {
+            tileId = value.id
+        }
+
     val density get() = -elevation.scaleAndCoerceUnit(-5000.0..5000.0)
     val temperature get() = 1 - tile.position.y.absoluteValue
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
+    @get:JsonIgnore
     val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
     var movement: Vector3 = Vector3.ZERO
 
@@ -40,16 +53,26 @@ class PlanetTile(
             field = value
         }
 
+    @get:JsonIgnore
     val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
+
+    @get:JsonIgnore
     val isAboveWater get() = elevation > planet.seaLevel
 
+    @get:JsonIgnore
     val contiguousSlope by memo({ planet.tectonicAge }) {
         sqrt(neighbors.filter { it.isAboveWater == isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
+
+    @get:JsonIgnore
     val nonContiguousSlope by memo({ planet.tectonicAge }) {
         sqrt(neighbors.filter { it.isAboveWater != isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
+
+    @get:JsonIgnore
     val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
+
+    @get:JsonIgnore
     val prominence by memo({ planet.tectonicAge }) {
         val computed =
             sqrt(
@@ -61,10 +84,11 @@ class PlanetTile(
         if (computed.isNaN()) 0.0 else computed
     }
 
-    val neighbors get() = tile.tiles.mapNotNull { planet.planetTiles[it] }
+    @get:JsonIgnore
+    val neighbors get() = tile.tiles.map { planet.getTile(it) }
 
     constructor(other: PlanetTile) : this(
-        other.planet, other.tile
+        other.planet, other.tile.id
     ) {
         this.elevation = other.elevation
 //        this.temperature = other.temperature
@@ -83,13 +107,15 @@ class PlanetTile(
 //        elevation = 0.0
     }
 
+    @get:JsonIgnore
     val tectonicBoundaries by memo({ planet.tectonicAge }) {
         tile.borders.filter { border ->
-            val otherPlate = planet.planetTiles[border.oppositeTile(tile)]?.tectonicPlate
+            val otherPlate = planet.getTile(border.oppositeTile(tile))?.tectonicPlate
             otherPlate != tectonicPlate
         }
     }
 
+    @get:JsonIgnore
     val isTectonicBoundary by memo({ planet.tectonicAge }) { tectonicBoundaries.isNotEmpty() }
 
     fun copy(): PlanetTile = PlanetTile(this)
@@ -104,11 +130,11 @@ class PlanetTile(
         movement = (movement * tileInertia + idealMovement).tangent(tile.position)
     }
 
-    fun oppositeTile(border: Border) = planet.planetTiles[border.oppositeTile(tile)]
+    fun oppositeTile(border: Border) = planet.getTile(border.oppositeTile(tile))
 
     fun floodFill(
         visited: MutableSet<PlanetTile> = mutableSetOf(),
-        planetTileFn: (Tile) -> PlanetTile = { planet.planetTiles[it]!! },
+        planetTileFn: (Tile) -> PlanetTile = { planet.getTile(it) },
         filterFn: (PlanetTile) -> Boolean
     ): Set<PlanetTile> {
         val visited = mutableSetOf<PlanetTile>()
@@ -138,22 +164,23 @@ class PlanetTile(
         return found
     }
 
+    @JsonIgnore
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}
         temperature: ${temperature.formatDigits()}
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()}
-        divergence: ${planet.divergenceZones[tile]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${planet.convergenceZones[tile]?.speed?.formatDigits() ?: 0.0}
+        divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
+        subduction: ${planet.convergenceZones[tile.id]?.speed?.formatDigits() ?: 0.0}
         erosion: ${erosionDelta.formatDigits()}
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
         plate: ${tectonicPlate?.name ?: "null"}
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
-    """.trimIndent() + if (planet.convergenceZones.contains(tile)) {
-        val convergenceZone = planet.convergenceZones[tile]!!
+    """.trimIndent() + if (planet.convergenceZones.contains(tile.id)) {
+        val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """
         CONVERGENCE
         speed: ${convergenceZone.speed.formatDigits()}

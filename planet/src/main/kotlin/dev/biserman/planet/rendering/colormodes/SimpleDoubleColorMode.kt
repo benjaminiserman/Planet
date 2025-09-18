@@ -17,7 +17,7 @@ class SimpleDoubleColorMode(
 
         yieldAll((0..<planetTile.tile.corners.size).map {
             val validTilesValues =
-                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.planetTiles[tile]!!) }
+                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.getTile(tile)) }
             colorFn(validTilesValues.sum() / validTilesValues.size)
         })
     }

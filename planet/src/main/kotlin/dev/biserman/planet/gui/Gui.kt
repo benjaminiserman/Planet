@@ -6,24 +6,14 @@ import dev.biserman.planet.geometry.Path.Companion.toPaths
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.Serialization
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
-import godot.api.Button
-import godot.api.CanvasItem
-import godot.api.CheckButton
-import godot.api.Label
-import godot.api.MenuButton
-import godot.api.Mesh
-import godot.api.Node
-import godot.api.RefCounted
-import godot.api.ScrollContainer
-import godot.api.StandardMaterial3D
+import godot.api.*
 import godot.core.Color
-import godot.core.NativeCallable
-import godot.core.PackedVector2Array
 import godot.core.Vector2
+import godot.core.connect
 import godot.global.GD
-import kotlin.math.sin
 
 @RegisterClass
 class Gui() : Node() {
@@ -54,7 +44,7 @@ class Gui() : Node() {
     }
 
     fun updateInfobox() {
-        infoboxLabel.text = Main.instance.planet.planetTiles[selectedTile]?.getInfoText() ?: "null"
+        infoboxLabel.text = if (selectedTile == null) "" else Main.instance.planet.getTile(selectedTile!!).getInfoText()
     }
 
     var selectedTile: Tile? = null
@@ -79,16 +69,16 @@ class Gui() : Node() {
         addToggle("Show Stats", defaultValue = statsGraph.visible) { statsGraph.visible = it }
         addToggle("Track Stats", defaultValue = statsGraph.trackStats) { statsGraph.trackStats = it }
 
-//        saveButton.pressed.connect {
-//            Serialization.save(Main.instance.planet)
-//            GD.print("Saved!")
-//        }
-//        loadButton.pressed.connect {
-//            val loadedPlanet = Serialization.load()
-//            Main.instance.updatePlanet(loadedPlanet)
-//            GD.print("Loaded!")
-//            GD.print("Tectonic age: ${loadedPlanet.tectonicAge}")
-//        }
+        saveButton.pressed.connect {
+            Serialization.save(Main.instance.planet)
+            GD.print("Saved!")
+        }
+        loadButton.pressed.connect {
+            val loadedPlanet = Serialization.load()
+            Main.instance.updatePlanet(loadedPlanet)
+            GD.print("Loaded!")
+            GD.print("Tectonic age: ${loadedPlanet.tectonicAge}")
+        }
     }
 
     companion object {
