@@ -1,5 +1,9 @@
 package dev.biserman.planet.topology
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.Ray
 import dev.biserman.planet.geometry.Sphere
 import dev.biserman.planet.geometry.triArea
@@ -12,8 +16,14 @@ import godot.core.Vector3
 interface Tile {
     val id: Int
     val position: Vector3
+
+    @get:JsonIgnore
     val corners: List<Corner>
+
+    @get:JsonIgnore
     val borders: List<Border>
+
+    @get:JsonIgnore
     val tiles: List<Tile>
 
     val normal get() = position.normalized()
@@ -55,9 +65,9 @@ interface Tile {
 
 class MutTile(
     override val id: Int,
-    override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
-    override var borders: MutableList<MutBorder> = mutableListOf(),
-    override var tiles: MutableList<MutTile> = mutableListOf(),
+    @JsonIgnore override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
+    @JsonIgnore override var borders: MutableList<MutBorder> = mutableListOf(),
+    @JsonIgnore override var tiles: MutableList<MutTile> = mutableListOf(),
 ) : Tile {
     override val position by memo({ corners.mutationCount }) { averagePosition }
 }

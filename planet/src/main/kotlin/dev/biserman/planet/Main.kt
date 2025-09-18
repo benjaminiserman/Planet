@@ -1,19 +1,15 @@
 package dev.biserman.planet
 
-import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
-import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.Tectonics
 import dev.biserman.planet.rendering.PlanetRenderer
-import dev.biserman.planet.topology.toTopology
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.Input
 import godot.api.InputEvent
 import godot.api.Node
-import godot.core.Key
 import godot.global.GD
 import kotlin.random.Random
 
@@ -26,15 +22,8 @@ class Main : Node() {
 	override fun _ready() {
 		instance = this
 
-		val icos = makeIcosahedron()
-		val sub = icos.subdivideIcosahedron(35)
-		sub.distortTriangles(0.5)
-		sub.relaxRepeatedly(500)
-		sub.reorderVerts()
-		val topology = sub.toTopology()
-		GD.print("average radius: ${topology.averageRadius}")
-		GD.print("tiles: ${topology.tiles.size}")
-		val newPlanet = Planet(topology)
+		val newPlanet = Planet(seed = 0, size = 35)
+		GD.print("tiles: ${newPlanet.topology.tiles.size}")
 
 		Tectonics.stepTectonicPlateForces(newPlanet)
 		planetRenderer = PlanetRenderer(this, newPlanet)

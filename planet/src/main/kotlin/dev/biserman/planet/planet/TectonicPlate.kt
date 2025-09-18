@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
 import dev.biserman.planet.planet.Tectonics.random
@@ -12,6 +14,7 @@ import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator::class, property = "id")
 class TectonicPlate(
     val planet: Planet,
     val age: Int = 0,
@@ -26,6 +29,7 @@ class TectonicPlate(
     var torque = Vector3.ZERO
 
     val formationTime = planet.tectonicAge
+    val id = planet.nextPlateId++
 
     val eulerPole by memo({ torque }) {
         try {
@@ -44,7 +48,7 @@ class TectonicPlate(
     val edgeTiles by memo({ planet.tectonicAge }) {
         tiles.filter { tile ->
             tile.tile.borders.any { border ->
-                tile.oppositeTile(border)?.tectonicPlate != this
+                tile.oppositeTile(border).tectonicPlate != this
             }
         }
     }
@@ -54,14 +58,14 @@ class TectonicPlate(
     fun calculateNeighborLengths(): Map<TectonicPlate, Double> {
         val neighborsBorderLengths = mutableMapOf<TectonicPlate, Double>()
 
-        fun Border.oppositeTile(tile: PlanetTile) = planet.planetTiles[this.oppositeTile(tile.tile)]?.tile
-        fun Tile.planetTile() = planet.planetTiles[this]!!
+        fun Border.oppositeTile(tile: PlanetTile) = planet.getTile(this.oppositeTile(tile.tile)).tile
+        fun Tile.planetTile() = planet.getTile(this)
 
         for (tile in tiles) {
             val neighborBorders =
-                tile.tile.borders.filter { it.oppositeTile(tile)!!.planetTile().tectonicPlate != this }
+                tile.tile.borders.filter { it.oppositeTile(tile).planetTile().tectonicPlate != this }
             for (border in neighborBorders) {
-                val neighbor = border.oppositeTile(tile)!!.planetTile().tectonicPlate!!
+                val neighbor = border.oppositeTile(tile).planetTile().tectonicPlate!!
                 neighborsBorderLengths[neighbor] = (neighborsBorderLengths[neighbor] ?: 0.0) + border.length
             }
         }
@@ -76,7 +80,7 @@ class TectonicPlate(
 
     fun clean() {
         val tilesToClean =
-            region.tiles.filter { planet.planetTiles[it.tile] != it || planet.planetTiles[it.tile]!!.tectonicPlate != this }
+            region.tiles.filter { planet.getTile(it.tile) != it || planet.getTile(it.tile).tectonicPlate != this }
         for (tile in tilesToClean) {
             region.tiles.remove(tile)
         }

@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
@@ -12,12 +13,13 @@ class PlanetRegion(
     val planet: Planet,
     var tiles: MutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
 ) {
+    @get:JsonIgnore
     val border by memo({ planet.tectonicAge }) {
         tiles.flatMap { planetTile ->
             planetTile.tile.borders.filter { border ->
-                planet.planetTiles[border.oppositeTile(
+                planet.getTile(border.oppositeTile(
                     planetTile.tile
-                )] !in tiles
+                )) !in tiles
             }
         }
     }
@@ -33,7 +35,7 @@ class PlanetRegion(
     )
 
     fun <T> calculateNeighborLengths(
-        planetTileFn: (Tile) -> PlanetTile = { planet.planetTiles[it]!! },
+        planetTileFn: (Tile) -> PlanetTile = { planet.getTile(it) },
         getFn: (PlanetTile) -> T
     ): Map<T, Double> {
         val neighborsBorderLengths = mutableMapOf<T, Double>()

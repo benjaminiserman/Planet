@@ -1,19 +1,17 @@
 package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
-import dev.biserman.planet.geometry.DebugVector
-import dev.biserman.planet.geometry.MutEdge
-import dev.biserman.planet.geometry.MutMesh
-import dev.biserman.planet.geometry.MutVertex
-import dev.biserman.planet.geometry.adjustRange
-import dev.biserman.planet.geometry.scaleAndCoerceIn
+import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redOutsideRange
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redWhenNull
-import dev.biserman.planet.rendering.renderers.*
+import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
+import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
+import dev.biserman.planet.rendering.renderers.TileMovementRenderer
+import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
@@ -50,7 +48,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleDebugRenderer(parent, "rivers") { planet ->
             val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
                 .distinctBy { it.position }
-                .associateWith { it.tiles.map { tile -> planet.planetTiles[tile]!!.elevation }.average() }
+                .associateWith { it.tiles.map { tile -> planet.getTile(tile).elevation }.average() }
 
             val riverSegments =
                 pointElevations.keys.map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
@@ -110,14 +108,14 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "convergence_zones", visibleByDefault = false,
         ) {
-            val convergenceZone = planet.convergenceZones[it.tile] ?: return@SimpleColorMode null
+            val convergenceZone = planet.convergenceZones[it.tile.id] ?: return@SimpleColorMode null
             val subductionStrength = convergenceZone.subductionStrengths.values.average()
             val strengthFactor = (convergenceZone.speed * subductionStrength.absoluteValue).pow(0.5)
             (if (subductionStrength > 0) Color.blue else Color.green) * strengthFactor
         },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,
-        ) { if (it.tile in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile]!!.strength else null },
+        ) { if (it.tile.id in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile.id]!!.strength else null },
         SimpleColorMode(
             this, "tectonic_plates", visibleByDefault = false,
         ) { it.tectonicPlate?.debugColor ?: Color.black },
@@ -167,7 +165,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 
     fun updateMesh() {
         val colorModeResults = planetColorModes.filter { it.visible }.map { mode ->
-            planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.planetTiles[tile]!!) }
+            planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.getTile(tile)) }
         }
 
         val colors = if (colorModeResults.isNotEmpty()) {

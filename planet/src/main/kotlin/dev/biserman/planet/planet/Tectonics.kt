@@ -1,18 +1,13 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.Main
-import dev.biserman.planet.geometry.Kriging
-import dev.biserman.planet.geometry.component1
-import dev.biserman.planet.geometry.component2
-import dev.biserman.planet.geometry.scaleAndCoerceIn
-import dev.biserman.planet.geometry.toPoint
-import dev.biserman.planet.geometry.toRTree
-import dev.biserman.planet.geometry.torque
+import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
+import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.erosionStrength
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
@@ -25,9 +20,7 @@ import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
-import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
-import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -90,7 +83,7 @@ object Tectonics {
 
             val currentPlate = currentTile.tectonicPlate!!
             for (neighbor in currentTile.tile.tiles) {
-                val neighborTile = planet.planetTiles[neighbor]!!
+                val neighborTile = planet.getTile(neighbor)
                 if (visitedTiles.contains(neighborTile)) {
                     continue
                 }
@@ -116,7 +109,7 @@ object Tectonics {
 
             for (planetTile in tiles.toList()) {
                 val neighborCounts =
-                    planetTile.tile.tiles.groupingBy { planet.planetTiles[it]!!.tectonicPlate }.eachCount()
+                    planetTile.tile.tiles.groupingBy { planet.getTile(it).tectonicPlate }.eachCount()
 
                 val bestNeighbor = neighborCounts.filter { it.key != null }.maxByOrNull { it.value }
                 if (bestNeighbor != null) {
@@ -194,7 +187,7 @@ object Tectonics {
 
             val displacement = nearbyContinentalCrust.fold(Vector3.ZERO) { sum, (otherTile, stiffness) ->
                 val restLength = (otherTile.position - planetTile.tile.position).length()
-                val currentDelta = (newPosition - tiles[planetTile.planet.planetTiles[otherTile]!!]!!)
+                val currentDelta = (newPosition - tiles[planetTile.planet.getTile(otherTile)]!!)
                 sum + currentDelta * (currentDelta.length() - restLength) * -stiffness
             }
 
@@ -217,7 +210,10 @@ object Tectonics {
         }
 
         val convergenceZones = mutableMapOf<Tile, ConvergenceZone>()
-        val newTileMap = planet.planetTiles.mapValues { null as PlanetTile? }.toMutableMap()
+        val newTileMap = planet.planetTiles
+            .mapKeys { planet.topology.tiles[it.key] }
+            .mapValues { null as PlanetTile? }
+            .toMutableMap()
 
         val movedTilesRTree =
             movedTiles.entries.map { MovedTile(it.key, it.value) }.toRTree { movedTiles[it.tile]!!.toPoint() to it }
@@ -254,7 +250,8 @@ object Tectonics {
                         }.average()
 
                         convergenceZones[tile] = ConvergenceZone(
-                            tile,
+                            planet,
+                            tile.id,
                             subductionSpeed,
                             ConvergenceInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
@@ -359,9 +356,9 @@ object Tectonics {
             plate.mergeInto(neighbors.keys.first())
         }
 
-        planet.convergenceZones = convergenceZones
-        planet.divergenceZones = divergenceZones
-        planet.planetTiles = newTileMap.mapValues { it.value!! }.toMap()
+        planet.convergenceZones = convergenceZones.mapKeys { it.key.id }.toMutableMap()
+        planet.divergenceZones = divergenceZones.mapKeys { it.key.id }.toMutableMap()
+        planet.planetTiles = newTileMap.mapKeys { it.key.id }.mapValues { it.value!! }.toMap()
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
     }

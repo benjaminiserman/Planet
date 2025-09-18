@@ -7,20 +7,12 @@ import godot.annotation.Export
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.annotation.RegisterProperty
-import godot.api.Camera3D
-import godot.api.Input
-import godot.api.InputEvent
-import godot.api.InputEventMouse
-import godot.api.InputEventMouseButton
-import godot.api.InputEventMouseMotion
-import godot.api.Node3D
-import godot.api.RayCast3D
+import godot.api.*
 import godot.core.MouseButton
 import godot.core.Vector2
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.PI
-import kotlin.math.sqrt
 
 @RegisterClass
 class CameraGimbal : Node3D() {
