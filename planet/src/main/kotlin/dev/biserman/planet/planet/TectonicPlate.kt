@@ -1,7 +1,14 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.KeyDeserializer
+import com.fasterxml.jackson.databind.SerializerProvider
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
 import dev.biserman.planet.planet.Tectonics.random
@@ -16,13 +23,14 @@ import godot.global.GD
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator::class, property = "id")
 class TectonicPlate(
-    val planet: Planet,
-    val age: Int = 0,
+    @get:JacksonInject @get:JsonIgnore val planet: Planet,
     val region: PlanetRegion = PlanetRegion(planet),
     var name: String = DebugNameGenerator.generateName(planet.random)
 ) {
     val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
+
+    @get:JsonIgnore
     val tiles by region::tiles
     var density: Double? = null
 
@@ -45,6 +53,7 @@ class TectonicPlate(
         }
     }
 
+    @get:JsonIgnore
     val edgeTiles by memo({ planet.tectonicAge }) {
         tiles.filter { tile ->
             tile.tile.borders.any { border ->
@@ -95,7 +104,7 @@ class TectonicPlate(
         val points = region.tiles.shuffled(random).take(random.nextInt(3, 5)).map { warp(it.tile.position) }
         GD.print("Rifting $debugColor in ${points.size}")
         val newPlates = region.voronoi(points, warp).map { region ->
-            val plate = TectonicPlate(planet, planet.tectonicAge, region)
+            val plate = TectonicPlate(planet, region)
             plate.torque = this.torque
             plate.tiles.forEach { it.tectonicPlate = plate }
             plate
@@ -103,5 +112,11 @@ class TectonicPlate(
 
         planet.tectonicPlates.addAll(newPlates)
         return newPlates
+    }
+}
+
+class TectonicPlateKeyDeserializer : KeyDeserializer() {
+    override fun deserializeKey(key: String, ctxt: DeserializationContext): Any {
+        throw Error("Key found: $key ${ctxt.parser.parsingContext.currentIndex} ${ctxt.contextualType.typeName}")
     }
 }

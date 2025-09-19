@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
@@ -31,20 +32,23 @@ data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector
     property = "id"
 )
 class ConvergenceZone(
-    val planet: Planet,
+    @get:JacksonInject @get:JsonIgnore val planet: Planet,
     val tileId: Int,
     val speed: Double,
     val overridingPlate: ConvergenceInteraction,
-    val subductingPlates: Map<TectonicPlate, ConvergenceInteraction>,
+    val subductingPlates: Map<Int, ConvergenceInteraction>,
     involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
 ) {
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
+    @JsonIgnore
     val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
+    @JsonIgnore
     val subductionStrengths =
         involvedTiles.mapValues { tiles -> tiles.value.map { it.tile.density }.average() - overridingDensity - 0.5 }
 
+    @JsonIgnore
     val slabPull = involvedTiles
         .filterKeys { subductionStrengths[it]!! > 0 }
         .mapValues { (plate, tiles) ->
@@ -56,6 +60,7 @@ class ConvergenceZone(
             }
         }
 
+    @JsonIgnore
     val convergencePush = involvedTiles
         .filterKeys { subductionStrengths[it]!! < 0 }
         .mapValues { (plate, tiles) ->
@@ -67,14 +72,15 @@ class ConvergenceZone(
             }
         }
 
+    @JsonIgnore
     val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
         .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
         .average()
 
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double {
         val subductionStrength = subductionStrengths[planetTile.tectonicPlate] ?: 0.0
-        return when (planetTile.tectonicPlate) {
-            overridingPlate.plate -> {
+        return when (planetTile.tectonicPlate?.id) {
+            overridingPlate.plate.id -> {
                 speed * if (subductionStrength > 0) {
                     overridingElevationStrengthScale * subductingMass
                 } else {

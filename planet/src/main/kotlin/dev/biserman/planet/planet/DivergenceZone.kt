@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
@@ -21,7 +22,7 @@ import kotlin.math.pow
     property = "id"
 )
 class DivergenceZone(
-    val planet: Planet,
+    @get:JacksonInject @get:JsonIgnore val planet: Planet,
     val tileId: Int,
     val strength: Double,
     val divergingPlates: List<TectonicPlate>

@@ -1,6 +1,8 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIdentityReference
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.Main
@@ -19,11 +21,11 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @JsonIdentityInfo(
-    generator = ObjectIdGenerators.IntSequenceGenerator::class,
-    property = "id"
+    generator = ObjectIdGenerators.PropertyGenerator::class,
+    property = "tileId"
 )
 class PlanetTile(
-    val planet: Planet,
+    @get:JacksonInject @get:JsonIgnore val planet: Planet,
     var tileId: Int
 ) {
     @get:JsonIgnore
@@ -37,6 +39,7 @@ class PlanetTile(
     val temperature get() = 1 - tile.position.y.absoluteValue
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
+
     @get:JsonIgnore
     val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
     var movement: Vector3 = Vector3.ZERO

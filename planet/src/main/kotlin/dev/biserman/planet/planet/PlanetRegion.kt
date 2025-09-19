@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
@@ -10,7 +11,7 @@ import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 
 class PlanetRegion(
-    val planet: Planet,
+    @get:JacksonInject @get:JsonIgnore val planet: Planet,
     var tiles: MutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
 ) {
     @get:JsonIgnore
