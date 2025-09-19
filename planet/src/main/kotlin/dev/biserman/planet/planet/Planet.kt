@@ -3,6 +3,14 @@ package dev.biserman.planet.planet
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.InjectableValues
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
@@ -10,15 +18,15 @@ import dev.biserman.planet.topology.toTopology
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 
-@JsonIdentityInfo(
-    generator = ObjectIdGenerators.IntSequenceGenerator::class,
-    property = "id"
-)
-class Planet(val seed: Int, size: Int) {
-    @JsonIgnore val random = Random(seed)
-    @JsonIgnore val noise = NoiseMaps(seed, random)
-    @JsonIgnore val topology = makeTopology(size)
-    var planetTiles = topology.tiles.associate { it.id to PlanetTile(this, it.id) }
+class Planet(val seed: Int, val size: Int) {
+    @JsonIgnore
+    val random = Random(seed)
+    @JsonIgnore
+    val noise = NoiseMaps(seed, random)
+    @JsonIgnore
+    val topology = makeTopology(size)
+
+    var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
 
     fun getTile(tile: Tile) = planetTiles[tile.id]!!
 
@@ -56,5 +64,25 @@ class Planet(val seed: Int, size: Int) {
         sub.relaxRepeatedly(500)
         sub.reorderVerts()
         return sub.toTopology()
+    }
+}
+
+class PlanetDeserializer(val mapper: ObjectMapper) : JsonDeserializer<Planet>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Planet {
+        val node = p.codec.readTree<JsonNode>(p)
+
+        // Step 1: partially deserialize to get seed and size
+        val seed = node["seed"].asInt()
+        val size = node["size"].asInt()
+        val planet = Planet(seed, size) // create instance manually
+
+        // Step 2: deserialize the rest into the existing instance
+        val injectables = InjectableValues.Std()
+        injectables.addValue(Planet::class.java, planet)  // inject the planet instance
+        mapper.setInjectableValues(injectables)
+
+        mapper.readerForUpdating(planet).readValue<JsonNode>(node)
+
+        return planet
     }
 }

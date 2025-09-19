@@ -144,12 +144,12 @@ object Tectonics {
             })
             val slabPull = torque(
                 planet.convergenceZones
-                    .filter { (_, zone) -> plate in zone.subductingPlates }
+                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
                     .flatMap { (_, zone) -> zone.slabPull[plate] ?: listOf() }
             )
             val convergencePush = torque(
                 planet.convergenceZones
-                    .filter { (_, zone) -> plate in zone.subductingPlates }
+                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
                     .flatMap { (_, zone) -> zone.convergencePush[plate] ?: listOf() }
             )
             val ridgePush = torque(
@@ -256,7 +256,7 @@ object Tectonics {
                             ConvergenceInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
                                 .mapNotNull { ConvergenceInteraction(it) }
-                                .associateBy { it.plate },
+                                .associateBy { it.plate.id },
                             groups
                         )
                     }
@@ -325,9 +325,9 @@ object Tectonics {
 
         for (plate in newPlates) {
             val newPlate = if (plate.size >= minPlateSize) {
-                TectonicPlate(planet, planet.tectonicAge)
+                TectonicPlate(planet)
             } else {
-                TectonicPlate(planet, planet.tectonicAge, name = "Complex")
+                TectonicPlate(planet, name = "Complex")
             }
             GD.print("creating plate of size ${plate.size}")
             planet.tectonicPlates.add(newPlate)
