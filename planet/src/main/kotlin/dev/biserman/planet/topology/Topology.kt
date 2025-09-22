@@ -23,7 +23,7 @@ class Topology(
 		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
 		radii.average()
 	}
-    val averageArea by lazy { tiles.sumOf { it.area } / tiles.size }
+	val averageArea by lazy { tiles.sumOf { it.area } / tiles.size }
 
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
 	fun makeMesh(): MutMesh {
