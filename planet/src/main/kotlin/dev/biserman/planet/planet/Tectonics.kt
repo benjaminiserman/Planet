@@ -136,7 +136,7 @@ object Tectonics {
         planet.tectonicPlates.forEach { plate ->
             val oldTorqueWithDrag = plate.torque * 0.9
             val mantleConvectionTorque = torque(plate.tiles.map { tile ->
-                Pair(
+                PointForce(
                     tile.tile.position, planet.noise.mantleConvection.sample4d(
                         tile.tile.position, planet.tectonicAge.toDouble()
                     ) * mantleConvectionStrength
@@ -145,12 +145,12 @@ object Tectonics {
             val slabPull = torque(
                 planet.convergenceZones
                     .filter { (_, zone) -> plate.id in zone.subductingPlates }
-                    .flatMap { (_, zone) -> zone.slabPull[plate] ?: listOf() }
+                    .flatMap { (_, zone) -> zone.slabPull[plate.id] ?: listOf() }
             )
             val convergencePush = torque(
                 planet.convergenceZones
                     .filter { (_, zone) -> plate.id in zone.subductingPlates }
-                    .flatMap { (_, zone) -> zone.convergencePush[plate] ?: listOf() }
+                    .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
             )
             val ridgePush = torque(
                 planet.divergenceZones
@@ -158,7 +158,7 @@ object Tectonics {
                     .flatMap { (_, zone) -> zone.ridgePush }
             )
             val springForces = torque(plate.tiles.map { tile ->
-                Pair(
+                PointForce(
                     tile.tile.position, tile.springDisplacement * springPlateContributionStrength
                 )
             })
@@ -249,14 +249,14 @@ object Tectonics {
                             }
                         }.average()
 
-                        convergenceZones[tile] = ConvergenceZone(
+                        convergenceZones[tile] = ConvergenceZone.make(
                             planet,
-                            tile.id,
+                            tile,
                             subductionSpeed,
                             ConvergenceInteraction(overridingPlate),
                             groups.filter { it != overridingPlate }
                                 .mapNotNull { ConvergenceInteraction(it) }
-                                .associateBy { it.plate.id },
+                                .associateBy { it.plate },
                             groups
                         )
                     }

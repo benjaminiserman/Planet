@@ -3,6 +3,8 @@ package dev.biserman.planet.gui
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetStats
 import dev.biserman.planet.planet.Stat
+import dev.biserman.planet.utils.component1
+import dev.biserman.planet.utils.component2
 import godot.api.CanvasItem
 import godot.api.MenuButton
 import godot.api.RefCounted
@@ -75,7 +77,7 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         val timeTaken = measureTime {
             stats.tectonicStats.forEach {
-                statValues[it.name]!!.add(planet.tectonicAge.toDouble() to it.getter(planet))
+                statValues[it.name]!!.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet)))
             }
         }
 
@@ -100,9 +102,9 @@ class StatsGraph(val rootNode: CanvasItem) {
             graph2d.set("y_min", range.start)
             graph2d.set("y_max", range.endInclusive)
         } else {
-            val statMin = statValues[stat.name]!!.minOfOrNull { it.second } ?: 0.0
+            val statMin = statValues[stat.name]!!.minOfOrNull { it.y } ?: 0.0
             val minY = statMin - 0.1 * statMin
-            val statMax = statValues[stat.name]!!.maxOfOrNull { it.second } ?: 0.0
+            val statMax = statValues[stat.name]!!.maxOfOrNull { it.y } ?: 0.0
             val maxY = statMax + 0.1 * statMax
 
             graph2d.set("y_min", minY)

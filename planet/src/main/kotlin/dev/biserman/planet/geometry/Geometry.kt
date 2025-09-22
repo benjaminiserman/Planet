@@ -4,9 +4,11 @@ import com.github.davidmoten.rtreemulti.Entry
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Geometry
 import com.github.davidmoten.rtreemulti.geometry.Point
+import dev.biserman.planet.planet.PointForce
 import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.*
+import kotlin.collections.fold
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -114,7 +116,7 @@ fun (List<DebugVector>).toMesh(): MutMesh {
     return MutMesh(mutVerts, mutEdges)
 }
 
-fun torque(forces: Iterable<Pair<Vector3, Vector3>>) = forces.fold(Vector3.ZERO) { sum, (position, force) ->
+fun torque(forces: Iterable<PointForce>) = forces.fold(Vector3.ZERO) { sum, (position, force) ->
     sum + position.cross(force)
 }
 
@@ -159,7 +161,7 @@ fun (Point).toVector3(): Vector3 {
     return Vector3(values[0], values[1], values[2])
 }
 
-fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>) =
+fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>): RTree<U, Point> =
     RTree.star().dimensions(3).create<U, Point>().add(this.map {
         val (point, value) = getFn(it)
         Entry.entry(value, point)

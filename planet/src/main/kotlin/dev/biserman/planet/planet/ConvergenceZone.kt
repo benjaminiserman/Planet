@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JacksonInject
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
@@ -29,56 +30,26 @@ data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector
 
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = ConvergenceZone::class,
     property = "id"
 )
 class ConvergenceZone(
-    @get:JacksonInject @get:JsonIgnore val planet: Planet,
+    val planet: Planet,
     val tileId: Int,
     val speed: Double,
     val overridingPlate: ConvergenceInteraction,
     val subductingPlates: Map<Int, ConvergenceInteraction>,
-    involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
+    val overridingDensity: Double,
+    val subductionStrengths: Map<Int, Double>,
+    val slabPull: Map<Int, List<PointForce>>,
+    val convergencePush: Map<Int, List<PointForce>>,
+    val subductingMass: Double
 ) {
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
-    @JsonIgnore
-    val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
-    @JsonIgnore
-    val subductionStrengths =
-        involvedTiles.mapValues { tiles -> tiles.value.map { it.tile.density }.average() - overridingDensity - 0.5 }
-
-    @JsonIgnore
-    val slabPull = involvedTiles
-        .filterKeys { subductionStrengths[it]!! > 0 }
-        .mapValues { (plate, tiles) ->
-            tiles.map { otherTile ->
-                Pair(
-                    tile.position,
-                    (tile.position - otherTile.tile.tile.position).normalized() * TectonicGlobals.slabPullStrength * tile.area // * strength
-                )
-            }
-        }
-
-    @JsonIgnore
-    val convergencePush = involvedTiles
-        .filterKeys { subductionStrengths[it]!! < 0 }
-        .mapValues { (plate, tiles) ->
-            tiles.map { otherTile ->
-                Pair(
-                    tile.position,
-                    (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area // * -strength
-                )
-            }
-        }
-
-    @JsonIgnore
-    val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
-        .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
-        .average()
-
     fun unscaledElevationAdjustment(planetTile: PlanetTile): Double {
-        val subductionStrength = subductionStrengths[planetTile.tectonicPlate] ?: 0.0
+        val subductionStrength = subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
         return when (planetTile.tectonicPlate?.id) {
             overridingPlate.plate.id -> {
                 speed * if (subductionStrength > 0) {
@@ -108,5 +79,60 @@ class ConvergenceZone(
                         planetTile.movement.length()
                     )
                 }
+
+        fun make(
+            planet: Planet,
+            tile: Tile,
+            speed: Double,
+            overridingPlate: ConvergenceInteraction,
+            subductingPlates: Map<TectonicPlate, ConvergenceInteraction>,
+            involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
+        ): ConvergenceZone {
+            val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
+            val subductionStrengths =
+                involvedTiles.mapValues { tiles ->
+                    tiles.value.map { it.tile.density }
+                        .average() - overridingDensity - 0.5
+                }
+
+            val slabPull = involvedTiles
+                .filterKeys { subductionStrengths[it]!! > 0 }
+                .mapValues { (plate, tiles) ->
+                    tiles.map { otherTile ->
+                        PointForce(
+                            tile.position,
+                            (tile.position - otherTile.tile.tile.position).normalized() * TectonicGlobals.slabPullStrength * tile.area // * strength
+                        )
+                    }
+                }
+
+            val convergencePush = involvedTiles
+                .filterKeys { subductionStrengths[it]!! < 0 }
+                .mapValues { (plate, tiles) ->
+                    tiles.map { otherTile ->
+                        PointForce(
+                            tile.position,
+                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area // * -strength
+                        )
+                    }
+                }
+
+            val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
+                .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
+                .average()
+
+            return ConvergenceZone(
+                planet,
+                tile.id,
+                speed,
+                overridingPlate,
+                subductingPlates.mapKeys { it.key.id },
+                overridingDensity,
+                subductionStrengths.mapKeys { it.key.id },
+                slabPull.mapKeys { it.key.id },
+                convergencePush.mapKeys { it.key.id },
+                subductingMass
+            )
+        }
     }
 }
