@@ -69,7 +69,6 @@ class Planet(val seed: Int, val size: Int) {
         sub.distortTriangles(0.5)
         sub.relaxRepeatedly(500)
         sub.reorderVerts()
-        GD.print("average radius: ${topology.averageRadius}, area: ${topology.averageArea}")
         return sub.toTopology()
     }
 }

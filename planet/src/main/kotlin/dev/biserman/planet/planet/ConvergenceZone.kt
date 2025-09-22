@@ -75,7 +75,10 @@ class ConvergenceZone(
             zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
                 .map { it.value() to it.value().unscaledElevationAdjustment(planetTile) }
                 .weightedAverage(planetTile.tile.position) { zone ->
-                    (1 - min(1.0, (zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed))).pow(
+                    (1 - min(
+                        1.0,
+                        zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
+                    )).pow(
                         planetTile.movement.length()
                     )
                 }

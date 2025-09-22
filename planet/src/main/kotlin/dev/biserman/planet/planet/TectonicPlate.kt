@@ -49,7 +49,7 @@ class TectonicPlate(
                 torque,
                 tiles.map { tile -> tile.tile.position to tile.tile.area })
                 .let {
-                    it.normalized() * it.length().coerceIn(0.02, 0.05)
+                    it.normalized() * it.length().coerceIn(planet.topology.averageRadius, planet.topology.averageRadius * 2.5)
                 }
         } catch (e: Exception) {
             GD.print("Failed to calculate euler pole: ${tiles.size} ${torque.length()}")
