@@ -22,7 +22,7 @@ class Main : Node() {
 	override fun _ready() {
 		instance = this
 
-		val newPlanet = Planet(seed = 0, size = 40)
+		val newPlanet = Planet(seed = 0, size = 35)
 		GD.print("tiles: ${newPlanet.topology.tiles.size}")
 		GD.print("average radius: ${newPlanet.topology.averageRadius}, area: ${newPlanet.topology.averageArea}")
 
