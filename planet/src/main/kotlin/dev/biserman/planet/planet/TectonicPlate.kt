@@ -21,9 +21,13 @@ import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator::class, property = "id")
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = TectonicPlate::class,
+    property = "serId"
+)
 class TectonicPlate(
-    @get:JacksonInject @get:JsonIgnore val planet: Planet,
+    val planet: Planet,
     val region: PlanetRegion = PlanetRegion(planet),
     var name: String = DebugNameGenerator.generateName(planet.random)
 ) {
@@ -112,11 +116,5 @@ class TectonicPlate(
 
         planet.tectonicPlates.addAll(newPlates)
         return newPlates
-    }
-}
-
-class TectonicPlateKeyDeserializer : KeyDeserializer() {
-    override fun deserializeKey(key: String, ctxt: DeserializationContext): Any {
-        throw Error("Key found: $key ${ctxt.parser.parsingContext.currentIndex} ${ctxt.contextualType.typeName}")
     }
 }

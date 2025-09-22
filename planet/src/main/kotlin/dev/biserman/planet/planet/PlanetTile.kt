@@ -21,11 +21,12 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @JsonIdentityInfo(
-    generator = ObjectIdGenerators.PropertyGenerator::class,
-    property = "tileId"
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = PlanetTile::class,
+    property = "id"
 )
 class PlanetTile(
-    @get:JacksonInject @get:JsonIgnore val planet: Planet,
+    val planet: Planet,
     var tileId: Int
 ) {
     @get:JsonIgnore

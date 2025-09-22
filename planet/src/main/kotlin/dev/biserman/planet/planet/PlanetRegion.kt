@@ -11,7 +11,7 @@ import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 
 class PlanetRegion(
-    @get:JacksonInject @get:JsonIgnore val planet: Planet,
+    val planet: Planet,
     var tiles: MutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
 ) {
     @get:JsonIgnore

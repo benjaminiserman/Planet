@@ -1,14 +1,17 @@
 package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JacksonInject
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.planet.TectonicGlobals.divergedCrustHeight
 import dev.biserman.planet.planet.TectonicGlobals.divergedCrustLerp
 import dev.biserman.planet.planet.TectonicGlobals.divergenceCutoff
+import dev.biserman.planet.planet.TectonicGlobals.divergencePatchUplift
 import dev.biserman.planet.planet.TectonicGlobals.divergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
@@ -19,10 +22,11 @@ import kotlin.math.pow
 
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = DivergenceZone::class,
     property = "id"
 )
 class DivergenceZone(
-    @get:JacksonInject @get:JsonIgnore val planet: Planet,
+    val planet: Planet,
     val tileId: Int,
     val strength: Double,
     val divergingPlates: List<TectonicPlate>
@@ -30,15 +34,15 @@ class DivergenceZone(
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
+    @get:JsonIgnore
     val ridgePush
         get() = divergingPlates.map { divergingPlate ->
-            Pair(
+            PointForce(
                 tile.position,
                 (divergingPlate.region.center - tile.position).normalized() * tile.area * TectonicGlobals.ridgePushStrength
             )
         }
 
-    @Suppress("MayBeConstant")
     companion object {
         fun divergeTileOrFillGap(
             planet: Planet,
@@ -47,7 +51,6 @@ class DivergenceZone(
             movedTiles: Map<PlanetTile, Vector3>
         ): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
-            val divergencePatchUplift = -1000 / planet.topology.averageRadius
             val newPlanetTile = PlanetTile(planet, tile.id)
             val searchDistance = planet.topology.averageRadius * divergenceSearchRadius
             val nearestOldTiles =
@@ -77,7 +80,7 @@ class DivergenceZone(
                 nearestOldTiles.firstOrNull()?.tile?.position?.distanceTo(tile.position) ?: searchDistance
             // divergence elevation
             newPlanetTile.elevation = lerp(
-                krigingElevation + divergencePatchUplift * nearestTileDistance,
+                krigingElevation + (divergencePatchUplift / planet.topology.averageRadius) * nearestTileDistance,
                 divergedCrustHeight,
                 divergenceStrength * divergedCrustLerp
             )
@@ -88,7 +91,6 @@ class DivergenceZone(
                 if (divergenceStrength >= divergenceCutoff) {
                     DivergenceZone(planet, tile.id, divergenceStrength, nearestOldTiles.mapNotNull { it.tectonicPlate })
                 } else {
-                    @Suppress("SimplifiableCallChain")
                     newPlanetTile.formationTime =
                         tile.tiles.map { newTileMap[it]?.formationTime }
                             .groupBy { it }

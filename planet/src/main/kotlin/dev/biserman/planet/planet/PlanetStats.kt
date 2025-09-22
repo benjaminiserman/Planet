@@ -2,6 +2,7 @@ package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import godot.core.Color
+import godot.core.Vector2
 
 data class Stat(
     val name: String,
@@ -49,5 +50,5 @@ class PlanetStats {
         },
     )
 
-    val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Pair<Double, Double>>() }
+    val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }
 }
