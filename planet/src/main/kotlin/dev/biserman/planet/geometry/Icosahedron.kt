@@ -5,6 +5,7 @@ import godot.core.Plane
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.*
+import kotlin.random.Random
 
 // Adapted from Andy Gainey, original license below:
 // Copyright © 2014 Andy Gainey <andy@experilous.com>
@@ -182,9 +183,10 @@ fun rotationPredicate(
 }
 
 fun (MutMesh).distortMesh(degree: Int): Boolean {
+    val distortionRandom = Random(0)
     (0..<degree).forEach { _ ->
         var consecutiveFailedAttempts = 0
-        var edgeIndex = Main.random.nextInt(0, this.edges.size)
+        var edgeIndex = distortionRandom.nextInt(0, this.edges.size)
 
         while (!this.conditionalRotateEdge(edgeIndex, ::rotationPredicate)) {
             consecutiveFailedAttempts += 1

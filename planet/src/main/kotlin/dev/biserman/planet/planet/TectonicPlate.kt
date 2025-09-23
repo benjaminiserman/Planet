@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.KeyDeserializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
-import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -31,7 +30,7 @@ class TectonicPlate(
     val region: PlanetRegion = PlanetRegion(planet),
     var name: String = DebugNameGenerator.generateName(planet.random)
 ) {
-    val biomeColor = Color.fromHsv(Main.random.nextDouble(0.15, 0.4), Main.random.nextDouble(0.7, 0.9), 0.5, 1.0)
+    val biomeColor = Color.fromHsv(Main.debugRandom.nextDouble(0.15, 0.4), Main.debugRandom.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
 
     @get:JsonIgnore
@@ -102,10 +101,10 @@ class TectonicPlate(
     fun rift(): List<TectonicPlate> {
         planet.tectonicPlates.remove(this)
 
-        val warpNoise = VectorWarpNoise(random.nextInt(), 0.75f)
+        val warpNoise = VectorWarpNoise(planet.random.nextInt(), 0.75f)
         val warp: (Vector3) -> Vector3 = { warpNoise.warp(it, 0.5) }
 
-        val points = region.tiles.shuffled(random).take(random.nextInt(3, 5)).map { warp(it.tile.position) }
+        val points = region.tiles.shuffled(planet.random).take(planet.random.nextInt(3, 5)).map { warp(it.tile.position) }
         GD.print("Rifting $debugColor in ${points.size}")
         val newPlates = region.voronoi(points, warp).map { region ->
             val plate = TectonicPlate(planet, region)

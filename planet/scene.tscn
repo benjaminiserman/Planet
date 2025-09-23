@@ -152,5 +152,16 @@ offset_top = 7.0
 offset_right = -55.0
 offset_bottom = 38.0
 grow_horizontal = 0
-text = "Load
-"
+text = "Load"
+
+[node name="ProjectButton" type="Button" parent="GUI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -168.0
+offset_top = 7.0
+offset_right = -105.0
+offset_bottom = 38.0
+grow_horizontal = 0
+text = "Project"

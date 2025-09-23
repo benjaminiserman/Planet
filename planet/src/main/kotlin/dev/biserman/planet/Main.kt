@@ -86,8 +86,7 @@ class Main : Node() {
 	}
 
 	companion object {
-		var random = Random(12)
-		val noise = NoiseMaps(random.nextInt(), random)
 		lateinit var instance: Main
+		val debugRandom = Random(0)
 	}
 }
