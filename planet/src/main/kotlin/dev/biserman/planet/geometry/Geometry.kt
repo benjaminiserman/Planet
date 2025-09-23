@@ -4,6 +4,8 @@ import com.github.davidmoten.rtreemulti.Entry
 import com.github.davidmoten.rtreemulti.RTree
 import com.github.davidmoten.rtreemulti.geometry.Geometry
 import com.github.davidmoten.rtreemulti.geometry.Point
+import dev.biserman.planet.geometry.component1
+import dev.biserman.planet.geometry.component2
 import dev.biserman.planet.planet.PointForce
 import godot.api.ArrayMesh
 import godot.api.Mesh
@@ -156,16 +158,24 @@ fun <T> (Iterable<Pair<T, Double>>).weightedAverage(
 }
 
 fun (Vector3).toPoint(): Point = Point.create(this.x, this.y, this.z)
+fun (Vector2).toPoint(): Point = Point.create(this.x, this.y)
 fun (Point).toVector3(): Vector3 {
     val values = this.values()
     return Vector3(values[0], values[1], values[2])
 }
+fun (Point).toVector2(): Vector2 {
+    val values = this.values()
+    return Vector2(values[0], values[1])
+}
 
-fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>): RTree<U, Point> =
-    RTree.star().dimensions(3).create<U, Point>().add(this.map {
+fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>): RTree<U, Point> {
+    val dimensions = getFn(this.first()).first.dimensions()
+    return RTree.star().dimensions(dimensions).create<U, Point>().add(this.map {
         val (point, value) = getFn(it)
         Entry.entry(value, point)
     })
+}
+
 
 //fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
 //    .star()

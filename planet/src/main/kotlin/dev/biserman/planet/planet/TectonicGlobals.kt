@@ -32,9 +32,9 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 2500.0
+    val overridingElevationStrengthScale = 3200.0
     val subductingElevationStrengthScale = -9000.0
-    val convergingElevationStrengthScale = 1800.0
+    val convergingElevationStrengthScale = 2100.0
 
     val divergenceCutoff = 0.25
     val divergedCrustHeight = -2000.0
@@ -44,7 +44,7 @@ object TectonicGlobals {
     val erosionStrength = 0.0055
 
     val estimatedAverageRadius = 0.020775855876950022
-    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 1.5, 1e4, 1e5)
+    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * convergenceSearchRadius, 1e6, 1e5)
 
     // desmos: f\left(x\right)\ =\ \frac{110}{1+e^{0.005\left(x+1400\right)}}-\frac{100}{1+e^{0.003\left(x+4500\right)}}
     fun oceanicSubsidence(elevation: Double) =
