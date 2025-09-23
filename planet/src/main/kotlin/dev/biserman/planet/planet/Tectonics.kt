@@ -121,7 +121,7 @@ object Tectonics {
     fun assignDensities(planet: Planet) {
         planet.tectonicPlates.withIndex().forEach { (index, plate) ->
             val averageDensity = (plate.tiles.sumOf { it.density } / plate.tiles.size)
-            val adjustedDensity = lerp(averageDensity, planet.random.nextDouble(-1.25, 0.5), 0.75)
+            val adjustedDensity = lerp(averageDensity, planet.random.nextDouble(-0.5, 1.0), 0.75)
             plate.density = adjustedDensity
 
             plate.tiles.forEach {

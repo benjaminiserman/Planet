@@ -62,7 +62,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
 
     fun value(tile: PlanetTile) = when (getMode(tile)) {
         RenderMode.BIOME -> lerp(
-            tile.elevation.adjustRange(
+            tile.elevation.scaleAndCoerceIn(
                 planetRenderer.planet.seaLevel..5000.0,
                 0.15..0.9
             ),
