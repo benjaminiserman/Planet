@@ -87,8 +87,8 @@ class Gui() : Node() {
             MapProjections.EQUIDISTANT.projectTiles(
                 Main.instance.planet,
                 "map.png",
-                200,
-                100,
+                300,
+                150,
                 Main.instance.planet.topology.averageRadius * 1.5
             ) { tile: PlanetTile -> Main.instance.planetRenderer.getColor(tile) }
 //            ) { tile: PlanetTile -> tile.tectonicPlate?.debugColor ?: Color.black }

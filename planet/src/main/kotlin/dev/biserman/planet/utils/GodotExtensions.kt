@@ -21,15 +21,16 @@ fun Color.Companion.randomHsv(
 
 fun (FastNoiseLite).withSeed(seed: Int): FastNoiseLite = this.apply { this.setSeed(seed) }
 
-fun Iterable<Color>.average(): Color {
-    val color = this.reduce { acc, color -> acc + color * color } / this.count().toDouble()
-    return Color(
-        sqrt(color.r),
-        sqrt(color.g),
-        sqrt(color.b),
-        sqrt(color.a),
-    )
-}
+fun Iterable<Color>.average() = this.reduce { acc, color -> acc + color } / this.count().toDouble()
+//fun Iterable<Color>.average(): Color {
+//    val color = this.reduce { acc, color -> acc + color * color } / this.count().toDouble()
+//    return Color(
+//        sqrt(color.r),
+//        sqrt(color.g),
+//        sqrt(color.b),
+//        sqrt(color.a),
+//    )
+//}
 
 operator fun (Vector2).component1() = this.x
 operator fun (Vector2).component2() = this.y
