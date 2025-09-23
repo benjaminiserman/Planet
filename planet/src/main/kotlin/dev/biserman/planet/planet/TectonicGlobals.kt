@@ -2,7 +2,6 @@ package dev.biserman.planet.planet
 
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
-import dev.biserman.planet.planet.Tectonics.random
 import godot.common.util.lerp
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -55,7 +54,7 @@ object TectonicGlobals {
     val hotspotStrength = 7500f.pow(2)
     fun tryHotspotEruption(tile: PlanetTile): Double {
         val planet = tile.planet
-        if (random.nextFloat() <= hotspotEruptionChance) {
+        if (planet.random.nextFloat() <= hotspotEruptionChance) {
             val hotspot =
                 planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
             if (hotspot > 0) {

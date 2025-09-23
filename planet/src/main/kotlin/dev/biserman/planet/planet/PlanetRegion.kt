@@ -2,7 +2,6 @@ package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
-import dev.biserman.planet.planet.Tectonics.random
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
@@ -58,7 +57,7 @@ class PlanetRegion(
 
     fun voronoi(points: List<Vector3>, warp: (Vector3) -> Vector3 = { it }): List<PlanetRegion> {
         val remainingTiles =
-            tiles.shuffled(random).toMutableList()
+            tiles.shuffled(planet.random).toMutableList()
 
         val regions = points.associateWith { PlanetRegion(planet) }
 

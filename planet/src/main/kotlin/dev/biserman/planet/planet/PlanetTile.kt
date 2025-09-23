@@ -105,7 +105,7 @@ class PlanetTile(
     }
 
     fun planetInit() {
-        elevation = Main.noise.startingElevation.getNoise3dv(tile.averagePosition)
+        elevation = planet.noise.startingElevation.getNoise3dv(tile.averagePosition)
             .toDouble()
             .adjustRange(-1.0..1.0, -5000.0..5000.0)
 //        elevation = 0.0

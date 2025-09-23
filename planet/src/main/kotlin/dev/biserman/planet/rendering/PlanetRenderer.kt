@@ -3,6 +3,7 @@ package dev.biserman.planet.rendering
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
@@ -12,11 +13,13 @@ import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
+import dev.biserman.planet.utils.average
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 import godot.global.GD
+import kotlin.collections.average
 import kotlin.math.absoluteValue
 import kotlin.math.pow
 import kotlin.time.measureTime
@@ -38,7 +41,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             parent,
             "mantle_convection",
             lift = 1.005,
-            getFn = { Main.noise.mantleConvection.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
+            getFn = { planet.noise.mantleConvection.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
             color = Color(1.0, 0.5, 0.0, 1.0),
             visibleByDefault = false
         ),
@@ -100,7 +103,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             "hotspots",
             visibleByDefault = false,
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }) {
-            Main.noise.hotspots.sample4d(
+            planet.noise.hotspots.sample4d(
                 it.tile.position,
                 planet.tectonicAge.toDouble()
             )
@@ -163,6 +166,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         GD.print("Updating renderers took ${timeTaken.inWholeMilliseconds}ms")
     }
 
+    fun getColor(planetTile: PlanetTile): Color {
+        val colors = planetColorModes.filter { it.visible }
+            .mapNotNull { mode -> mode.colorsFor(planetTile).first() }
+        return colors.average()
+    }
+
     fun updateMesh() {
         val colorModeResults = planetColorModes.filter { it.visible }.map { mode ->
             planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.getTile(tile)) }
@@ -175,8 +184,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             }
 
             (0..<resultsSize).map { i ->
-                colorModeResults.filter { it[i] != null }
-                    .fold(Color.black) { acc, list -> acc + list[i]!! } / colorModeResults.filter { it[i] != null }.size.toDouble()
+                colorModeResults.mapNotNull { it[i] }.average()
             }
         } else listOf()
 

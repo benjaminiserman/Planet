@@ -30,11 +30,9 @@ import godot.global.GD
 import kotlin.time.measureTime
 
 object Tectonics {
-    val random by lazy { Main.random }
-
     fun seedPlates(planet: Planet, plateCount: Int): MutableList<TectonicPlate> {
         val plates = (1..plateCount).map { TectonicPlate(planet) }
-        val remainingTiles = planet.planetTiles.values.shuffled(random).toMutableList()
+        val remainingTiles = planet.planetTiles.values.shuffled(planet.random).toMutableList()
 
         for (plate in plates) {
             val selectedTile = remainingTiles.first()
@@ -47,9 +45,9 @@ object Tectonics {
 
     fun voronoiPlates(planet: Planet) {
         val remainingTiles =
-            planet.planetTiles.values.filter { it.tectonicPlate == null }.shuffled(random).toMutableList()
+            planet.planetTiles.values.filter { it.tectonicPlate == null }.shuffled(planet.random).toMutableList()
 
-        val warpNoise = VectorWarpNoise(random.nextInt(), 0.75f)
+        val warpNoise = VectorWarpNoise(planet.random.nextInt(), 0.75f)
 
         val centerTiles = planet.tectonicPlates.associateBy { it.tiles.first() }
         for (planetTile in remainingTiles) {
@@ -99,7 +97,7 @@ object Tectonics {
     }
 
     fun patchAllHoles(planet: Planet) {
-        val tiles = planet.planetTiles.values.shuffled(random).filter { it.tectonicPlate == null }.toMutableList()
+        val tiles = planet.planetTiles.values.shuffled(planet.random).filter { it.tectonicPlate == null }.toMutableList()
         var i = 0
         while (tiles.any { it.tectonicPlate == null }) {
             i += 1
@@ -123,7 +121,7 @@ object Tectonics {
     fun assignDensities(planet: Planet) {
         planet.tectonicPlates.withIndex().forEach { (index, plate) ->
             val averageDensity = (plate.tiles.sumOf { it.density } / plate.tiles.size)
-            val adjustedDensity = lerp(averageDensity, random.nextDouble(-1.25, 0.5), 0.75)
+            val adjustedDensity = lerp(averageDensity, planet.random.nextDouble(-1.25, 0.5), 0.75)
             plate.density = adjustedDensity
 
             plate.tiles.forEach {

@@ -3,6 +3,9 @@ package dev.biserman.planet.gui
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Path.Companion.toMesh
 import dev.biserman.planet.geometry.Path.Companion.toPaths
+import dev.biserman.planet.planet.MapProjections
+import dev.biserman.planet.planet.MapProjections.projectTiles
+import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
@@ -24,6 +27,7 @@ class Gui() : Node() {
 
     val saveButton by lazy { findChild("SaveButton") as Button }
     val loadButton by lazy { findChild("LoadButton") as Button }
+    val projectButton by lazy { findChild("ProjectButton") as Button }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -78,6 +82,17 @@ class Gui() : Node() {
             Main.instance.updatePlanet(loadedPlanet)
             GD.print("Loaded!")
             GD.print("Tectonic age: ${loadedPlanet.tectonicAge}")
+        }
+        projectButton.pressed.connect {
+            MapProjections.EQUIDISTANT.projectTiles(
+                Main.instance.planet,
+                "map.png",
+                200,
+                100,
+                Main.instance.planet.topology.averageRadius * 1.5
+            ) { tile: PlanetTile -> Main.instance.planetRenderer.getColor(tile) }
+//            ) { tile: PlanetTile -> tile.tectonicPlate?.debugColor ?: Color.black }
+            GD.print("Image created")
         }
     }
 

@@ -13,7 +13,7 @@ object Kriging {
     fun interpolate(
         samples: List<Pair<Vector3, Double>>,
         target: Vector3,
-        variogram: (Double) -> Double = variogram(10.0, 1.0, 0.0)
+        variogram: (Double) -> Double = variogram(1.0, 1.0, 0.0)
     ): Double {
         val n = samples.size
         if (n == 0) return 0.0
