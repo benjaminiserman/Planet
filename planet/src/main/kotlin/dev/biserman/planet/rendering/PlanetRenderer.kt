@@ -82,7 +82,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
         ) {
-            it.elevation.scaleAndCoerceIn(-5000.0..5000.0, 0.0..1.0)
+            it.elevation.scaleAndCoerceIn(-10000.0..10000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
             this, "density", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
