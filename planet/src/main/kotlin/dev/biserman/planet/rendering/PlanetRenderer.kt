@@ -2,6 +2,7 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.planet.Insolation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -143,6 +144,16 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) {
             Color.white * it.formationTime.toDouble()
                 .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
+        },
+        SimpleColorMode(
+            this, "insolation", visibleByDefault = false,
+        ) { planetTile ->
+            Color.orange * planetTile.insolation
+        },
+        SimpleColorMode(
+            this, "edge_depth", visibleByDefault = false,
+        ) { planetTile ->
+            Color.white * (planetTile.edgeDepth * 0.01)
         })
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

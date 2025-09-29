@@ -9,6 +9,7 @@ import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
+import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
@@ -58,6 +59,13 @@ class PlanetTile(
         }
 
     @get:JsonIgnore
+    val insolation
+        get() = Insolation.directHorizontal(
+            planet.tectonicAge % Insolation.yearLength.toInt(),
+            tile.position.toGeoPoint().latitude
+        )
+
+    @get:JsonIgnore
     val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
 
     @get:JsonIgnore
@@ -90,6 +98,8 @@ class PlanetTile(
 
     @get:JsonIgnore
     val neighbors get() = tile.tiles.map { planet.getTile(it) }
+
+    var edgeDepth: Int = -1
 
     constructor(other: PlanetTile) : this(
         other.planet, other.tile.id
@@ -182,6 +192,8 @@ class PlanetTile(
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime
         plate: ${tectonicPlate?.name ?: "null"}
+        insolation: ${insolation.formatDigits()}
+        edge depth: $edgeDepth
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
     """.trimIndent() + if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!

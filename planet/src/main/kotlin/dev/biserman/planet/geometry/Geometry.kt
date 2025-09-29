@@ -19,9 +19,7 @@ fun calculateNormal(p1: Vector3, p2: Vector3, p3: Vector3): Vector3 {
     val b = p3 - p1
 
     return -Vector3(
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x
+        a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x
     )
 }
 
@@ -34,17 +32,14 @@ fun triArea(p0: Vector3, p1: Vector3, p2: Vector3): Double {
     return width * height * 0.5
 }
 
-fun centroid(verts: List<Vector3>): Vector3 =
-    verts.fold(Vector3.ZERO) { a, b -> a + b } / verts.size
+fun centroid(verts: List<Vector3>): Vector3 = verts.fold(Vector3.ZERO) { a, b -> a + b } / verts.size
 
 fun (Random).randomUnitVector(): Vector3 {
     val theta = this.nextDouble(0.0, PI * 2)
     val phi = acos(this.nextDouble(-1.0, 1.0))
     val sinPhi = sin(phi)
     return Vector3(
-        cos(theta) * sinPhi,
-        sin(theta) * sinPhi,
-        cos(phi)
+        cos(theta) * sinPhi, sin(theta) * sinPhi, cos(phi)
     )
 }
 
@@ -56,10 +51,7 @@ fun (Random).randomQuaternion(): Quaternion {
     val sinGamma = sin(gamma)
 
     return Quaternion(
-        cos(theta) * sinPhi * sinGamma,
-        sin(theta) * sinPhi * sinGamma,
-        cos(phi) * sinGamma,
-        cos(gamma)
+        cos(theta) * sinPhi * sinGamma, sin(theta) * sinPhi * sinGamma, cos(phi) * sinGamma, cos(gamma)
     )
 }
 
@@ -102,17 +94,17 @@ data class DebugVector(val origin: Vector3, val vector: Vector3, val color: Colo
     fun crossOff(magnitude: Double) = crossOff(origin, vector, magnitude)
 
     companion object {
-        fun crossOff(origin: Vector3, vector: Vector3, magnitude: Double) =
-            DebugVector(
-                origin + vector,
-                vector.cross(origin + vector) * magnitude
-            )
+        fun crossOff(origin: Vector3, vector: Vector3, magnitude: Double) = DebugVector(
+            origin + vector, vector.cross(origin + vector) * magnitude
+        )
     }
 }
 
 fun (List<DebugVector>).toMesh(): MutMesh {
-    val mutVerts = this.flatMap { listOf(it.origin, it.origin + it.vector) }.withIndex()
-        .map { (i, vertex) -> MutVertex(vertex, mutableListOf(i / 2)) }.toMutableList()
+    val mutVerts = this.flatMap { listOf(it.origin, it.origin + it.vector) }
+        .withIndex()
+        .map { (i, vertex) -> MutVertex(vertex, mutableListOf(i / 2)) }
+        .toMutableList()
     val mutEdges = this.withIndex().map { i -> MutEdge(mutableListOf(i.index * 2, i.index * 2 + 1)) }.toMutableList()
 
     return MutMesh(mutVerts, mutEdges)
@@ -133,8 +125,7 @@ fun eulerPole(torque: Vector3, points: Collection<Pair<Vector3, Double>>): Vecto
     return inertiaTensor.inverse() * torque
 }
 
-fun Collection<Vector3>.average(): Vector3 =
-    this.fold(Vector3.ZERO) { sum, v -> sum + v } / this.size
+fun Collection<Vector3>.average(): Vector3 = this.fold(Vector3.ZERO) { sum, v -> sum + v } / this.size
 
 fun (Iterable<Pair<Vector3, Double>>).weightedAverageInverse(reference: Vector3, maxDistance: Double) =
     this.weightedAverage(reference) { 1 - (it.distanceTo(reference) / maxDistance) }
@@ -146,8 +137,7 @@ fun (Iterable<Pair<Vector3, Double>>).weightedAverage(reference: Vector3) =
     this.weightedAverage(reference) { point -> reference.distanceTo(point) }
 
 fun <T> (Iterable<Pair<T, Double>>).weightedAverage(
-    reference: Vector3,
-    contributionFn: (T) -> Double
+    reference: Vector3, contributionFn: (T) -> Double
 ): Double {
     val contributions = this.map { (point, value) -> Pair(value, contributionFn(point)) }
     val contributionSum = contributions.sumOf { it.second }
@@ -163,6 +153,7 @@ fun (Point).toVector3(): Vector3 {
     val values = this.values()
     return Vector3(values[0], values[1], values[2])
 }
+
 fun (Point).toVector2(): Vector2 {
     val values = this.values()
     return Vector2(values[0], values[1])
@@ -176,6 +167,35 @@ fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>): RTree<U, Point> 
     })
 }
 
+data class GeoPoint(val latitude: Double, val longitude: Double) {
+    constructor (point: Vector3) : this(
+        asin(-point.y),
+        -atan2(point.z, point.x)
+    )
+
+    constructor (pixel: Vector2) : this(
+        pixel.y * PI,
+        pixel.x * PI * 2
+    )
+
+    fun toVector3(): Vector3 {
+        return Vector3(
+            cos(longitude) * cos(latitude),
+            sin(latitude),
+            sin(longitude) * cos(latitude)
+        )
+    }
+
+    fun toVector2(): Vector2 {
+        return Vector2(
+            longitude / (PI * 2),
+            latitude / PI
+        )
+    }
+}
+
+fun (Vector2).toGeoPoint() = GeoPoint(this)
+fun (Vector3).toGeoPoint() = GeoPoint(this)
 
 //fun <T> (Iterable<T>).toRTree(getFn: (T) -> Point): RTree<T, Point> = RTree
 //    .star()
@@ -188,10 +208,7 @@ fun sigmoid(x: Float, xScalar: Float = -1.0f, xOffset: Float = 0.0f) =
     1f / (1 + E.toFloat().pow(xScalar * (x + xOffset)))
 
 fun intersectRaySphere(
-    rayOrigin: Vector3,
-    rayDir: Vector3,
-    sphereCenter: Vector3,
-    sphereRadius: Double
+    rayOrigin: Vector3, rayDir: Vector3, sphereCenter: Vector3, sphereRadius: Double
 ): Double? {
     val oc = rayOrigin - sphereCenter
     val a = rayDir.dot(rayDir)

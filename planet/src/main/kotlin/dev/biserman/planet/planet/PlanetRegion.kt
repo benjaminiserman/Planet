@@ -1,6 +1,5 @@
 package dev.biserman.planet.planet
 
-import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
@@ -17,9 +16,11 @@ class PlanetRegion(
     val border by memo({ planet.tectonicAge }) {
         tiles.flatMap { planetTile ->
             planetTile.tile.borders.filter { border ->
-                planet.getTile(border.oppositeTile(
-                    planetTile.tile
-                )) !in tiles
+                planet.getTile(
+                    border.oppositeTile(
+                        planetTile.tile
+                    )
+                ) !in tiles
             }
         }
     }
@@ -68,5 +69,29 @@ class PlanetRegion(
         }
 
         return regions.values.toList()
+    }
+
+    fun <T> calculateEdgeDepthMap(classify: (PlanetTile) -> T): Map<PlanetTile, Int> {
+        val edgeTiles = tiles.filter { tile ->
+            val classification = classify(tile)
+            tile.neighbors.any { classify(it) != classification }
+        }
+        val results = mutableMapOf<PlanetTile, Int>()
+        val queue = ArrayDeque<Pair<PlanetTile, Int>>()
+        queue.addAll(edgeTiles.map { it to 0 })
+
+        while (queue.isNotEmpty()) {
+            val (current, depth) = queue.removeFirst()
+            if (current !in results) {
+                results[current] = depth
+                val classification = classify(current)
+                current.neighbors
+                    .filter { classify(it) == classification }
+                    .filter { it !in results }
+                    .forEach { queue.add(it to depth + 1) }
+            }
+        }
+
+        return results
     }
 }

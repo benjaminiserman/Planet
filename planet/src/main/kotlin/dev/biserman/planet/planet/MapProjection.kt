@@ -1,6 +1,8 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.Kriging
+import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.toVector2
@@ -21,38 +23,10 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
-class MapProjection(val forward: (Vector3) -> Vector2, val backward: (Vector2) -> Vector3) {
-    companion object {
-        fun make(
-            forward: (Vector2) -> Vector2,
-            backward: (Vector2) -> Vector2,
-        ) = MapProjection(
-            { point: Vector3 -> forward(pointToGeo(point)) },
-            { geo: Vector2 -> geoToPoint(backward(geo)) },
-        )
-    }
-}
-
-fun geoToPoint(latitudeLongitude: Vector2): Vector3 {
-    val phi = latitudeLongitude.y * Math.PI
-    val theta = latitudeLongitude.x * 2 * Math.PI
-
-    return Vector3(
-        cos(theta) * sin(phi),
-        cos(phi),
-        sin(theta) * sin(phi)
-    )
-}
-
-fun pointToGeo(point: Vector3): Vector2 {
-    val latitude = asin(-point.y) / Math.PI
-    val longitude = -atan2(point.z, point.x) / (2 * Math.PI)
-
-    return Vector2(longitude, latitude)
-}
+class MapProjection(val forward: (GeoPoint) -> Vector2, val backward: (Vector2) -> GeoPoint)
 
 object MapProjections {
-    val EQUIDISTANT = MapProjection.make({ latLong: Vector2 -> latLong }, { pixel: Vector2 -> pixel })
+    val EQUIDISTANT = MapProjection({ geoPoint -> geoPoint.toVector2() }, { vector2 -> GeoPoint(vector2) })
 
     fun (MapProjection).projectPoints(
         planet: Planet,
@@ -73,7 +47,7 @@ object MapProjections {
                                 (x.toDouble() / imageX) - 0.5,
                                 y.toDouble() / imageY - 0.5,
                             )
-                        )
+                        ).toVector3()
                     ).toARGB32()
                 )
             }
@@ -135,15 +109,17 @@ object MapProjections {
         }.toRTree { it.first.toPoint() to it.second }
 
         val testPoints =
-            planet.topology.rTree.nearest(Vector3.RIGHT.toPoint(), planet.topology.averageRadius * 1.5, 2)
+            planet.topology.rTree.nearest(Vector3.RIGHT.toPoint(), planet.topology.averageRadius * 10, 2)
         val distanceGuess = min(
-            this.forward(testPoints.first().value().position)
-                .distanceTo(this.forward(testPoints.last().value().position)),
+            this.forward(testPoints.first().value().position.toGeoPoint())
+                .distanceTo(this.forward(testPoints.last().value().position.toGeoPoint())),
             max(1.0 / image.width, 1.0 / image.height)
         ) * 1.5
+        GD.print("Distance guess: $distanceGuess")
 
         planet.planetTiles.values.forEach { tile ->
-            val samples = imageRTree.nearest(this.forward(tile.tile.position).toPoint(), distanceGuess, 100)
+            val samples =
+                imageRTree.nearest(this.forward(tile.tile.position.toGeoPoint()).toPoint(), distanceGuess, 100)
             tile.modifyFn(
                 if (samples.count() == 0) {
                     -10.0
