@@ -14,15 +14,20 @@ import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
+import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import dev.biserman.planet.utils.average
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
+import godot.core.Vector3
 import godot.global.GD
 import kotlin.collections.average
+import kotlin.math.PI
 import kotlin.math.absoluteValue
+import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.time.measureTime
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
@@ -72,6 +77,37 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             listOf(
                 MeshData(
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
+            )
+        },
+        SimpleDebugRenderer(parent, "climate_cells") { planet ->
+            val bands = listOf(-60, -30, 0, +30, +60).map { it.toDouble() }
+            val verts = mutableListOf<MutVertex>()
+            val edges = mutableListOf<MutEdge>()
+            val lift = 1.001
+
+            bands.forEach { band ->
+                val y = sin(band.degToRad())
+                val radius = cos(band.degToRad()) * lift
+                val circumference = 2 * radius * PI
+                val lineSegments = (circumference / planet.topology.averageRadius).toInt()
+                val firstVert = verts.size
+
+                for (i in 0..<lineSegments) {
+                    val angle = i * 2 * PI / lineSegments
+                    val x = radius * cos(angle)
+                    val z = radius * sin(angle)
+                    if (i != 0) {
+                        edges.add(MutEdge(mutableListOf(verts.size - 1, verts.size)))
+                    }
+                    verts.add(MutVertex(Vector3(x, y, z)))
+                }
+                edges.add(MutEdge(mutableListOf(verts.size - 1, firstVert)))
+            }
+
+            listOf(
+                MeshData(
+                    MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.white }
+                )
             )
         })
 

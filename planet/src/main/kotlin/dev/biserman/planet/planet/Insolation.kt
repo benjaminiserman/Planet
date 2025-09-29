@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import kotlin.math.*
 
 @Suppress("MayBeConstant")
@@ -19,7 +20,7 @@ object Insolation {
 
     // Solar declination (radians, Cooper’s formula)
     fun solarDeclination(dayOfYear: Int): Double {
-        return (axialTiltDeg * PI / 180.0) *
+        return (axialTiltDeg.degToRad()) *
                 sin(2.0 * PI * (northSpringEquinox + dayOfYear) / yearLength)
     }
 
