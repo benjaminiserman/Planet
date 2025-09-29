@@ -69,16 +69,6 @@ class Topology(
 
 		return mutMesh
 	}
-
-	companion object {
-		@JvmStatic
-		@JsonCreator
-		fun create(
-			@JsonProperty("size") size: Int,
-		) {
-
-		}
-	}
 }
 
 fun (MutMesh).toTopology(): Topology {

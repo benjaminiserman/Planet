@@ -41,14 +41,16 @@ object TectonicGlobals {
     val divergedCrustLerp = 1.0
 
     val depositStrength = 0.25
-    val erosionStrength = 0.0055
+    val prominenceErosion = 0.0055
+    val elevationErosion = 0.000
+    val depositionStartHeight = 1000
 
     val estimatedAverageRadius = 0.020775855876950022
-    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * convergenceSearchRadius, 1e6, 1e5)
+    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 10.0)
 
-    // desmos: f\left(x\right)\ =\ \frac{110}{1+e^{0.005\left(x+1400\right)}}-\frac{100}{1+e^{0.003\left(x+4500\right)}}
+    // desmos: f\left(x\right)\ =\ \frac{110}{1+e^{0.005\left(x+1400\right)}}-\frac{100}{1+e^{0.003\left(x+5500\right)}}
     fun oceanicSubsidence(elevation: Double) =
-        110 * sigmoid(elevation, 0.005, 1400.0) - 100 * sigmoid(elevation, 0.003, 4500.0)
+        110 * sigmoid(elevation, 0.005, 1400.0) - 100 * sigmoid(elevation, 0.003, 5500.0)
 
     val hotspotEruptionChance = 0.45
     val hotspotStrength = 7500f.pow(2)
@@ -64,5 +66,4 @@ object TectonicGlobals {
 
         return tile.elevation
     }
-
 }

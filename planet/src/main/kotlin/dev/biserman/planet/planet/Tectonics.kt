@@ -1,6 +1,5 @@
 package dev.biserman.planet.planet
 
-import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
@@ -9,7 +8,9 @@ import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
-import dev.biserman.planet.planet.TectonicGlobals.erosionStrength
+import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.TectonicGlobals.elevationErosion
+import dev.biserman.planet.planet.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.TectonicGlobals.minElevation
@@ -97,7 +98,8 @@ object Tectonics {
     }
 
     fun patchAllHoles(planet: Planet) {
-        val tiles = planet.planetTiles.values.shuffled(planet.random).filter { it.tectonicPlate == null }.toMutableList()
+        val tiles =
+            planet.planetTiles.values.shuffled(planet.random).filter { it.tectonicPlate == null }.toMutableList()
         var i = 0
         while (tiles.any { it.tectonicPlate == null }) {
             i += 1
@@ -367,28 +369,46 @@ object Tectonics {
             val originalElevation = planetTile.elevation
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
-            val depositTaken = deposit * depositStrength * (1 - prominenceScale)
+            val depositTaken =
+                if (planetTile.elevation <= depositionStartHeight) deposit * depositStrength * (1 - prominenceScale) else 0.0
             planetTile.elevation += depositTaken
 
-            val depositeeTile = planetTile.neighbors.minBy { it.elevation }
+            val depositeeTiles = planetTile.neighbors
+                .filter { it.elevation < planetTile.elevation }
+            val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
+            val erosion =
+                if (planetTile.isAboveWater) planetTile.elevation * elevationErosion + planetTile.prominence * prominenceErosion else 0.0
+            val totalDepositAvailable = erosion + deposit - depositTaken
 
-            if (depositeeTile.elevation <= planetTile.elevation) {
-                val depositProvided = if (planetTile.isAboveWater) planetTile.prominence * erosionStrength else 0.0
-                planetTile.elevation -= depositProvided
-                deposits[depositeeTile] = (deposits[depositeeTile] ?: 0.0) + deposit + depositProvided - depositTaken
+            planetTile.elevation -= erosion
+
+            if (depositeeTiles.isNotEmpty()) {
+                depositeeTiles.forEach { depositeeTile ->
+                    val depositSent =
+                        totalDepositAvailable * ((planetTile.elevation - depositeeTile.elevation) / sumDecline)
+                    deposits[depositeeTile] =
+                        (deposits[depositeeTile] ?: 0.0) + depositSent
+                }
             } else {
                 planetTile.elevation += deposit - depositTaken
             }
+
             planetTile.erosionDelta = planetTile.elevation - originalElevation
         }
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
-        val timeTaken = measureTime {
-            movePlanetTiles(planet)
-            stepTectonicPlateForces(planet)
-            performErosion(planet)
+        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
+        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
+        val performErosionTime = measureTime { performErosion(planet) }
+        val calculateEdgeDepth = measureTime {
+            PlanetRegion(planet, planet.planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
+                .forEach { (planetTile, depth) ->
+                    planetTile.edgeDepth = depth
+                }
         }
+
+        val timeTaken = movePlanetTilesTime + tectonicPlateForcesTime + performErosionTime + calculateEdgeDepth
 
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
@@ -398,6 +418,10 @@ object Tectonics {
         val percentContinental =
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
         GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
+        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
+        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
+        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
+        GD.print(" - calculateEdgeDepth: ${calculateEdgeDepth.inWholeMilliseconds}ms")
         GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
     }
