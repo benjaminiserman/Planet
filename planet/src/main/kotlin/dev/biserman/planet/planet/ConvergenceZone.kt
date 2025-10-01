@@ -98,6 +98,10 @@ class ConvergenceZone(
                         .average() - overridingDensity - 0.5
                 }
 
+            val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
+                .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
+                .average()
+
             val slabPull = involvedTiles
                 .filterKeys { subductionStrengths[it]!! > 0 }
                 .mapValues { (plate, tiles) ->
@@ -115,14 +119,11 @@ class ConvergenceZone(
                     tiles.map { otherTile ->
                         PointForce(
                             tile.position,
-                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area // * -strength
+                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area * subductingMass // * -strength
                         )
                     }
                 }
 
-            val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
-                .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
-                .average()
 
             return ConvergenceZone(
                 planet,
