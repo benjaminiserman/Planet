@@ -28,6 +28,7 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
+import kotlin.math.absoluteValue
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -231,13 +232,19 @@ object Tectonics {
                 val nearestMovedTile =
                     overlappingTiles.first { it.value().tile.tectonicPlate == overridingPlate.key }.value().tile
                 newTileMap[tile] = nearestMovedTile.copy().apply {
-                    this.elevation =
-                        Kriging.interpolate(
-                            nearestMovedTiles.filter { it.value().tile.tectonicPlate == overridingPlate.key }
-                                .map { it.value().newPosition to it.value().tile.elevation },
-                            tile.position,
-                            tectonicElevationVariogram
-                        )
+                    val goalElevation = Kriging.interpolate(
+                        nearestMovedTiles
+                            .filter { it.value().tile.tectonicPlate == overridingPlate.key }
+                            .map { it.value().newPosition to it.value().tile.elevation },
+                        tile.position,
+                        tectonicElevationVariogram
+                    )
+                    val closestElevation = nearestMovedTiles
+                        .filter { it.value().tile.tectonicPlate == overridingPlate.key }
+                        .minBy { (it.value().tile.elevation - goalElevation).absoluteValue }
+                        .value().tile.elevation
+                    this.elevation = lerp(goalElevation, closestElevation, 0.5)
+
                     this.tile = tile
                     this.movement += (tile.position - nearestMovedTiles.first().value().newPosition)
 
