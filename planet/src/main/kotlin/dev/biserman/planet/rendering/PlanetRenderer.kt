@@ -16,6 +16,7 @@ import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import dev.biserman.planet.utils.average
+import dev.biserman.planet.utils.sum
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
@@ -55,7 +56,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             parent, "spring_displacement", lift = 1.005, getFn = { it.springDisplacement }, visibleByDefault = false
         ),
         TileVectorRenderer(
-            parent, "edge_interaction", lift = 1.005, getFn = { (it.edgeResistance + it.edgePush) * 100 }, visibleByDefault = false
+            parent,
+            "edge_interaction",
+            lift = 1.005,
+            getFn = { it.getEdgeForces().sum() * 10 },
+            visibleByDefault = false
         ),
         SimpleDebugRenderer(parent, "rivers") { planet ->
             val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
@@ -152,7 +157,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "convergence_zones", visibleByDefault = false,
         ) {
             val convergenceZone = planet.convergenceZones[it.tile.id] ?: return@SimpleColorMode null
-            val subductionStrength = convergenceZone.subductionStrengths.values.average()
+            val subductionStrength =
+                convergenceZone.subductionStrengths[it.tectonicPlate?.id ?: return@SimpleColorMode null]
+                    ?: return@SimpleColorMode null
             val strengthFactor = (convergenceZone.speed * subductionStrength.absoluteValue).pow(0.5)
             (if (subductionStrength > 0) Color.blue else Color.green) * strengthFactor
         },

@@ -32,6 +32,8 @@ fun Iterable<Color>.average() = this.reduce { acc, color -> acc + color } / this
 //    )
 //}
 
+fun Iterable<Vector3>.sum() = this.fold(Vector3.ZERO) { acc, vector3 -> acc + vector3 }
+
 operator fun (Vector2).component1() = this.x
 operator fun (Vector2).component2() = this.y
 
