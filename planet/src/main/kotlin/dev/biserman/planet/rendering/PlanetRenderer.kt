@@ -54,6 +54,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         TileVectorRenderer(
             parent, "spring_displacement", lift = 1.005, getFn = { it.springDisplacement }, visibleByDefault = false
         ),
+        TileVectorRenderer(
+            parent, "edge_interaction", lift = 1.005, getFn = { (it.edgeResistance + it.edgePush) * 100 }, visibleByDefault = false
+        ),
         SimpleDebugRenderer(parent, "rivers") { planet ->
             val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
                 .distinctBy { it.position }
