@@ -106,7 +106,7 @@ object MapProjections {
                     image.getRGB(x, y).toRGB().r
                 )
             }
-        }.toRTree { it.first.toPoint() to it.second }
+        }.toRTree(dimensions = 2) { it.first.toPoint() to it.second }
 
         val testPoints =
             planet.topology.rTree.nearest(Vector3.RIGHT.toPoint(), planet.topology.averageRadius * 10, 2)

@@ -159,8 +159,7 @@ fun (Point).toVector2(): Vector2 {
     return Vector2(values[0], values[1])
 }
 
-fun <T, U> (Iterable<T>).toRTree(getFn: (T) -> Pair<Point, U>): RTree<U, Point> {
-    val dimensions = getFn(this.first()).first.dimensions()
+fun <T, U> (Iterable<T>).toRTree(dimensions: Int = 3, getFn: (T) -> Pair<Point, U>): RTree<U, Point> {
     return RTree.star().dimensions(dimensions).create<U, Point>().add(this.map {
         val (point, value) = getFn(it)
         Entry.entry(value, point)

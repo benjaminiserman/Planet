@@ -9,7 +9,7 @@ import kotlin.math.sqrt
 @Suppress("MayBeConstant")
 object TectonicGlobals {
     val slabPullStrength = 0.015
-    val convergencePushStrength = 0.1
+    val convergencePushStrength = 0.5
     val ridgePushStrength = 0.003
     val mantleConvectionStrength = 0.0005
     val springPlateContributionStrength = 0.007
