@@ -9,7 +9,6 @@ import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
-import dev.biserman.planet.planet.TectonicGlobals.elevationErosion
 import dev.biserman.planet.planet.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
@@ -29,6 +28,7 @@ import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.absoluteValue
+import kotlin.math.pow
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -150,7 +150,7 @@ object Tectonics {
             )
             val convergencePush = torque(
                 planet.convergenceZones
-                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
+                    .filter { (_, zone) -> plate.id in zone.subductingPlates  }
                     .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
             )
             val ridgePush = torque(
@@ -163,9 +163,14 @@ object Tectonics {
                     tile.tile.position, tile.springDisplacement * springPlateContributionStrength
                 )
             })
+            val edgeForces = torque(plate.tiles.map { tile ->
+                PointForce(
+                    tile.tile.position, tile.edgeResistance + tile.edgePush
+                )
+            })
 
             plate.torque =
-                oldTorqueWithDrag + (mantleConvectionTorque + slabPull + convergencePush + ridgePush + springForces) * plateTorqueScalar
+                oldTorqueWithDrag + (mantleConvectionTorque + slabPull + convergencePush + ridgePush + springForces + edgeForces) * plateTorqueScalar
         }
 
         planet.planetTiles.values.forEach {
@@ -196,6 +201,30 @@ object Tectonics {
         }
     }
 
+    fun applyEdgeResistance(tiles: Map<PlanetTile, Vector3>) {
+        val continentalTilesRTree = tiles.filter { it.key.isContinental }.entries.toRTree { it.value.toPoint() to it }
+        val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
+
+        tiles.forEach { (planetTile, _) -> planetTile.edgeResistance = Vector3.ZERO }
+
+        tiles.forEach { entry ->
+            val (planetTile, newPosition) = entry
+            val nearbyTileResistances = if (planetTile.isContinental) {
+                continentalTilesRTree.nearest(planetTile.tile.position.toPoint(), searchRadius, 6)
+                    .toList()
+                    .filter { (entry, _) ->
+                        entry.key.tectonicPlate != planetTile.tectonicPlate
+                                && planetTile.tectonicPlate != null
+                                && entry.key.tectonicPlate != null
+                    }
+                    .map { (entry, _) -> entry.key to 0.003 * entry.key.tile.position.distanceTo(newPosition) / searchRadius }
+            } else listOf()
+
+//            nearbyTileResistances.forEach { (otherTile, resistance) -> otherTile.edgePush += planetTile.movement * resistance }
+            planetTile.edgeResistance = -planetTile.movement * nearbyTileResistances.sumOf { it.second }
+        }
+    }
+
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
@@ -206,6 +235,7 @@ object Tectonics {
             .sortedByDescending { it.elevation }
             .associateWith { tile -> tile.tile.position + tile.movement }
         val movedTiles = springAndDamp(originalMovedTiles)
+        applyEdgeResistance(originalMovedTiles)
         planet.planetTiles.forEach { (_, planetTile) ->
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
@@ -377,14 +407,16 @@ object Tectonics {
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
             val depositTaken =
-                if (planetTile.elevation <= depositionStartHeight) deposit * depositStrength * (1 - prominenceScale) else 0.0
+                if (planetTile.elevation <= depositionStartHeight) deposit *
+                        depositStrength *
+                        (1 - prominenceScale).pow(3)
+                else 0.0
             planetTile.elevation += depositTaken
 
             val depositeeTiles = planetTile.neighbors
                 .filter { it.elevation < planetTile.elevation }
             val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
-            val erosion =
-                if (planetTile.isAboveWater) planetTile.elevation * elevationErosion + planetTile.prominence * prominenceErosion else 0.0
+            val erosion = if (planetTile.isAboveWater) planetTile.prominence.pow(0.5) * prominenceErosion else 0.0
             val totalDepositAvailable = erosion + deposit - depositTaken
 
             planetTile.elevation -= erosion

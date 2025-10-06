@@ -108,7 +108,7 @@ class ConvergenceZone(
                     tiles.map { otherTile ->
                         PointForce(
                             tile.position,
-                            (tile.position - otherTile.tile.tile.position).normalized() * TectonicGlobals.slabPullStrength * tile.area // * strength
+                            (tile.position - otherTile.tile.tile.position).normalized() * TectonicGlobals.slabPullStrength * tile.area * subductionStrengths[plate]!!
                         )
                     }
                 }
@@ -119,11 +119,10 @@ class ConvergenceZone(
                     tiles.map { otherTile ->
                         PointForce(
                             tile.position,
-                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area * subductingMass // * -strength
+                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area * subductingMass * -subductionStrengths[plate]!!
                         )
                     }
                 }
-
 
             return ConvergenceZone(
                 planet,

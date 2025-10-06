@@ -46,6 +46,9 @@ class PlanetTile(
     val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
     var movement: Vector3 = Vector3.ZERO
 
+    var edgeResistance: Vector3 = Vector3.ZERO
+    var edgePush: Vector3 = Vector3.ZERO
+
     var formationTime = planet.tectonicAge
 
     var erosionDelta: Double = 0.0
@@ -110,6 +113,8 @@ class PlanetTile(
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
         this.springDisplacement = other.springDisplacement
+        this.edgeResistance = other.edgeResistance
+        this.edgePush = other.edgePush
         this.formationTime = other.formationTime
         this.erosionDelta = other.erosionDelta
     }
@@ -124,7 +129,7 @@ class PlanetTile(
     @get:JsonIgnore
     val tectonicBoundaries by memo({ planet.tectonicAge }) {
         tile.borders.filter { border ->
-            val otherPlate = planet.getTile(border.oppositeTile(tile))?.tectonicPlate
+            val otherPlate = planet.getTile(border.oppositeTile(tile)).tectonicPlate
             otherPlate != tectonicPlate
         }
     }
@@ -185,6 +190,8 @@ class PlanetTile(
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()}
+        spring displacement: ${springDisplacement.formatDigits()}
+        edge resistance: ${edgeResistance.formatDigits()}
         divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
         subduction: ${planet.convergenceZones[tile.id]?.speed?.formatDigits() ?: 0.0}
         erosion: ${erosionDelta.formatDigits()}

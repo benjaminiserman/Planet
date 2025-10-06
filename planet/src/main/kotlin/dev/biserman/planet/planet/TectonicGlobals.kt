@@ -32,17 +32,16 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 3200.0
+    val overridingElevationStrengthScale = 2200.0
     val subductingElevationStrengthScale = -9000.0
-    val convergingElevationStrengthScale = 2100.0
+    val convergingElevationStrengthScale = 1100.0
 
     val divergenceCutoff = 0.25
     val divergedCrustHeight = -2000.0
     val divergedCrustLerp = 1.0
 
     val depositStrength = 0.25
-    val prominenceErosion = 0.0055
-    val elevationErosion = 0.000
+    val prominenceErosion = 0.3
     val depositionStartHeight = 1000
 
     val estimatedAverageRadius = 0.020775855876950022
