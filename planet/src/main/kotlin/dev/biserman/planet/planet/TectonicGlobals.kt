@@ -13,6 +13,7 @@ object TectonicGlobals {
     val ridgePushStrength = 0.003
     val mantleConvectionStrength = 0.0005
     val springPlateContributionStrength = 0.007
+    val edgeInteractionStrength = 0.1
     val tileInertia = 0.25
 
     val plateTorqueScalar = 0.1
@@ -32,9 +33,9 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 2200.0
+    val overridingElevationStrengthScale = 1800.0
     val subductingElevationStrengthScale = -9000.0
-    val convergingElevationStrengthScale = 1100.0
+    val convergingElevationStrengthScale = 800.0
 
     val divergenceCutoff = 0.25
     val divergedCrustHeight = -2000.0

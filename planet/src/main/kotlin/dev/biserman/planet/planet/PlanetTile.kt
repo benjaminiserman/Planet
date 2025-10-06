@@ -146,8 +146,21 @@ class PlanetTile(
 
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
+
         movement = (movement * tileInertia + idealMovement).tangent(tile.position)
     }
+
+    fun getEdgeForces() =
+        neighbors
+            .filter { it.tectonicPlate != tectonicPlate }
+            .map { otherTile ->
+                val delta = tile.position - otherTile.tile.position
+//                val movementDelta = otherTile.movement - movement
+                val force = max(0.0, otherTile.movement.dot(delta))
+                val densityDiff = (otherTile.density - density).absoluteValue * 0.5
+                val thisDensityFactor = (-density + 1) * 0.5
+                delta.normalized() * force * (1 - densityDiff) * thisDensityFactor
+            }
 
     fun oppositeTile(border: Border) = planet.getTile(border.oppositeTile(tile))
 
@@ -207,7 +220,7 @@ class PlanetTile(
         "\n" + """
         CONVERGENCE
         speed: ${convergenceZone.speed.formatDigits()}
-        strength: ${convergenceZone.subductionStrengths.values.average().formatDigits()}
+        strength: ${convergenceZone.subductionStrengths[tectonicPlate!!.id]!!.formatDigits()}
         subducting plates: ${convergenceZone.subductingPlates.size}
         subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()

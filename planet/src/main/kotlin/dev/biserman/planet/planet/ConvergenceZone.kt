@@ -17,6 +17,8 @@ import dev.biserman.planet.planet.TectonicGlobals.overridingElevationStrengthSca
 import dev.biserman.planet.planet.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
+import godot.global.GD
+import kotlin.math.absoluteValue
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -52,14 +54,14 @@ class ConvergenceZone(
         val subductionStrength = subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
         return when (planetTile.tectonicPlate?.id) {
             overridingPlate.plate.id -> {
-                speed * if (subductionStrength > 0) {
+                speed * if (subductionStrength >= 0) {
                     overridingElevationStrengthScale * subductingMass
                 } else {
                     convergingElevationStrengthScale * subductingMass
                 }
             }
             in subductingPlates -> {
-                speed * if (subductionStrength > 0) {
+                speed * if (subductionStrength >= 0) {
                     subductingElevationStrengthScale * subductionStrength * (2 - subductingMass)
                 } else {
                     convergingElevationStrengthScale * -subductionStrength * subductingMass
@@ -92,10 +94,10 @@ class ConvergenceZone(
             involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
         ): ConvergenceZone {
             val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
+            val averageDensity = involvedTiles.values.flatten().map { it.tile.density }.average()
             val subductionStrengths =
                 involvedTiles.mapValues { tiles ->
-                    tiles.value.map { it.tile.density }
-                        .average() - overridingDensity - 0.5
+                    (tiles.value.map { it.tile.density }.average() - averageDensity).absoluteValue - 0.5
                 }
 
             val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
@@ -114,7 +116,7 @@ class ConvergenceZone(
                 }
 
             val convergencePush = involvedTiles
-                .filterKeys { subductionStrengths[it]!! < 0 }
+                .filterKeys { subductionStrengths[it]!! <= 0 }
                 .mapValues { (plate, tiles) ->
                     tiles.map { otherTile ->
                         PointForce(

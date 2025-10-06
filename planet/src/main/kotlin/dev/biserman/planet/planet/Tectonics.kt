@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
@@ -9,6 +10,7 @@ import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
@@ -24,6 +26,7 @@ import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
+import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
@@ -150,7 +153,7 @@ object Tectonics {
             )
             val convergencePush = torque(
                 planet.convergenceZones
-                    .filter { (_, zone) -> plate.id in zone.subductingPlates  }
+                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
                     .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
             )
             val ridgePush = torque(
@@ -163,14 +166,14 @@ object Tectonics {
                     tile.tile.position, tile.springDisplacement * springPlateContributionStrength
                 )
             })
-            val edgeForces = torque(plate.tiles.map { tile ->
+            val edgeInteractionForces = torque(plate.tiles.map { tile ->
                 PointForce(
-                    tile.tile.position, tile.edgeResistance + tile.edgePush
+                    tile.tile.position, tile.getEdgeForces().sum() * edgeInteractionStrength
                 )
             })
 
             plate.torque =
-                oldTorqueWithDrag + (mantleConvectionTorque + slabPull + convergencePush + ridgePush + springForces + edgeForces) * plateTorqueScalar
+                oldTorqueWithDrag + (mantleConvectionTorque + slabPull + convergencePush + ridgePush + springForces + edgeInteractionForces) * plateTorqueScalar
         }
 
         planet.planetTiles.values.forEach {
@@ -201,30 +204,6 @@ object Tectonics {
         }
     }
 
-    fun applyEdgeResistance(tiles: Map<PlanetTile, Vector3>) {
-        val continentalTilesRTree = tiles.filter { it.key.isContinental }.entries.toRTree { it.value.toPoint() to it }
-        val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
-
-        tiles.forEach { (planetTile, _) -> planetTile.edgeResistance = Vector3.ZERO }
-
-        tiles.forEach { entry ->
-            val (planetTile, newPosition) = entry
-            val nearbyTileResistances = if (planetTile.isContinental) {
-                continentalTilesRTree.nearest(planetTile.tile.position.toPoint(), searchRadius, 6)
-                    .toList()
-                    .filter { (entry, _) ->
-                        entry.key.tectonicPlate != planetTile.tectonicPlate
-                                && planetTile.tectonicPlate != null
-                                && entry.key.tectonicPlate != null
-                    }
-                    .map { (entry, _) -> entry.key to 0.003 * entry.key.tile.position.distanceTo(newPosition) / searchRadius }
-            } else listOf()
-
-//            nearbyTileResistances.forEach { (otherTile, resistance) -> otherTile.edgePush += planetTile.movement * resistance }
-            planetTile.edgeResistance = -planetTile.movement * nearbyTileResistances.sumOf { it.second }
-        }
-    }
-
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
@@ -235,7 +214,6 @@ object Tectonics {
             .sortedByDescending { it.elevation }
             .associateWith { tile -> tile.tile.position + tile.movement }
         val movedTiles = springAndDamp(originalMovedTiles)
-        applyEdgeResistance(originalMovedTiles)
         planet.planetTiles.forEach { (_, planetTile) ->
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
@@ -463,5 +441,10 @@ object Tectonics {
         GD.print(" - calculateEdgeDepth: ${calculateEdgeDepth.inWholeMilliseconds}ms")
         GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
+
+        // hacky way to stop simulation from running forever
+        if (planet.tectonicAge % 5000 == 0) {
+            Main.instance.timerActive = false
+        }
     }
 }
