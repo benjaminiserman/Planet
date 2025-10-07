@@ -18,6 +18,7 @@ import dev.biserman.planet.utils.memo
 import godot.core.Vector3
 import kotlin.math.absoluteValue
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -157,8 +158,8 @@ class PlanetTile(
                 val delta = tile.position - otherTile.tile.position
 //                val movementDelta = otherTile.movement - movement
                 val force = max(0.0, otherTile.movement.dot(delta))
-                val densityDiff = (otherTile.density - density).absoluteValue * 0.5
-                val thisDensityFactor = (-density + 1) * 0.5
+                val densityDiff = min((otherTile.density - density).absoluteValue * 2, 1.0)
+                val thisDensityFactor = min((-(density * 2) + 1), 1.0)
                 delta.normalized() * force * (1 - densityDiff) * thisDensityFactor
             }
 
@@ -198,7 +199,7 @@ class PlanetTile(
 
     @JsonIgnore
     fun getInfoText(): String = """
-        elevation: ${elevation.formatDigits()}
+        elevation: ${elevation.formatDigits()} (density: ${density.formatDigits()})
         temperature: ${temperature.formatDigits()}
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})

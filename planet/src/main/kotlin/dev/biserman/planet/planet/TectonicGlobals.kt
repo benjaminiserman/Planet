@@ -11,9 +11,9 @@ object TectonicGlobals {
     val slabPullStrength = 0.015
     val convergencePushStrength = 0.5
     val ridgePushStrength = 0.003
-    val mantleConvectionStrength = 0.0005
+    val mantleConvectionStrength = 0.0008
     val springPlateContributionStrength = 0.007
-    val edgeInteractionStrength = 0.1
+    val edgeInteractionStrength = 0.08
     val tileInertia = 0.25
 
     val plateTorqueScalar = 0.1
@@ -33,20 +33,21 @@ object TectonicGlobals {
     val continentSpringDamping = 0.1
     val continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 1800.0
+    val overridingElevationStrengthScale = 1150.0
     val subductingElevationStrengthScale = -9000.0
-    val convergingElevationStrengthScale = 800.0
+    val convergingElevationStrengthScale = 1050.0
 
     val divergenceCutoff = 0.25
     val divergedCrustHeight = -2000.0
     val divergedCrustLerp = 1.0
 
     val depositStrength = 0.25
-    val prominenceErosion = 0.3
+    val prominenceErosion = 0.15
+    val elevationErosion = 7e-07
     val depositionStartHeight = 1000
 
     val estimatedAverageRadius = 0.020775855876950022
-    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 10.0)
+    val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 1.0)
 
     // desmos: f\left(x\right)\ =\ \frac{110}{1+e^{0.005\left(x+1400\right)}}-\frac{100}{1+e^{0.003\left(x+5500\right)}}
     fun oceanicSubsidence(elevation: Double) =
