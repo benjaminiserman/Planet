@@ -11,6 +11,7 @@ import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
 import dev.biserman.planet.planet.TectonicGlobals.edgeInteractionStrength
+import dev.biserman.planet.planet.TectonicGlobals.elevationErosion
 import dev.biserman.planet.planet.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.TectonicGlobals.maxElevation
@@ -394,12 +395,12 @@ object Tectonics {
             val depositeeTiles = planetTile.neighbors
                 .filter { it.elevation < planetTile.elevation }
             val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
-            val erosion = if (planetTile.isAboveWater) planetTile.prominence.pow(0.5) * prominenceErosion else 0.0
+            val erosion = if (planetTile.isAboveWater) planetTile.prominence.pow(0.5) * prominenceErosion + planetTile.elevation.pow(2) * elevationErosion else 0.0
             val totalDepositAvailable = erosion + deposit - depositTaken
 
             planetTile.elevation -= erosion
 
-            if (depositeeTiles.isNotEmpty()) {
+            if (depositeeTiles.isNotEmpty() && totalDepositAvailable >= 0.1) {
                 depositeeTiles.forEach { depositeeTile ->
                     val depositSent =
                         totalDepositAvailable * ((planetTile.elevation - depositeeTile.elevation) / sumDecline)
@@ -443,7 +444,7 @@ object Tectonics {
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
-        if (planet.tectonicAge % 5000 == 0) {
+        if (planet.tectonicAge % 10000 == 0) {
             Main.instance.timerActive = false
         }
     }
