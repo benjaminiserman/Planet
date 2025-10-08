@@ -24,7 +24,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         WATER
     }
 
-    fun snowLine(tile: PlanetTile) = tile.temperature.pow(0.5) * 7500
+    fun snowLine(tile: PlanetTile) = tile.temperature.pow(0.5) * 6500
     val warpNoise by memo({ planetRenderer.planet.tectonicAge }) {
         VectorWarpNoise(
             planetRenderer.planet.tectonicAge,
