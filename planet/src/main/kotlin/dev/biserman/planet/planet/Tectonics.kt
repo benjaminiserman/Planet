@@ -8,6 +8,7 @@ import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
+import dev.biserman.planet.planet.TectonicGlobals.depositLoss
 import dev.biserman.planet.planet.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
 import dev.biserman.planet.planet.TectonicGlobals.edgeInteractionStrength
@@ -25,13 +26,17 @@ import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
 import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
+import dev.biserman.planet.planet.TectonicGlobals.waterErosion
 import dev.biserman.planet.topology.Tile
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.time.measureTime
 
@@ -381,37 +386,57 @@ object Tectonics {
 
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
+        val waterFlow = planet.planetTiles.values.associateWith { 1.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
             val originalElevation = planetTile.elevation
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
+            val water = waterFlow[planetTile]!!
             val depositTaken =
-                if (planetTile.elevation <= depositionStartHeight) deposit *
-                        depositStrength *
-                        (1 - prominenceScale).pow(3)
+                if (planetTile.elevation <= depositionStartHeight)
+                    deposit * depositStrength * (1 - prominenceScale).pow(3)
                 else 0.0
-            planetTile.elevation += depositTaken
+            planetTile.elevation += depositTaken * (1 - depositLoss)
 
             val depositeeTiles = planetTile.neighbors
                 .filter { it.elevation < planetTile.elevation }
             val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
-            val erosion = if (planetTile.isAboveWater) planetTile.prominence.pow(0.5) * prominenceErosion + planetTile.elevation.pow(2) * elevationErosion else 0.0
+            val erosion = max(
+                0.0, min(
+                    planetTile.prominence, min(
+                        planetTile.elevation,
+                        planetTile.prominence.pow(0.5) * prominenceErosion +
+                                planetTile.elevation.pow(2) * elevationErosion +
+                                water * waterErosion
+                    )
+                )
+            )
             val totalDepositAvailable = erosion + deposit - depositTaken
 
             planetTile.elevation -= erosion
 
+            // deposit water
+            if (depositeeTiles.isNotEmpty() && planetTile.isAboveWater) {
+                depositeeTiles.forEach { depositeeTile ->
+                    val waterSent = water * (planetTile.elevation - depositeeTile.elevation) / sumDecline
+                    waterFlow[depositeeTile] = (waterFlow[depositeeTile] ?: 0.0) + waterSent
+                }
+            }
+
+            // deposit sediment
             if (depositeeTiles.isNotEmpty() && totalDepositAvailable >= 0.1) {
                 depositeeTiles.forEach { depositeeTile ->
-                    val depositSent =
-                        totalDepositAvailable * ((planetTile.elevation - depositeeTile.elevation) / sumDecline)
-                    deposits[depositeeTile] =
-                        (deposits[depositeeTile] ?: 0.0) + depositSent
+                    val depositSent = totalDepositAvailable *
+                            (planetTile.elevation - depositeeTile.elevation) / sumDecline
+                    deposits[depositeeTile] = (deposits[depositeeTile] ?: 0.0) + depositSent
                 }
             } else {
-                planetTile.elevation += deposit - depositTaken
+                planetTile.elevation += totalDepositAvailable
             }
 
             planetTile.erosionDelta = planetTile.elevation - originalElevation
+            planetTile.depositFlow = deposits[planetTile]!!
+            planetTile.waterFlow = waterFlow[planetTile]!!
         }
     }
 
@@ -419,14 +444,24 @@ object Tectonics {
         val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
         val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
         val performErosionTime = measureTime { performErosion(planet) }
-        val calculateEdgeDepth = measureTime {
+        val calculateEdgeDepthTime = measureTime {
             PlanetRegion(planet, planet.planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
                 .forEach { (planetTile, depth) ->
                     planetTile.edgeDepth = depth
                 }
         }
+        val runGuardrailsTime = measureTime {
+            planet.planetTiles.values.forEach {
+                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
+            }
+            runGuardrails(planet)
+        }
 
-        val timeTaken = movePlanetTilesTime + tectonicPlateForcesTime + performErosionTime + calculateEdgeDepth
+        val timeTaken = movePlanetTilesTime +
+                tectonicPlateForcesTime +
+                performErosionTime +
+                calculateEdgeDepthTime +
+                runGuardrailsTime
 
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
@@ -439,13 +474,34 @@ object Tectonics {
         GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
         GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
         GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
-        GD.print(" - calculateEdgeDepth: ${calculateEdgeDepth.inWholeMilliseconds}ms")
+        GD.print(" - calculateEdgeDepth: ${calculateEdgeDepthTime.inWholeMilliseconds}ms")
+        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
         GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
         if (planet.tectonicAge % 10000 == 0) {
             Main.instance.timerActive = false
+        }
+    }
+
+    fun runGuardrails(planet: Planet) {
+        val averageContinentalHeight = planet.planetTiles.values
+            .filter { it.isContinental }
+            .map { it.elevation }
+            .average()
+
+        val percentContinental =
+            planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
+
+        if (averageContinentalHeight <= 750 && percentContinental <= 0.15) {
+            GD.print("raising elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
+            planet.planetTiles.values.forEach { it.elevation += 100 }
+        }
+
+        if (averageContinentalHeight >= 1250 && percentContinental >= 0.55) {
+            GD.print("lowering elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
+            planet.planetTiles.values.forEach { it.elevation -= 100 }
         }
     }
 }

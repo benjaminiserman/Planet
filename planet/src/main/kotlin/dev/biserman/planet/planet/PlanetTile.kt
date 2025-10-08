@@ -55,6 +55,9 @@ class PlanetTile(
     var erosionDelta: Double = 0.0
     var springDisplacement: Vector3 = Vector3.ZERO
 
+    var depositFlow: Double = 0.0
+    var waterFlow: Double = 0.0
+
     var tectonicPlate: TectonicPlate? = null
         set(value) {
             field?.tiles?.remove(this)
@@ -118,6 +121,8 @@ class PlanetTile(
         this.edgePush = other.edgePush
         this.formationTime = other.formationTime
         this.erosionDelta = other.erosionDelta
+        this.depositFlow = other.depositFlow
+        this.waterFlow = other.waterFlow
     }
 
     fun planetInit() {
@@ -199,7 +204,7 @@ class PlanetTile(
 
     @JsonIgnore
     fun getInfoText(): String = """
-        elevation: ${elevation.formatDigits()} (density: ${density.formatDigits()})
+        elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
         temperature: ${temperature.formatDigits()}
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
@@ -211,11 +216,13 @@ class PlanetTile(
         erosion: ${erosionDelta.formatDigits()}
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
-        formation time: $formationTime
+        formation time: $formationTime My
         plate: ${tectonicPlate?.name ?: "null"}
         insolation: ${insolation.formatDigits()}
-        edge depth: $edgeDepth
+        edge depth: $edgeDepth tiles
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
+        deposit flow: ${depositFlow.formatDigits()}
+        water flow: ${waterFlow.formatDigits()}
     """.trimIndent() + if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """

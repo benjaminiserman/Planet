@@ -173,8 +173,14 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "slope", visibleByDefault = false,
         ) { Color.white * it.slope.scaleAndCoerceIn(0.0..500.0, 0.0..1.0) },
         SimpleColorMode(
+            this, "contiguous_slope", visibleByDefault = false,
+        ) { Color.white * it.contiguousSlope.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
+        SimpleColorMode(
+            this, "non_contiguous_slope", visibleByDefault = false,
+        ) { Color.white * it.nonContiguousSlope.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
+        SimpleColorMode(
             this, "prominence", visibleByDefault = false,
-        ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..500.0, 0.0..1.0) },
+        ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "erosion", visibleByDefault = false,
         ) {
@@ -185,6 +191,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 else -> Color.gray
             }
         },
+        SimpleColorMode(
+            this, "deposit_flow", visibleByDefault = false,
+        ) { Color.green * it.depositFlow.scaleAndCoerceIn(0.0..250.0, 0.0..1.0) },
+        SimpleColorMode(
+            this, "water_flow", visibleByDefault = false,
+        ) { Color.blue * it.waterFlow.scaleAndCoerceIn(0.0..50.0, 0.0..1.0) },
         SimpleColorMode(
             this, "crust_age", visibleByDefault = false,
         ) {

@@ -19,6 +19,7 @@ import godot.core.Color
 import godot.core.Vector2
 import godot.core.connect
 import godot.global.GD
+import kotlin.math.min
 
 @RegisterClass
 class Gui() : Node() {
@@ -104,7 +105,7 @@ class Gui() : Node() {
             ) { value ->
                 this.elevation = value.adjustRange(0.0..1.0, -10000.0..10000.0)
             }
-            Main.instance.planet.tectonicAge -= 1
+            Main.instance.planet.tectonicAge = min(-1, Main.instance.planet.tectonicAge - 1)
             Main.instance.planetRenderer.update(Main.instance.planet)
         }
     }
