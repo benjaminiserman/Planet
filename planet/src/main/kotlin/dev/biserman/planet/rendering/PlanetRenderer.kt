@@ -171,16 +171,16 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { it.tectonicPlate?.debugColor ?: Color.black },
         SimpleColorMode(
             this, "slope", visibleByDefault = false,
-        ) { Color.white * it.slope.scaleAndCoerceIn(0.0..500.0, 0.0..1.0) },
+        ) { Color.white * it.slope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "contiguous_slope", visibleByDefault = false,
-        ) { Color.white * it.contiguousSlope.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
+        ) { Color.white * it.contiguousSlope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "non_contiguous_slope", visibleByDefault = false,
-        ) { Color.white * it.nonContiguousSlope.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
+        ) { Color.white * it.nonContiguousSlope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "prominence", visibleByDefault = false,
-        ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0) },
+        ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
             this, "erosion", visibleByDefault = false,
         ) {
