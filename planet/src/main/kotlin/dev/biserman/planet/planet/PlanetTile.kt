@@ -73,7 +73,7 @@ class PlanetTile(
         )
 
     @get:JsonIgnore
-    val isContinental get() = elevation >= TectonicGlobals.continentElevationCutoff
+    val isContinental get() = elevation > TectonicGlobals.continentElevationCutoff
 
     @get:JsonIgnore
     val isAboveWater get() = elevation > planet.seaLevel
@@ -213,7 +213,7 @@ class PlanetTile(
         edge resistance: ${edgeResistance.formatDigits()}
         divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
         subduction: ${planet.convergenceZones[tile.id]?.speed?.formatDigits() ?: 0.0}
-        erosion: ${erosionDelta.formatDigits()}
+        erosion delta: ${erosionDelta.formatDigits()}m
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My

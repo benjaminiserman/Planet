@@ -35,7 +35,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     fun getMode(tile: PlanetTile) = when {
         tile.elevation >= snowLine(tile) -> RenderMode.SNOW
         warpNoise.warp(tile.tile.position, 0.075).y.absoluteValue >= 0.95 -> RenderMode.SNOW
-        tile.elevation < planetRenderer.planet.seaLevel -> RenderMode.WATER
+        tile.elevation <= planetRenderer.planet.seaLevel -> RenderMode.WATER
         else -> RenderMode.BIOME
     }
 
