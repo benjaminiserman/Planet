@@ -177,3 +177,32 @@ offset_right = -172.0
 offset_bottom = 38.0
 grow_horizontal = 0
 text = "Import"
+
+[node name="ExportDialog" type="FileDialog" parent="GUI"]
+title = "Export World"
+initial_position = 2
+access = 2
+
+[node name="SaveDialog" type="FileDialog" parent="GUI"]
+auto_translate_mode = 1
+title = "Save World"
+initial_position = 2
+access = 2
+filters = PackedStringArray("*.json")
+
+[node name="ImportDialog" type="FileDialog" parent="GUI"]
+auto_translate_mode = 1
+title = "Import onto Current World"
+initial_position = 2
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+
+[node name="LoadDialog" type="FileDialog" parent="GUI"]
+auto_translate_mode = 1
+title = "Load World"
+initial_position = 2
+ok_button_text = "Open"
+file_mode = 0
+access = 2
+filters = PackedStringArray("*.json")
