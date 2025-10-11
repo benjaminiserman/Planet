@@ -33,6 +33,11 @@ class Gui() : Node() {
     val projectButton by lazy { findChild("ProjectButton") as Button }
     val importButton by lazy { findChild("ImportButton") as Button }
 
+    val saveDialog by lazy { findChild("SaveDialog") as FileDialog }
+    val loadDialog by lazy { findChild("LoadDialog") as FileDialog }
+    val importDialog by lazy { findChild("ImportDialog") as FileDialog }
+    val exportDialog by lazy { findChild("ExportDialog") as FileDialog }
+
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
     }
@@ -77,16 +82,19 @@ class Gui() : Node() {
         addToggle("Show Stats", defaultValue = statsGraph.visible) { statsGraph.visible = it }
         addToggle("Track Stats", defaultValue = statsGraph.trackStats) { statsGraph.trackStats = it }
 
-        saveButton.pressed.connect {
-            Serialization.save(Main.instance.planet)
+        saveDialog.fileSelected.connect { filename ->
+            Serialization.save(filename.removePrefix("res:\\"), Main.instance.planet)
             GD.print("Saved!")
         }
-        loadButton.pressed.connect {
-            val loadedPlanet = Serialization.load()
+        loadDialog.fileSelected.connect { filename ->
+            val loadedPlanet = Serialization.load(filename.removePrefix("res:\\"))
             Main.instance.updatePlanet(loadedPlanet)
             GD.print("Loaded!")
             GD.print("Tectonic age: ${loadedPlanet.tectonicAge}")
         }
+        saveButton.pressed.connect { saveDialog.popup() }
+        loadButton.pressed.connect { loadDialog.popup() }
+
         projectButton.pressed.connect {
             MapProjections.EQUIDISTANT.projectTiles(
                 Main.instance.planet,

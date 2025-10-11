@@ -74,13 +74,11 @@ object Serialization {
             }
     }
 
-    fun save(planet: Planet) {
-        objectMapper.writeValue(File("planet.json"), planet)
+    fun save(filename: String, planet: Planet) {
+        objectMapper.writeValue(File(filename), planet)
     }
 
-    fun load(): Planet {
-        GD.print("Loading planet.json")
-        val planet = objectMapper.readValue(File("planet.json"), Planet::class.java)
-        return planet
+    fun load(filename: String): Planet {
+        return objectMapper.readValue(File(filename), Planet::class.java)
     }
 }
