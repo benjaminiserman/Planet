@@ -34,7 +34,7 @@ object MapProjections {
         imageX: Int,
         imageY: Int,
         colorFn: (Planet).(Vector3) -> Color
-    ) {
+    ): BufferedImage {
         val image = BufferedImage(imageX, imageY, BufferedImage.TYPE_INT_ARGB)
         for (x in 0..<imageX) {
             for (y in 0..<imageY) {
@@ -54,6 +54,7 @@ object MapProjections {
         }
 
         ImageIO.write(image, "png", File(imageName))
+        return image
     }
 
     fun (MapProjection).projectTiles(
@@ -65,7 +66,7 @@ object MapProjections {
         sampleRadius: Double = planet.topology.averageRadius,
         variogram: (Double) -> Double = Kriging.variogram(sampleRadius, 1.0, 0.0),
         colorFn: (PlanetTile) -> Color,
-    ) {
+    ): BufferedImage =
         this.projectPoints(
             planet,
             imageName,
@@ -95,15 +96,14 @@ object MapProjections {
                 )
             }
         }
-    }
 
-    fun (MapProjection).applyValueTo(planet: Planet, imageName: String, modifyFn: (PlanetTile).(Double) -> Unit) {
+    fun (MapProjection).applyValueTo(planet: Planet, imageName: String, modifyFn: (PlanetTile).(Color) -> Unit) {
         val image = ImageIO.read(File(imageName))
         val imageRTree = (0..<image.width).flatMap { x ->
             (0..<image.height).map { y ->
                 Pair(
                     Vector2(x.toDouble() / image.width - 0.5, y.toDouble() / image.height - 0.5),
-                    image.getRGB(x, y).toRGB().r
+                    image.getRGB(x, y).toRGB()
                 )
             }
         }.toRTree(dimensions = 2) { it.first.toPoint() to it.second }
@@ -115,23 +115,14 @@ object MapProjections {
                 .distanceTo(this.forward(testPoints.last().value().position.toGeoPoint())),
             max(1.0 / image.width, 1.0 / image.height)
         ) * 1.5
-        GD.print("Distance guess: $distanceGuess")
 
         planet.planetTiles.values.forEach { tile ->
             val samples =
-                imageRTree.nearest(this.forward(tile.tile.position.toGeoPoint()).toPoint(), distanceGuess, 100)
-            tile.modifyFn(
-                if (samples.count() == 0) {
-                    -10.0
-                } else {
-                    samples.first().value()
-//                    Kriging.interpolate(
-//                        samples.map { backward(it.geometry().toVector2()) to it.value() },
-//                        tile.tile.position,
-//                        variogram = Kriging.variogram(distanceGuess, 1.0, 0.0)
-//                    )
-                }
-            )
+                imageRTree.nearest(this.forward(tile.tile.position.toGeoPoint()).toPoint(), distanceGuess, 1)
+            val nearest = samples.firstOrNull()?.value()
+            if (nearest != null) {
+                modifyFn(tile, nearest)
+            }
         }
     }
 
