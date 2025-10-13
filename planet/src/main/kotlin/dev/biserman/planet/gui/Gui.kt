@@ -111,7 +111,7 @@ class Gui() : Node() {
                 Main.instance.planet,
                 "import_elevation.png",
             ) { value ->
-                this.elevation = value.adjustRange(0.0..1.0, -10000.0..10000.0)
+                this.elevation = value.r.adjustRange(0.0..1.0, -10000.0..10000.0)
             }
             Main.instance.planet.tectonicAge = min(-1, Main.instance.planet.tectonicAge - 1)
             Main.instance.planetRenderer.update(Main.instance.planet)
