@@ -404,7 +404,7 @@ object Tectonics {
             val erosion = max(
                 0.0, min(
                     planetTile.prominence, min(
-                        planetTile.elevation,
+                        planetTile.elevation + 1.0,
                         planetTile.prominence.pow(0.5) * prominenceErosion +
                                 planetTile.elevation.pow(2) * elevationErosion +
                                 water * waterErosion
