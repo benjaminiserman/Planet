@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import godot.common.util.lerp
@@ -8,62 +9,64 @@ import kotlin.math.sqrt
 
 @Suppress("MayBeConstant")
 object TectonicGlobals {
-    val slabPullStrength = 0.015
-    val convergencePushStrength = 0.5
-    val ridgePushStrength = 0.003
-    val mantleConvectionStrength = 0.0008
-    val springPlateContributionStrength = 0.007
-    val edgeInteractionStrength = 0.08
-    val tileInertia = 0.25
+    var slabPullStrength = 0.015
+    var convergencePushStrength = 0.5
+    var ridgePushStrength = 0.003
+    var mantleConvectionStrength = 0.0008
+    var springPlateContributionStrength = 0.007
+    var edgeInteractionStrength = 0.08
+    var tileInertia = 0.25
 
-    val plateTorqueScalar = 0.1
-    val riftCutoff = 0.5
-    val minElevation = -12000.0
-    val maxElevation = 12000.0
-    val plateMergeCutoff = 0.39
-    val minPlateSize = 10
-    val continentElevationCutoff = -250.0
+    var plateTorqueScalar = 0.1
+    var riftCutoff = 0.5
+    var minElevation = -12000.0
+    var maxElevation = 12000.0
+    var plateMergeCutoff = 0.39
+    var minPlateSize = 10
+    var continentElevationCutoff = -250.0
 
-    val convergenceSearchRadius = 1.5 // multiple of average tile radius
-    val divergenceSearchRadius = 1.5 // multiple of average tile radius
-    val searchMaxResults = 7
-    val divergencePatchUplift = -1000
+    var convergenceSearchRadius = 1.5 // multiple of average tile radius
+    var divergenceSearchRadius = 1.5 // multiple of average tile radius
+    var searchMaxResults = 7
+    var divergencePatchUplift = -1000
 
-    val continentSpringStiffness = 1.0
-    val continentSpringDamping = 0.1
-    val continentSpringSearchRadius = 2.0 // multiple of average tile radius
+    var continentSpringStiffness = 1.0
+    var continentSpringDamping = 0.1
+    var continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    val overridingElevationStrengthScale = 1400.0
-    val subductingElevationStrengthScale = -1000.0
-    val convergingElevationStrengthScale = 1500.0
+    var overridingElevationStrengthScale = 1400.0
+    var subductingElevationStrengthScale = -1000.0
+    var convergingElevationStrengthScale = 1500.0
 
-    val divergenceCutoff = 0.25
-    val divergedCrustHeight = -2000.0
-    val divergedCrustLerp = 1.0
+    var divergenceCutoff = 0.25
+    var divergedCrustHeight = -2000.0
+    var divergedCrustLerp = 1.0
 
-    val depositStrength = 0.6
-    val depositLoss = 0.01
-    val prominenceErosion = 0.1
-    val elevationErosion = 6e-07
-    val waterErosion = 12.5
-    val depositionStartHeight = 1000
+    var depositStrength = 0.6
+    var depositLoss = 0.01
+    var prominenceErosion = 0.1
+    var elevationErosion = 6e-07
+    var waterErosion = 12.5
+    var depositionStartHeight = 1000
 
-    val estimatedAverageRadius = 0.020775855876950022
+    var estimatedAverageRadius = 0.020775855876950022
+    @JsonIgnore
     val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 1000.0)
 
     // desmos: f\left(x\right)\ =\ \frac{110}{1+e^{0.005\left(x+1400\right)}}-\frac{100}{1+e^{0.003\left(x+5500\right)}}
     fun oceanicSubsidence(elevation: Double) =
         110 * sigmoid(elevation, 0.005, 1400.0) - 100 * sigmoid(elevation, 0.003, 5500.0)
 
-    val hotspotEruptionChance = 0.45
-    val hotspotStrength = 7500f.pow(2)
+    var hotspotEruptionChance = 0.45
+    var hotspotStrength = 7500f.pow(2)
+    var hotspotLerp = 0.66
     fun tryHotspotEruption(tile: PlanetTile): Double {
         val planet = tile.planet
         if (planet.random.nextFloat() <= hotspotEruptionChance) {
             val hotspot =
                 planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
             if (hotspot > 0) {
-                return lerp(tile.elevation, sqrt(hotspot), 0.66)
+                return lerp(tile.elevation, sqrt(hotspot), hotspotLerp)
             }
         }
 

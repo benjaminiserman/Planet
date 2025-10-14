@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler
@@ -18,6 +19,7 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
+import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -58,21 +60,28 @@ abstract class Vector2Mixin {
 
 object Serialization {
     val objectMapper: ObjectMapper = jacksonObjectMapper()
+        .registerKotlinModule()
+        .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
+        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+        .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
+        .addMixIn(Vector3::class.java, Vector3Mixin::class.java)
+        .addMixIn(Vector2::class.java, Vector2Mixin::class.java)
+        .enable(SerializationFeature.INDENT_OUTPUT)
+        .enable(SerializationFeature.WRAP_EXCEPTIONS)
+        .enable(DeserializationFeature.WRAP_EXCEPTIONS).also {
+            it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
+        }
 
-    init {
-        objectMapper
-            .registerKotlinModule()
-            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)
-            .addMixIn(Vector3::class.java, Vector3Mixin::class.java)
-            .addMixIn(Vector2::class.java, Vector2Mixin::class.java)
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .enable(SerializationFeature.WRAP_EXCEPTIONS)
-            .enable(DeserializationFeature.WRAP_EXCEPTIONS).also {
-                it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
-            }
-    }
+    val configMapper: ObjectMapper = jacksonObjectMapper()
+        .registerKotlinModule { enable(KotlinFeature.SingletonSupport) }
+        .addMixIn(Vector3::class.java, Vector3Mixin::class.java)
+        .addMixIn(Vector2::class.java, Vector2Mixin::class.java)
+        .enable(SerializationFeature.INDENT_OUTPUT)
+        .enable(SerializationFeature.WRAP_EXCEPTIONS)
+        .enable(MapperFeature.SORT_CREATOR_PROPERTIES_BY_DECLARATION_ORDER)
+        .enable(DeserializationFeature.WRAP_EXCEPTIONS).also {
+            it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
+        }
 
     fun save(filename: String, planet: Planet) {
         objectMapper.writeValue(File(filename), planet)
