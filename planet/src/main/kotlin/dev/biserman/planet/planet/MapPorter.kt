@@ -7,6 +7,9 @@ import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.memberProperties
 
+// variables: name, fetch, apply, min & max, type — (PlanetTile) <-> T
+// channels: name, fetch, apply, type — (Color) <-> T
+
 object MapPorter {
     data class Variable<T>(
         val name: String,
@@ -46,22 +49,12 @@ object MapPorter {
     )
 
     @Suppress("UNCHECKED_CAST")
-    val doubleVariables = listOf(
+    val numberVariables = listOf(
         (PlanetTile::class).memberProperties
-            .filter { it.returnType == Double::class.createType() }
+            .filter { it.returnType == Double::class.createType() || it.returnType == Int::class.createType() }
             .filter { it is KMutableProperty1<*, *> }
-            .map { it as KMutableProperty1<PlanetTile, Double> }
+            .map { it as KMutableProperty1<PlanetTile, Number> }
             .map { Variable(it) },
-        (PlanetTile::class).memberProperties
-            .filter { it.returnType == Int::class.createType() }
-            .filter { it is KMutableProperty1<*, *> }
-            .map { it as KMutableProperty1<PlanetTile, Int> }
-            .map {
-                Variable(
-                    it.name,
-                    { planetTile -> it.get(planetTile).toDouble() },
-                    { planetTile, value -> it.set(planetTile, value.toInt()) })
-            },
     ).flatten().associateBy { it.name }
 
     fun parseFilenameToSteps(filename: String): List<Pair<Variable<*>, Channel<*>>> {
@@ -71,8 +64,8 @@ object MapPorter {
             .filter { "-" in it }
             .mapNotNull {
                 val (start, end) = it.split("-")
-                if (start in doubleVariables && (end in doubleChannels || end == colorChannel.name)) {
-                    Pair(doubleVariables[start]!!, doubleChannels[end] ?: colorChannel)
+                if (start in numberVariables && (end in doubleChannels || end == colorChannel.name)) {
+                    Pair(numberVariables[start]!!, doubleChannels[end] ?: colorChannel)
                 } else {
                     null
                 }
