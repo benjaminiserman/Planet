@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
+import dev.biserman.planet.utils.UtilityExtensions.radToDeg
 import kotlin.math.*
 
 @Suppress("MayBeConstant")
@@ -30,9 +31,12 @@ object Insolation {
         return sin(latitude) * sin(dec) + cos(latitude) * cos(dec)
     }
 
-    // Air mass (simple, assumes sea level)
+    // Kasten–Young (1989) airmass
     fun airMass(cosZenith: Double): Double {
-        return 1.0 / cosZenith
+        val theta = acos(cosZenith)
+        val thetaDeg = theta * 180.0 / PI
+        if (thetaDeg >= 90.0) return Double.POSITIVE_INFINITY
+        return 1.0 / (cosZenith + 0.50572 * (96.07995 - thetaDeg).pow(-1.6364))
     }
 
     // Direct horizontal irradiance at noon
