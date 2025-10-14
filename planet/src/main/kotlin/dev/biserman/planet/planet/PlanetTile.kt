@@ -10,13 +10,16 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
+import dev.biserman.planet.planet.ClimateSimulation.bands
 import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
+import godot.common.util.lerp
 import godot.core.Vector3
 import kotlin.math.absoluteValue
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -39,9 +42,28 @@ class PlanetTile(
         }
 
     val density get() = -elevation.scaleAndCoerceUnit(-5000.0..5000.0)
-    val temperature get() = 1 - tile.position.y.absoluteValue
+    var temperature = 0.0
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
+    val airPressure: Double
+        get() {
+            val latitude = tile.position.toGeoPoint().latitudeDegrees
+            val nearestBandAbove = bands.last { it.latitude >= latitude }
+            val nearestBandBelow = bands.first { it.latitude <= latitude }
+
+            val seasonalAdjustment = if (isAboveWater) {
+                -30 * (2 / (1 + exp(-insolation.pow(2) * edgeDepth * 0.2)) - 1)
+            } else {
+                -10 * (2 / (1 + exp(-insolation.pow(2) * edgeDepth * 0.2)) - 1)
+            }
+
+            return ClimateSimulation.basePressure + lerp(
+                nearestBandBelow.pressureDelta,
+                nearestBandAbove.pressureDelta,
+                (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
+            ) + seasonalAdjustment
+        }
+    var wind = Vector3.ZERO
 
     @get:JsonIgnore
     val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
@@ -68,7 +90,7 @@ class PlanetTile(
     @get:JsonIgnore
     val insolation
         get() = Insolation.directHorizontal(
-            planet.tectonicAge % Insolation.yearLength.toInt(),
+            planet.tectonicAge * 30 % Insolation.yearLength.toInt(),
             tile.position.toGeoPoint().latitude
         )
 
@@ -223,6 +245,7 @@ class PlanetTile(
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
         deposit flow: ${depositFlow.formatDigits()}
         water flow: ${waterFlow.formatDigits()}
+        airPressure: ${airPressure.formatDigits()}
     """.trimIndent() + if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """

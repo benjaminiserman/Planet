@@ -2,6 +2,7 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.planet.ClimateSimulation
 import dev.biserman.planet.planet.Insolation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
@@ -15,11 +16,14 @@ import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
+import dev.biserman.planet.utils.alphaAverage
 import dev.biserman.planet.utils.average
 import dev.biserman.planet.utils.sum
+import dev.biserman.planet.utils.transparent
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
+import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
@@ -206,13 +210,22 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "insolation", visibleByDefault = false,
         ) { planetTile ->
-            Color.orange * planetTile.insolation
+            Color.black.transparent.lerp(Color.orange, planetTile.insolation)
         },
         SimpleColorMode(
             this, "edge_depth", visibleByDefault = false,
         ) { planetTile ->
-            Color.white * (planetTile.edgeDepth * 0.01)
-        })
+            Color.black.transparent.lerp(Color.white, planetTile.edgeDepth / 40.0)
+        },
+        SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
+            val airPressure = planetTile.airPressure
+            if (airPressure >= ClimateSimulation.basePressure) {
+                Color.black.transparent.lerp(Color.red, (airPressure - ClimateSimulation.basePressure) / 40)
+            } else {
+                Color.black.transparent.lerp(Color.blue, (ClimateSimulation.basePressure - airPressure) / 40)
+            }
+        }
+    )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
 
@@ -238,7 +251,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
     fun getColor(planetTile: PlanetTile): Color {
         val colors = planetColorModes.filter { it.visible }
             .mapNotNull { mode -> mode.colorsFor(planetTile).first() }
-        return colors.average()
+        return colors.alphaAverage()
     }
 
     fun updateMesh() {
@@ -253,7 +266,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             }
 
             (0..<resultsSize).map { i ->
-                colorModeResults.mapNotNull { it[i] }.average()
+                colorModeResults.mapNotNull { it[i] }.alphaAverage()
             }
         } else listOf()
 
