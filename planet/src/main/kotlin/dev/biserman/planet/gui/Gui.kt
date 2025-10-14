@@ -1,5 +1,6 @@
 package dev.biserman.planet.gui
 
+import com.fasterxml.jackson.module.kotlin.readValue
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Path.Companion.toMesh
 import dev.biserman.planet.geometry.Path.Companion.toPaths
@@ -8,6 +9,7 @@ import dev.biserman.planet.planet.MapProjections
 import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
@@ -19,6 +21,7 @@ import godot.core.Color
 import godot.core.Vector2
 import godot.core.connect
 import godot.global.GD
+import java.io.File
 import kotlin.math.min
 
 @RegisterClass
@@ -32,6 +35,7 @@ class Gui() : Node() {
     val loadButton by lazy { findChild("LoadButton") as Button }
     val projectButton by lazy { findChild("ProjectButton") as Button }
     val importButton by lazy { findChild("ImportButton") as Button }
+    val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
 
     val saveDialog by lazy { findChild("SaveDialog") as FileDialog }
     val loadDialog by lazy { findChild("LoadDialog") as FileDialog }
@@ -94,6 +98,16 @@ class Gui() : Node() {
         }
         saveButton.pressed.connect { saveDialog.popup() }
         loadButton.pressed.connect { loadDialog.popup() }
+        refreshConfigButton.pressed.connect {
+            val configFile = File("tectonics_config.json")
+            if (configFile.exists()) {
+                Serialization.configMapper.readValue<TectonicGlobals>(configFile)
+                GD.print("Config refreshed!")
+            } else {
+                Serialization.configMapper.writeValue(configFile, TectonicGlobals)
+                GD.print("No tectonics_config.json not found, created one with default values.")
+            }
+        }
 
         projectButton.pressed.connect {
             MapProjections.EQUIDISTANT.projectTiles(
