@@ -68,7 +68,7 @@ class Planet(val seed: Int, val size: Int) {
 
         planetTiles.values.associateWith { tile ->
             val edgeDepth = continentEdgeDepth[tile]!!
-            edgeDepth * if (isContinental[tile]!!) +1 else -1
+            if (isContinental[tile]!!) edgeDepth else -edgeDepth - 1
         }
     }
 
