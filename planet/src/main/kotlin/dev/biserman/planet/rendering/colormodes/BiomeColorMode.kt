@@ -24,17 +24,13 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         WATER
     }
 
-    fun snowLine(tile: PlanetTile) = (1 - tile.tile.position.y.absoluteValue).pow(0.5) * 6500
-    val warpNoise by memo({ planetRenderer.planet.tectonicAge }) {
-        VectorWarpNoise(
-            planetRenderer.planet.tectonicAge,
-            3f
-        )
-    }
+//    fun snowLine(tile: PlanetTile) = (1 - tile.tile.position.y.absoluteValue).pow(0.5) * 6500
+
 
     fun getMode(tile: PlanetTile) = when {
-        tile.elevation >= snowLine(tile) -> RenderMode.SNOW
-        warpNoise.warp(tile.tile.position, 0.075).y.absoluteValue >= 0.95 -> RenderMode.SNOW
+//        tile.elevation >= snowLine(tile) -> RenderMode.SNOW
+//        warpNoise.warp(tile.tile.position, 0.075).y.absoluteValue >= 0.95 -> RenderMode.SNOW
+        tile.isIceCap -> RenderMode.SNOW
         tile.elevation <= planetRenderer.planet.seaLevel -> RenderMode.WATER
         else -> RenderMode.BIOME
     }

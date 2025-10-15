@@ -12,6 +12,8 @@ class PlanetRegion(
     val planet: Planet,
     var tiles: MutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
 ) {
+    constructor(planet: Planet, tiles: Collection<PlanetTile>) : this(planet, tiles.toMutableSet())
+
     @get:JsonIgnore
     val border by memo({ planet.tectonicAge }) {
         tiles.flatMap { planetTile ->
@@ -90,6 +92,31 @@ class PlanetRegion(
                     .filter { it !in results }
                     .forEach { queue.add(it to depth + 1) }
             }
+        }
+
+        return results
+    }
+
+    fun <T> floodFillGroupBy(
+        planetTileFn: ((Tile) -> PlanetTile)? = null, keyFn: (PlanetTile) -> T
+    ): Map<T, List<PlanetRegion>> {
+        val visited = mutableSetOf<PlanetTile>()
+        val results = mutableMapOf<T, MutableList<PlanetRegion>>()
+
+        for (tile in tiles) {
+            if (visited.contains(tile)) {
+                continue
+            }
+            val tileValue = keyFn(tile)
+            val found = if (planetTileFn == null) {
+                tile.floodFill { keyFn(it) == tileValue }
+            } else {
+                tile.floodFill(planetTileFn = planetTileFn) {
+                    keyFn(it) == tileValue
+                }
+            }
+            visited.addAll(found)
+            results[tileValue] = (results[tileValue] ?: mutableListOf()).also { it.add(PlanetRegion(planet, found)) }
         }
 
         return results

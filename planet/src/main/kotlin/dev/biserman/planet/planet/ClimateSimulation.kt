@@ -6,11 +6,11 @@ object ClimateSimulation {
     @Suppress("UnusedUnaryOperator")
     val bands = listOf(
         +90 to 0,
-        +60 to -15,
-        +30 to +15,
-        0 to 0,
-        -30 to +15,
-        -60 to -15,
+        +60 to -10,
+        +30 to +10,
+        0 to +4,
+        -30 to +10,
+        -60 to -10,
         -90 to 0,
     ).map { Band(it.first.toDouble(), it.second.toDouble()) }
     val basePressure = 1010.0

@@ -1,9 +1,7 @@
 package dev.biserman.planet.rendering
 
-import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.ClimateSimulation
-import dev.biserman.planet.planet.Insolation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -17,13 +15,11 @@ import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import dev.biserman.planet.utils.alphaAverage
-import dev.biserman.planet.utils.average
 import dev.biserman.planet.utils.sum
 import dev.biserman.planet.utils.transparent
 import godot.api.MeshInstance3D
 import godot.api.Node
 import godot.api.StandardMaterial3D
-import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
@@ -121,7 +117,15 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.white }
                 )
             )
-        })
+        },
+        TileVectorRenderer(
+            parent,
+            "wind",
+            lift = 1.005,
+            getFn = { it.prevailingWind * 2.5 },
+            visibleByDefault = false
+        ),
+    )
 
     val planetColorModes = listOf(
         BiomeColorMode(this, visibleByDefault = true),
@@ -215,14 +219,23 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "edge_depth", visibleByDefault = false,
         ) { planetTile ->
-            Color.black.transparent.lerp(Color.white, planetTile.edgeDepth / 40.0)
+            Color.white * (planetTile.edgeDepth / 40.0)
+        },
+        SimpleColorMode(
+            this, "continentiality", visibleByDefault = false,
+        ) { planetTile ->
+            if (planetTile.continentiality >= 0) Color.red * (planetTile.continentiality / 40.0)
+            else Color.blue * (-planetTile.continentiality / 40.0)
         },
         SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
             val airPressure = planetTile.airPressure
             if (airPressure >= ClimateSimulation.basePressure) {
-                Color.black.transparent.lerp(Color.red, (airPressure - ClimateSimulation.basePressure) / 40)
+                Color.black.transparent.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(3))
             } else {
-                Color.black.transparent.lerp(Color.blue, (ClimateSimulation.basePressure - airPressure) / 40)
+                Color.black.transparent.lerp(
+                    Color.darkorange,
+                    ((ClimateSimulation.basePressure - airPressure) / 25).pow(3)
+                )
             }
         }
     )

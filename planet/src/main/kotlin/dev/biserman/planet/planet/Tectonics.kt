@@ -3,7 +3,6 @@ package dev.biserman.planet.planet
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
-import dev.biserman.planet.planet.PlanetTile.Companion.floodFillGroupBy
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
@@ -188,12 +187,12 @@ object Tectonics {
     }
 
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>): Map<PlanetTile, Vector3> {
-        val continentalTilesRTree = tiles.filter { it.key.isContinental }.entries.toRTree { it.value.toPoint() to it }
+        val continentalTilesRTree = tiles.filter { it.key.isContinentalCrust }.entries.toRTree { it.value.toPoint() to it }
         val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
 
         return tiles.mapValues { entry ->
             val (planetTile, newPosition) = entry
-            val nearbyContinentalCrust = if (planetTile.isContinental) {
+            val nearbyContinentalCrust = if (planetTile.isContinentalCrust) {
                 continentalTilesRTree.nearest(planetTile.tile.position.toPoint(), searchRadius, 6)
                     .toList()
                     .filter { (entry, _) -> entry.key != planetTile }
@@ -303,11 +302,11 @@ object Tectonics {
             newPlanetTile?.tile = tile
         }
 
-        val plateRegions = newTileMap.values.filterNotNull()
+        val plateRegions = PlanetRegion(planet, newTileMap.values.filterNotNull())
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate }
             .toMutableMap()
             .mapValues { (_, value) ->
-                value.map { PlanetRegion(planet, it.toMutableSet()) }.sortedByDescending { it.tiles.size }
+                value.sortedByDescending { it.tiles.size }
             }
 
         for ((plate, regions) in plateRegions) {
@@ -341,18 +340,18 @@ object Tectonics {
             }
         }
 
-        val newPlates = newTileMap.values.filterNotNull()
+        val newPlates = PlanetRegion(planet, newTileMap.values.filterNotNull())
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
 
         for (plate in newPlates) {
-            val newPlate = if (plate.size >= minPlateSize) {
+            val newPlate = if (plate.tiles.size >= minPlateSize) {
                 TectonicPlate(planet)
             } else {
                 TectonicPlate(planet, name = "Complex")
             }
-            GD.print("creating plate of size ${plate.size}")
+            GD.print("creating plate of size ${plate.tiles.size}")
             planet.tectonicPlates.add(newPlate)
-            plate.forEach { it.tectonicPlate = newPlate }
+            plate.tiles.forEach { it.tectonicPlate = newPlate }
         }
 
         val subductionZonesRTree = convergenceZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
@@ -441,43 +440,35 @@ object Tectonics {
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
-        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
-        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
-        val performErosionTime = measureTime { performErosion(planet) }
-        val calculateEdgeDepthTime = measureTime {
-            PlanetRegion(planet, planet.planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
-                .forEach { (planetTile, depth) ->
-                    planetTile.edgeDepth = depth
-                }
-        }
-        val runGuardrailsTime = measureTime {
-            planet.planetTiles.values.forEach {
-                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
-            }
-            runGuardrails(planet)
-        }
-
-        val timeTaken = movePlanetTilesTime +
-                tectonicPlateForcesTime +
-                performErosionTime +
-                calculateEdgeDepthTime +
-                runGuardrailsTime
+//        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
+//        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
+//        val performErosionTime = measureTime { performErosion(planet) }
+//        val runGuardrailsTime = measureTime {
+//            planet.planetTiles.values.forEach {
+//                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
+//            }
+//            runGuardrails(planet)
+//        }
+//
+//        val timeTaken = movePlanetTilesTime +
+//                tectonicPlateForcesTime +
+//                performErosionTime +
+//                runGuardrailsTime
 
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
         Gui.instance.statsGraph.update(planet)
 
-        val percentContinental =
-            planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
-        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
-        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
-        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
-        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
-        GD.print(" - calculateEdgeDepth: ${calculateEdgeDepthTime.inWholeMilliseconds}ms")
-        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
-        GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
-        GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
+//        val percentContinental =
+//            planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
+//        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
+//        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
+//        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
+//        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
+//        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
+//        GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
+//        GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
         if (planet.tectonicAge % 10000 == 0) {
@@ -487,7 +478,7 @@ object Tectonics {
 
     fun runGuardrails(planet: Planet) {
         val averageContinentalHeight = planet.planetTiles.values
-            .filter { it.isContinental }
+            .filter { it.isContinentalCrust }
             .map { it.elevation }
             .average()
 
