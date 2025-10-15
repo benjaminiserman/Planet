@@ -14,6 +14,7 @@ import dev.biserman.planet.planet.TectonicGlobals.tileInertia
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
+import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
@@ -50,17 +51,17 @@ class PlanetTile(
         val nearestBandAbove = bands.last { it.latitude >= latitude }
         val nearestBandBelow = bands.first { it.latitude <= latitude }
 
-        val adjustedContinentiality = continentiality + 2.0
+        val adjustedContinentiality = continentiality + 1.0
 
         val seasonalAdjustment = -(2 / (1 + exp(
-            -(insolation - 0.6) * adjustedContinentiality.absoluteValue * 0.7
-        )) - 1) * if (adjustedContinentiality > 0) 15 else 7
+            -(insolation - 0.6) * adjustedContinentiality.absoluteValue * 0.65
+        )) - 1) * if (adjustedContinentiality > 0) 15 else 5
 
         val latitudeAdjustment =
             tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
                 0.0..1.0,
-                -5.0..9.0
-            ) * (1 / (1 + exp(-adjustedContinentiality * 0.03)))
+                -5.0..2.0
+            ) * (1 / (1 + exp(-adjustedContinentiality.signPow(0.5) * 0.3)))
 
         ClimateSimulation.basePressure + lerp(
             nearestBandBelow.pressureDelta,
@@ -71,7 +72,7 @@ class PlanetTile(
     val prevailingWind by memo({ planet.tectonicAge }) {
         neighbors
             .filter { it.airPressure < airPressure }
-            .map { (it.tile.position - tile.position).tangent(tile.position) * (it.airPressure - airPressure) / 10.0 }
+            .map { (it.tile.position - tile.position).tangent(tile.position) * (airPressure - it.airPressure) / 10.0 }
             .sum()
     }
 
