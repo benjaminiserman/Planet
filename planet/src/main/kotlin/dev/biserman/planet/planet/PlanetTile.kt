@@ -1,12 +1,11 @@
 package dev.biserman.planet.planet
 
-import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
-import com.fasterxml.jackson.annotation.JsonIdentityReference
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
-import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.average
+import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
@@ -16,6 +15,7 @@ import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
+import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
 import kotlin.math.absoluteValue
@@ -45,25 +45,42 @@ class PlanetTile(
     var temperature = 0.0
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure: Double
-        get() {
-            val latitude = tile.position.toGeoPoint().latitudeDegrees
-            val nearestBandAbove = bands.last { it.latitude >= latitude }
-            val nearestBandBelow = bands.first { it.latitude <= latitude }
+    val airPressure by memo({ planet.tectonicAge }) {
+        val latitude = tile.position.toGeoPoint().latitudeDegrees
+        val nearestBandAbove = bands.last { it.latitude >= latitude }
+        val nearestBandBelow = bands.first { it.latitude <= latitude }
 
-            val seasonalAdjustment = if (isAboveWater) {
-                -30 * (2 / (1 + exp(-insolation.pow(2) * edgeDepth * 0.2)) - 1)
-            } else {
-                -10 * (2 / (1 + exp(-insolation.pow(2) * edgeDepth * 0.2)) - 1)
-            }
+        val adjustedContinentiality = continentiality + 2.0
 
-            return ClimateSimulation.basePressure + lerp(
-                nearestBandBelow.pressureDelta,
-                nearestBandAbove.pressureDelta,
-                (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-            ) + seasonalAdjustment
-        }
-    var wind = Vector3.ZERO
+        val seasonalAdjustment = -(2 / (1 + exp(
+            -(insolation - 0.6) * adjustedContinentiality.absoluteValue * 0.7
+        )) - 1) * if (adjustedContinentiality > 0) 15 else 7
+
+        val latitudeAdjustment =
+            tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
+                0.0..1.0,
+                -5.0..9.0
+            ) * (1 / (1 + exp(-adjustedContinentiality * 0.03)))
+
+        ClimateSimulation.basePressure + lerp(
+            nearestBandBelow.pressureDelta,
+            nearestBandAbove.pressureDelta,
+            (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
+        ) + seasonalAdjustment + latitudeAdjustment
+    }
+    val prevailingWind by memo({ planet.tectonicAge }) {
+        neighbors
+            .filter { it.airPressure < airPressure }
+            .map { (it.tile.position - tile.position).tangent(tile.position) * (it.airPressure - airPressure) / 10.0 }
+            .sum()
+    }
+
+    val isIceCap
+        get() = elevation >= (1 - tile.position.y.absoluteValue).pow(0.5) * 6500 ||
+                planet.warpNoise.warp(
+                    tile.position,
+                    0.075
+                ).y.absoluteValue >= 0.95
 
     @get:JsonIgnore
     val elevationAboveSeaLevel get() = max(elevation - planet.seaLevel, 0.0)
@@ -95,7 +112,7 @@ class PlanetTile(
         )
 
     @get:JsonIgnore
-    val isContinental get() = elevation > TectonicGlobals.continentElevationCutoff
+    val isContinentalCrust get() = elevation > TectonicGlobals.continentElevationCutoff
 
     @get:JsonIgnore
     val isAboveWater get() = elevation > planet.seaLevel
@@ -128,7 +145,11 @@ class PlanetTile(
     @get:JsonIgnore
     val neighbors get() = tile.tiles.map { planet.getTile(it) }
 
-    var edgeDepth: Int = -1
+    @get:JsonIgnore
+    val edgeDepth get() = planet.edgeDepthMap[this]!!
+
+    @get:JsonIgnore
+    val continentiality get() = planet.continentialityMap[this]!!
 
     constructor(other: PlanetTile) : this(
         other.planet, other.tile.id
@@ -242,6 +263,7 @@ class PlanetTile(
         plate: ${tectonicPlate?.name ?: "null"}
         insolation: ${insolation.formatDigits()}
         edge depth: $edgeDepth tiles
+        continentiality: $continentiality tiles
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
         deposit flow: ${depositFlow.formatDigits()}
         water flow: ${waterFlow.formatDigits()}
@@ -256,31 +278,4 @@ class PlanetTile(
         subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()
     } else ""
-
-    companion object {
-        fun <T> (Collection<PlanetTile>).floodFillGroupBy(
-            planetTileFn: ((Tile) -> PlanetTile)? = null, keyFn: (PlanetTile) -> T
-        ): Map<T, List<Set<PlanetTile>>> {
-            val visited = mutableSetOf<PlanetTile>()
-            val results = mutableMapOf<T, MutableList<Set<PlanetTile>>>()
-
-            for (tile in this) {
-                if (visited.contains(tile)) {
-                    continue
-                }
-                val tileValue = keyFn(tile)
-                val found = if (planetTileFn == null) {
-                    tile.floodFill { keyFn(it) == tileValue }
-                } else {
-                    tile.floodFill(planetTileFn = planetTileFn) {
-                        keyFn(it) == tileValue
-                    }
-                }
-                visited.addAll(found)
-                results[tileValue] = (results[tileValue] ?: mutableListOf()).also { it.add(found) }
-            }
-
-            return results
-        }
-    }
 }

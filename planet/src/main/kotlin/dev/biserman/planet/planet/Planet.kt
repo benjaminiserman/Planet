@@ -18,6 +18,7 @@ import dev.biserman.planet.utils.memo
 import godot.global.GD
 import kotlin.random.Random
 import com.fasterxml.jackson.module.kotlin.treeToValue
+import dev.biserman.planet.utils.VectorWarpNoise
 import godot.core.Vector3
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
@@ -32,6 +33,51 @@ class Planet(val seed: Int, val size: Int) {
     val topology = makeTopology(size)
 
     var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
+
+    @get:JsonIgnore
+    val contiguousRegions by memo({ tectonicAge }) {
+        PlanetRegion(
+            this,
+            planetTiles.values.toMutableSet()
+        ).floodFillGroupBy { it.isAboveWater || it.isIceCap }.flatMap { it.value }
+    }
+
+    @get:JsonIgnore
+    val edgeDepthMap by memo({ tectonicAge }) {
+        PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
+    }
+
+
+    @get:JsonIgnore
+    val continentialityMap by memo({ tectonicAge }) {
+        val tilesToFlip = contiguousRegions
+            .filter { region -> region.tiles.maxOf { it.edgeDepth } <= 2 }
+            .flatMap { it.tiles }
+            .toSet()
+
+        val isContinental = planetTiles.values.associateWith { tile ->
+            if (tile in tilesToFlip) {
+                !(tile.isAboveWater || tile.isIceCap)
+            } else {
+                tile.isAboveWater || tile.isIceCap
+            }
+        }
+
+        val continentEdgeDepth =
+            PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { isContinental[it]!! }
+
+        planetTiles.values.associateWith { tile ->
+            val edgeDepth = continentEdgeDepth[tile]!!
+            edgeDepth * if (isContinental[tile]!!) +1 else -1
+        }
+    }
+
+    val warpNoise by memo({ tectonicAge }) {
+        VectorWarpNoise(
+            tectonicAge,
+            3f
+        )
+    }
 
     fun getTile(tile: Tile) = planetTiles[tile.id]!!
 

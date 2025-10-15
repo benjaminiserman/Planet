@@ -1,6 +1,8 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.geometry.tangent
+import dev.biserman.planet.utils.VectorWarpNoise
+import dev.biserman.planet.utils.memo
 import godot.api.FastNoiseLite
 import godot.core.Vector3
 import opensimplex2.OpenSimplex2S
