@@ -1,6 +1,8 @@
 package dev.biserman.planet
 
+import com.sun.tools.javac.code.TypeAnnotationPosition.field
 import dev.biserman.planet.gui.Gui
+import dev.biserman.planet.planet.ClimateSimulation
 import dev.biserman.planet.planet.NoiseMaps
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.Tectonics
@@ -30,7 +32,10 @@ class Main : Node() {
 		planetRenderer = PlanetRenderer(this, newPlanet)
 
 		Gui.addToggle("Run Tectonics Simulation", defaultValue = false) {
-			timerActive = it
+			timerActive = if (it) "tectonics" else "none"
+		}
+		Gui.addToggle("Run Climate Simulation", defaultValue = false) {
+			timerActive = if (it) "climate" else "none"
 		}
 
 		updatePlanet(newPlanet)
@@ -59,7 +64,7 @@ class Main : Node() {
 	}
 
 	val timerStep = 0.1
-	var timerActive = false
+	var timerActive = "none"
 		set(value) {
 			field = value
 			timerTime = timerStep
@@ -68,11 +73,14 @@ class Main : Node() {
 
 	@RegisterFunction
 	override fun _process(delta: Double) {
-		if (timerActive) {
+		if (timerActive != "none") {
 			timerTime += delta
 			if (timerTime >= timerStep) {
 				timerTime = 0.0
-				Tectonics.stepTectonicsSimulation(planet)
+				when (timerActive) {
+					"tectonics" -> Tectonics.stepTectonicsSimulation(planet)
+					"climate" -> ClimateSimulation.stepClimateSimulation(planet)
+				}
 				planetRenderer.update(planet)
 			}
 		}

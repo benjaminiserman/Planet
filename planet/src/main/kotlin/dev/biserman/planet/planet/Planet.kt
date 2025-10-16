@@ -79,6 +79,8 @@ class Planet(val seed: Int, val size: Int) {
         )
     }
 
+    val rotationRate = 1.0
+
     fun getTile(tile: Tile) = planetTiles[tile.id]!!
 
     var planetStats = PlanetStats()
@@ -89,6 +91,7 @@ class Planet(val seed: Int, val size: Int) {
     var divergenceZones: MutableMap<Int, DivergenceZone> = mutableMapOf()
 
     var tectonicAge = 0
+    var daysPassed = 0
     var nextPlateId = 0
 
     var seaLevel: Double = 0.0

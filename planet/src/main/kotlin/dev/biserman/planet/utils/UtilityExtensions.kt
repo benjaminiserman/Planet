@@ -11,5 +11,5 @@ object UtilityExtensions {
     fun (Vector3).formatDigits(digits: Int = 2) = "(%.${digits}f, %.${digits}f, %.${digits}f)".format(x, y, z)
     fun (Double).degToRad() = this * Math.PI / 180.0
     fun (Double).radToDeg() = this * 180.0 / Math.PI
-    fun (Double).signPow(exp: Double) = this * abs(this).pow(exp).withSign(this)
+    fun (Double).signPow(exp: Double) = abs(this).pow(exp).withSign(this)
 }

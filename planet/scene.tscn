@@ -84,6 +84,17 @@ offset_right = -7.0
 offset_bottom = 66.0
 grow_horizontal = 0
 
+[node name="DaysPassed" type="Label" parent="GUI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -113.0
+offset_top = 67.0
+offset_right = -7.0
+offset_bottom = 90.0
+grow_horizontal = 0
+
 [node name="DebugGraph" type="Control" parent="GUI"]
 visible = false
 layout_mode = 1
