@@ -20,10 +20,12 @@ import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
 import kotlin.math.absoluteValue
+import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 @JsonIdentityInfo(
@@ -46,16 +48,18 @@ class PlanetTile(
     var temperature = 0.0
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo({ planet.tectonicAge }) {
+    val airPressure by memo({ planet.tectonicAge }, { planet.daysPassed }) {
         val latitude = tile.position.toGeoPoint().latitudeDegrees
         val nearestBandAbove = bands.last { it.latitude >= latitude }
         val nearestBandBelow = bands.first { it.latitude <= latitude }
 
-        val adjustedContinentiality = continentiality + 1.0
+        val adjustedContinentiality = continentiality.toDouble() + 2.0
 
         val seasonalAdjustment = -(2 / (1 + exp(
-            -(insolation - 0.6) * adjustedContinentiality.absoluteValue * 0.65
-        )) - 1) * if (adjustedContinentiality > 0) 15 else 5
+            -(insolation - 0.6).signPow(1.01) * (adjustedContinentiality.absoluteValue + 1).pow(2.0) * 0.05
+        )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..15.0)
+
+        val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.002
 
         val latitudeAdjustment =
             tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
@@ -67,13 +71,24 @@ class PlanetTile(
             nearestBandBelow.pressureDelta,
             nearestBandAbove.pressureDelta,
             (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-        ) + seasonalAdjustment + latitudeAdjustment
+        ) + seasonalAdjustment + latitudeAdjustment + elevationAdjustment
     }
-    val prevailingWind by memo({ planet.tectonicAge }) {
-        neighbors
+    val prevailingWind by memo({ planet.tectonicAge }, { planet.daysPassed }) {
+        val pressureGradientForce = neighbors
             .filter { it.airPressure < airPressure }
-            .map { (it.tile.position - tile.position).tangent(tile.position) * (airPressure - it.airPressure) / 10.0 }
+            .map { (it.tile.position - tile.position).tangent(tile.position) * (airPressure - it.airPressure) * 0.1 }
             .sum()
+
+        val latitudeRadians = asin(tile.position.y)
+        val coriolisParameter = 2.0 * planet.rotationRate * -sin(latitudeRadians)
+
+        // Deflection is perpendicular to both motion and local vertical
+        val coriolisDeflection = tile.position.cross(pressureGradientForce).normalized() *
+                coriolisParameter * pressureGradientForce.length()
+
+        val direction = pressureGradientForce + coriolisDeflection
+        direction.normalized() * direction.length()
+            .coerceIn(planet.topology.averageRadius * 0.25, planet.topology.averageRadius * 0.66)
     }
 
     val isIceCap
@@ -108,7 +123,7 @@ class PlanetTile(
     @get:JsonIgnore
     val insolation
         get() = Insolation.directHorizontal(
-            planet.tectonicAge * 30 % Insolation.yearLength.toInt(),
+            planet.daysPassed % Insolation.yearLength,
             tile.position.toGeoPoint().latitude
         )
 

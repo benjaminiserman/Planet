@@ -440,39 +440,39 @@ object Tectonics {
     }
 
     fun stepTectonicsSimulation(planet: Planet) {
-//        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
-//        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
-//        val performErosionTime = measureTime { performErosion(planet) }
-//        val runGuardrailsTime = measureTime {
-//            planet.planetTiles.values.forEach {
-//                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
-//            }
-//            runGuardrails(planet)
-//        }
-//
-//        val timeTaken = movePlanetTilesTime +
-//                tectonicPlateForcesTime +
-//                performErosionTime +
-//                runGuardrailsTime
+        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
+        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
+        val performErosionTime = measureTime { performErosion(planet) }
+        val runGuardrailsTime = measureTime {
+            planet.planetTiles.values.forEach {
+                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
+            }
+            runGuardrails(planet)
+        }
+
+        val timeTaken = movePlanetTilesTime +
+                tectonicPlateForcesTime +
+                performErosionTime +
+                runGuardrailsTime
 
         planet.tectonicAge += 1
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
         Gui.instance.statsGraph.update(planet)
 
-//        val percentContinental =
-//            planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
-//        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
-//        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
-//        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
-//        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
-//        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
-//        GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
-//        GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
+        val percentContinental =
+            planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
+        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
+        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
+        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
+        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
+        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
+        GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
+        GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
         if (planet.tectonicAge % 10000 == 0) {
-            Main.instance.timerActive = false
+            Main.instance.timerActive = "none"
         }
     }
 

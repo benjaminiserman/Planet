@@ -28,6 +28,7 @@ import kotlin.math.min
 class Gui() : Node() {
     val infoboxContainer by lazy { findChild("InfoboxContainer") as ScrollContainer }
     val infoboxLabel by lazy { infoboxContainer.findChild("Label") as Label }
+    val daysPassedLabel by lazy { findChild("DaysPassed") as Label }
     val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
     val statsGraph by lazy { StatsGraph(findChild("DebugGraph") as CanvasItem) }
 

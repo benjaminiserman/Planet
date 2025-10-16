@@ -68,6 +68,7 @@ object Serialization {
         .addMixIn(Vector2::class.java, Vector2Mixin::class.java)
         .enable(SerializationFeature.INDENT_OUTPUT)
         .enable(SerializationFeature.WRAP_EXCEPTIONS)
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .enable(DeserializationFeature.WRAP_EXCEPTIONS).also {
             it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
         }
