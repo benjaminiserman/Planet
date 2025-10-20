@@ -3,23 +3,15 @@ package dev.biserman.planet.planet
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
-import com.fasterxml.jackson.core.JacksonException
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.InjectableValues
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
 import dev.biserman.planet.utils.memo
-import godot.global.GD
 import kotlin.random.Random
-import com.fasterxml.jackson.module.kotlin.treeToValue
 import dev.biserman.planet.utils.VectorWarpNoise
 import godot.core.Vector3
+import kotlin.math.absoluteValue
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -51,7 +43,7 @@ class Planet(val seed: Int, val size: Int) {
     @get:JsonIgnore
     val continentialityMap by memo({ tectonicAge }) {
         val tilesToFlip = contiguousRegions
-            .filter { region -> region.tiles.maxOf { it.edgeDepth } <= 2 }
+            .filter { region -> region.tiles.maxOf { it.edgeDepth } <= 1 }
             .flatMap { it.tiles }
             .toSet()
 
@@ -95,6 +87,8 @@ class Planet(val seed: Int, val size: Int) {
     var nextPlateId = 0
 
     var seaLevel: Double = 0.0
+
+    val radiusMeters = 6378137.0
 
     val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
 

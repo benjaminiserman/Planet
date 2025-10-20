@@ -237,7 +237,8 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     ((ClimateSimulation.basePressure - airPressure) / 25).pow(3)
                 )
             }
-        }
+        },
+        SimpleColorMode(this, "debug_color", visibleByDefault = false) { it.debugColor },
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
