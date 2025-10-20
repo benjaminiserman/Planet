@@ -23,7 +23,8 @@ class OceanBand(
     val centerLatitudeDegrees get() = (bottomLatitudeDegrees + topLatitudeDegrees) * 0.5
 
     val centerParallel = let {
-        val center = region.tiles.minBy { (it.tile.position.toGeoPoint().latitudeDegrees - centerLatitudeDegrees).absoluteValue }
+        val center =
+            region.tiles.minBy { (it.tile.position.toGeoPoint().latitudeDegrees - centerLatitudeDegrees).absoluteValue }
         PlanetRegion(planet, region.parallelCross(center, Vector3.UP))
     }
 }
@@ -56,18 +57,26 @@ object OceanCurrents {
             val oceans = band.region
                 .floodFillGroupBy { it.continentiality >= 0 }[false]
                 ?.filter { waterBody -> waterBody.tiles.minOf { it.continentiality } <= -minOceanRadius }
-                ?.flatMap { ocean ->
+                ?.map { ocean ->
                     val oceanBandTiles = PlanetRegion(planet, band.centerParallel.tiles.filter { it in ocean.tiles })
-                    val first = oceanBandTiles.tiles.first()
-                    oceanBandTiles.raycastClockwise(first, Vector3.UP).forEach { bandTile ->
-                        val scanLine = band.region.raycastClockwise(bandTile, bandTile.tile.position.cross(Vector3.UP)).toList()
-                        if (scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5) {
+                    val first = oceanBandTiles.tiles.minBy { it.continentiality }
+                    val rightExtent =
+                        oceanBandTiles.raycastClockwise(first, Vector3.UP).map { bandTile ->
+                            band.region.raycastClockwise(bandTile, bandTile.tile.position.cross(Vector3.UP)).toList()
+                        }.takeWhile { scanLine ->
+                            scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                        }.flatMap { it }
+                    val leftExtent =
+                        oceanBandTiles.raycastClockwise(first, Vector3.DOWN).map { bandTile ->
+                            band.region.raycastClockwise(bandTile, bandTile.tile.position.cross(Vector3.UP)).toList()
+                        }.takeWhile { scanLine ->
+                            scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                        }.flatMap { it }
 
-                        }
-                    }
+                    PlanetRegion(planet, rightExtent + leftExtent)
+//                    ocean
                 }
                 ?: listOf()
-            val oceans = listOf(band.centerParallel)
 
             oceans.forEach { region ->
                 val color = Color.randomHsv()
