@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.adjustRange
-import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
@@ -18,6 +17,7 @@ import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
+import godot.core.Color
 import godot.core.Vector3
 import kotlin.math.absoluteValue
 import kotlin.math.asin
@@ -112,6 +112,8 @@ class PlanetTile(
 
     var depositFlow: Double = 0.0
     var waterFlow: Double = 0.0
+
+    var debugColor: Color = Color.black
 
     var tectonicPlate: TectonicPlate? = null
         set(value) {
@@ -231,26 +233,37 @@ class PlanetTile(
 
     fun floodFill(
         visited: MutableSet<PlanetTile> = mutableSetOf(),
-        planetTileFn: (Tile) -> PlanetTile = { planet.getTile(it) },
-        filterFn: (PlanetTile) -> Boolean
+        planetTileFn: (Tile) -> PlanetTile? = { planet.getTile(it) },
+        planetRegion: PlanetRegion? = null,
+        filterFn: (PlanetTile, Set<PlanetTile>) -> Boolean,
     ): Set<PlanetTile> {
         val visited = mutableSetOf<PlanetTile>()
         val found = mutableSetOf<PlanetTile>()
         val queue = ArrayDeque<PlanetTile>()
         queue.add(this)
         visited.add(this)
-        if (filterFn(this)) {
+        if (filterFn(this, found)) {
             found.add(this)
         }
+
+        val wrappedGetPlanetTile = if (planetRegion != null) ({ tile: Tile ->
+            val planetTile = planetTileFn(tile)
+            if (planetTile in planetRegion.tiles) {
+                planetTile
+            } else {
+                null
+            }
+        }) else planetTileFn
+
 
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
             for (neighbor in current.tile.tiles) {
-                val neighborPlanetTile = planetTileFn(neighbor)
+                val neighborPlanetTile = wrappedGetPlanetTile(neighbor) ?: continue
                 if (visited.contains(neighborPlanetTile)) {
                     continue
                 }
-                if (filterFn(neighborPlanetTile)) {
+                if (filterFn(neighborPlanetTile, found)) {
                     queue.addLast(neighborPlanetTile)
                     visited.add(neighborPlanetTile)
                     found.add(neighborPlanetTile)
@@ -267,7 +280,7 @@ class PlanetTile(
         temperature: ${temperature.formatDigits()}
         moisture: ${moisture.formatDigits()}
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
-        position: ${tile.position.formatDigits()}
+        position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()})
         spring displacement: ${springDisplacement.formatDigits()}
         edge resistance: ${edgeResistance.formatDigits()}
         divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}

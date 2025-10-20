@@ -169,7 +169,7 @@ fun <T, U> (Iterable<T>).toRTree(dimensions: Int = 3, getFn: (T) -> Pair<Point, 
 // in radians
 data class GeoPoint(val latitude: Double, val longitude: Double) {
     constructor (point: Vector3) : this(
-        asin(-point.y),
+        asin(point.y),
         -atan2(point.z, point.x)
     )
 
@@ -181,7 +181,7 @@ data class GeoPoint(val latitude: Double, val longitude: Double) {
     fun toVector3(): Vector3 {
         return Vector3(
             cos(longitude) * cos(latitude),
-            sin(latitude),
+            sin(-latitude),
             sin(longitude) * cos(latitude)
         )
     }
@@ -195,6 +195,16 @@ data class GeoPoint(val latitude: Double, val longitude: Double) {
 
     val latitudeDegrees get() = latitude * 180 / PI
     val longitudeDegrees get() = longitude * 180 / PI
+
+    fun formatDigits(digits: Int = 2): String {
+        val northSouth = if (latitudeDegrees >= 0) "N" else "S"
+        val eastWest = if (longitudeDegrees >= 0) "E" else "W"
+
+        return "%.${digits}f $northSouth, %.${digits}f $eastWest".format(
+            latitudeDegrees.absoluteValue,
+            longitudeDegrees.absoluteValue
+        )
+    }
 }
 
 fun (Vector2).toGeoPoint() = GeoPoint(this)
