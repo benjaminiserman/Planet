@@ -10,6 +10,7 @@ import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
 import godot.core.Plane
 import godot.core.Vector3
+import kotlin.math.PI
 import kotlin.math.absoluteValue
 
 class PlanetRegion(
@@ -34,6 +35,12 @@ class PlanetRegion(
 
     val center by memo({ tiles.mutationCount }) {
         tiles.fold(Vector3.ZERO) { sum, tile -> sum + tile.tile.position }.normalized()
+    }
+
+    val edgeTiles by memo({ tiles.mutationCount }) {
+        tiles.filter { tile ->
+            tile.neighbors.any { it !in tiles }
+        }
     }
 
     fun toTopology(): Topology = Topology(
@@ -129,15 +136,23 @@ class PlanetRegion(
         while (current in tiles && current !in results) {
             results.add(current)
             yield(current)
-            val rightward = current.tile.position.cross(normal)
+            val rightward = current.tile.position.cross(-normal)
             current = current.neighbors
                 .filter { (it.tile.position - current.tile.position).dot(rightward) >= 0 }
                 .minBy {
                     val toPoint = it.tile.position - tile.tile.position
-                    val projection = toPoint.dot(normal)
+                    val projection = toPoint.dot(-normal)
                     projection.absoluteValue
                 }
         }
+    }
+
+    fun sortedClockwiseFrom(tile: PlanetTile, normal: Vector3) = tiles.sortedBy {
+        val normalDistance = normal.dot(tile.tile.position)
+        val projectedPoint = it.tile.position - normal * (normal.dot(it.tile.position) - normalDistance)
+        val referenceVector = tile.tile.position - normal * (normal.dot(tile.tile.position) - normalDistance)
+        val angle = projectedPoint.angleTo(referenceVector)
+        if (projectedPoint.cross(referenceVector).dot(normal) < 0) 2 * PI - angle else angle
     }
 
     fun parallelCross(tile: PlanetTile, normal: Vector3) = sequence {

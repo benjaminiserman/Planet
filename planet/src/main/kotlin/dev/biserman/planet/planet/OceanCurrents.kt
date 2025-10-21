@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.utils.randomHsv
 import godot.core.Color
@@ -30,7 +31,8 @@ class OceanBand(
 }
 
 object OceanCurrents {
-    val minOceanRadius = 3
+    val minOceanRadius = 4
+    val minOceanTiles = 50
 
     fun viaEarthlikeHeuristic(planet: Planet, numBands: Int) {
         val cells = numBands - 2
@@ -49,43 +51,63 @@ object OceanCurrents {
             )
         }
 
-        GD.print("bands: $bands")
-
         planet.planetTiles.values.forEach { it.debugColor = Color.black }
 
         bands.forEach { band ->
             val oceans = band.region
                 .floodFillGroupBy { it.continentiality >= 0 }[false]
                 ?.filter { waterBody -> waterBody.tiles.minOf { it.continentiality } <= -minOceanRadius }
-                ?.map { ocean ->
-                    val oceanBandTiles = PlanetRegion(planet, band.centerParallel.tiles.filter { it in ocean.tiles })
-                    val first = oceanBandTiles.tiles.minBy { it.continentiality }
-                    val rightExtent =
-                        oceanBandTiles.raycastClockwise(first, Vector3.UP).map { bandTile ->
-                            band.region.raycastClockwise(bandTile, bandTile.tile.position.cross(Vector3.UP)).toList()
-                        }.takeWhile { scanLine ->
-                            scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
-                        }.flatMap { it }
-                    val leftExtent =
-                        oceanBandTiles.raycastClockwise(first, Vector3.DOWN).map { bandTile ->
-                            band.region.raycastClockwise(bandTile, bandTile.tile.position.cross(Vector3.UP)).toList()
-                        }.takeWhile { scanLine ->
-                            scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
-                        }.flatMap { it }
+                ?.flatMap { ocean ->
+                    val deepest =
+                        ocean.tiles.filter { it.continentiality <= -minOceanRadius }.sortedBy { it.continentiality }
+                    deepest.fold(mutableListOf<PlanetRegion>()) { acc, tile ->
+                        if (!acc.any { it.tiles.contains(tile) }) {
+                            val clockwiseExtent =
+                                ocean.sortedClockwiseFrom(tile, Vector3.UP).takeWhile { bandTile ->
+                                    val scanLine =
+                                        band.region.parallelCross(bandTile, bandTile.tile.position.cross(Vector3.UP))
+                                            .toList()
+                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                                }
+                            val counterExtent =
+                                ocean.sortedClockwiseFrom(tile, Vector3.DOWN).takeWhile { bandTile ->
+                                    val scanLine =
+                                        band.region.parallelCross(bandTile, bandTile.tile.position.cross(Vector3.UP))
+                                            .toList()
+                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                                }
 
-                    PlanetRegion(planet, rightExtent + leftExtent)
-//                    ocean
+                            ocean.tiles.removeAll(clockwiseExtent + counterExtent)
+                            acc.apply { add(PlanetRegion(planet, clockwiseExtent + counterExtent)) }
+                        } else acc
+                    }
                 }
+                ?.filter { it.tiles.size >= minOceanTiles }
                 ?: listOf()
+
+            oceans.flatMap { ocean ->
+                ocean.edgeTiles.map { edgeTile ->
+                    val averageNeighbor = edgeTile.neighbors
+                        .filter { it !in ocean.tiles }
+                        .map { it.tile.position }
+                        .average()
+
+                    OceanCurrent(
+                        edgeTile,
+                        (averageNeighbor - edgeTile.tile.position).cross(edgeTile.tile.position) *
+                                if (edgeTile.tile.position.y >= 0) 1 else -1,
+                        0.0
+                    )
+                }
+
+            }
 
             oceans.forEach { region ->
                 val color = Color.randomHsv()
                 region.tiles.forEach {
-                    if (it.debugColor == Color.black) it.debugColor = color
+                    it.debugColor = color
                 }
             }
-
-            GD.print("oceans: ${oceans.size}, ${oceans.sumOf { it.tiles.size }}")
         }
     }
 }
