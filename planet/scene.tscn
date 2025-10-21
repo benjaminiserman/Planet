@@ -215,7 +215,7 @@ filters = PackedStringArray("*.json")
 
 [node name="ImportDialog" type="FileDialog" parent="GUI"]
 auto_translate_mode = 1
-title = "Import onto Current World"
+title = "Open a File"
 initial_position = 2
 ok_button_text = "Open"
 file_mode = 0
@@ -223,7 +223,7 @@ access = 2
 
 [node name="LoadDialog" type="FileDialog" parent="GUI"]
 auto_translate_mode = 1
-title = "Load World"
+title = "Open a File"
 initial_position = 2
 ok_button_text = "Open"
 file_mode = 0

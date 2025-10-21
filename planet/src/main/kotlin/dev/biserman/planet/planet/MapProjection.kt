@@ -102,7 +102,7 @@ object MapProjections {
         val imageRTree = (0..<image.width).flatMap { x ->
             (0..<image.height).map { y ->
                 Pair(
-                    Vector2(x.toDouble() / image.width - 0.5, y.toDouble() / image.height - 0.5),
+                    Vector2(x.toDouble() / image.width - 0.5, (image.height - y.toDouble() - 1) / image.height - 0.5),
                     image.getRGB(x, y).toRGB()
                 )
             }
