@@ -1,13 +1,20 @@
 package dev.biserman.planet.planet
 
+import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.utils.randomHsv
+import dev.biserman.planet.utils.toCardinal
 import godot.core.Color
+import godot.core.Vector2
 import godot.core.Vector3
 import godot.global.GD
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.absoluteValue
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 class OceanCurrent(val planetTile: PlanetTile, val direction: Vector3, val temperature: Double)
 class OceanBand(
@@ -33,6 +40,7 @@ class OceanBand(
 object OceanCurrents {
     val minOceanRadius = 4
     val minOceanTiles = 50
+    val minScanlineProportion = 0.3
 
     fun viaEarthlikeHeuristic(planet: Planet, numBands: Int) {
         val cells = numBands - 2
@@ -44,8 +52,8 @@ object OceanCurrents {
                 topLatitudeDegrees = -75 + (i + 1) * degreesPerCell,
                 polarity = when {
                     i == equatorialCellIndex -> 0.0
-                    abs(equatorialCellIndex - i) % 2 == 1 -> 1.0
-                    else -> -1.0
+                    abs(equatorialCellIndex - i) % 2 == 1 -> -1.0
+                    else -> 1.0
                 },
                 planet
             )
@@ -67,14 +75,14 @@ object OceanCurrents {
                                     val scanLine =
                                         band.region.parallelCross(bandTile, bandTile.tile.position.cross(Vector3.UP))
                                             .toList()
-                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * minScanlineProportion
                                 }
                             val counterExtent =
                                 ocean.sortedClockwiseFrom(tile, Vector3.DOWN).takeWhile { bandTile ->
                                     val scanLine =
                                         band.region.parallelCross(bandTile, bandTile.tile.position.cross(Vector3.UP))
                                             .toList()
-                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * 0.5
+                                    scanLine.filter { it in ocean.tiles }.size >= scanLine.size * minScanlineProportion
                                 }
 
                             ocean.tiles.removeAll(clockwiseExtent + counterExtent)
@@ -85,29 +93,47 @@ object OceanCurrents {
                 ?.filter { it.tiles.size >= minOceanTiles }
                 ?: listOf()
 
-            oceans.flatMap { ocean ->
+            if (band.centerLatitudeDegrees == 0.0) {
+                return@forEach
+            }
+
+            val currents = oceans.flatMap { ocean ->
                 ocean.edgeTiles.map { edgeTile ->
                     val averageNeighbor = edgeTile.neighbors
                         .filter { it !in ocean.tiles }
                         .map { it.tile.position }
                         .average()
 
+                    val polarity = if (edgeTile.tile.position.y >= 0) 1 else -1
+
+                    val delta = (edgeTile.tile.position - ocean.center)
+                    val bandHeight = PI * (band.topLatitudeDegrees - band.bottomLatitudeDegrees) / 180
+                    val compareVector =
+                        (ocean.center + delta * min(delta.length(), bandHeight * 0.5) / delta.length()).normalized()
+
                     OceanCurrent(
                         edgeTile,
-                        (averageNeighbor - edgeTile.tile.position).cross(edgeTile.tile.position) *
-                                if (edgeTile.tile.position.y >= 0) 1 else -1,
-                        0.0
+                        (averageNeighbor - edgeTile.tile.position).cross(edgeTile.tile.position) * polarity,
+                        ((edgeTile.tile.position - compareVector)
+                            .toCardinal(edgeTile.tile.position)
+                            .normalized()
+                            .dot(Vector2.RIGHT) * band.polarity).pow(5)
                     )
                 }
-
             }
 
-            oceans.forEach { region ->
-                val color = Color.randomHsv()
-                region.tiles.forEach {
-                    it.debugColor = color
-                }
+            currents.forEach { current ->
+                current.planetTile.debugColor =
+                    if (current.temperature > 0) Color.red * current.temperature
+                    else Color.blue * current.temperature
             }
+
+//            oceans.forEach { region ->
+//                val color = Color.randomHsv()
+//                region.tiles.forEach {
+//                    it.debugColor = color
+//                }
+//            }
         }
     }
 }

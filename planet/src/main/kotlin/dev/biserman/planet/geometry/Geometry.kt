@@ -205,6 +205,15 @@ data class GeoPoint(val latitude: Double, val longitude: Double) {
             longitudeDegrees.absoluteValue
         )
     }
+
+    companion object {
+        fun fromDegrees(latitudeDegrees: Double, longitudeDegrees: Double): GeoPoint {
+            return GeoPoint(
+                latitudeDegrees * PI / 180,
+                longitudeDegrees * PI / 180
+            )
+        }
+    }
 }
 
 fun (Vector2).toGeoPoint() = GeoPoint(this)

@@ -8,6 +8,7 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.planet.MapProjections
 import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
+import dev.biserman.planet.planet.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
@@ -129,6 +130,7 @@ class Gui() : Node() {
                 this.elevation = value.r.adjustRange(0.0..1.0, -10000.0..10000.0)
             }
             Main.instance.planet.tectonicAge = min(-1, Main.instance.planet.tectonicAge - 1)
+            OceanCurrents.viaEarthlikeHeuristic(Main.instance.planet, 7)
             Main.instance.planetRenderer.update(Main.instance.planet)
         }
     }

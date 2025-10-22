@@ -6,6 +6,7 @@ import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
 import kotlin.math.sqrt
+import kotlin.math.tan
 import kotlin.random.Random
 
 fun Color.Companion.randomRgb(a: Int = 255, random: Random = Main.debugRandom) =
@@ -37,6 +38,13 @@ fun Iterable<Color>.alphaAverage() = this.reduce { acc, color -> acc + (color * 
 //}
 
 fun Iterable<Vector3>.sum() = this.fold(Vector3.ZERO) { acc, vector3 -> acc + vector3 }
+
+fun (Vector3).toCardinal(normal: Vector3): Vector2 {
+    val tangentX = normal.cross(Vector3.UP).normalized()
+    val tangentY = normal.cross(tangentX).normalized()
+    val projection = this - normal * this.dot(normal)
+    return -Vector2(projection.dot(tangentX), projection.dot(tangentY))
+}
 
 operator fun (Vector2).component1() = this.x
 operator fun (Vector2).component2() = this.y
