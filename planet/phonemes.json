@@ -1,0 +1,446 @@
+{
+  "consonants": {
+    "m": {
+      "place": "bilabial",
+      "manner": "nasal"
+    },
+    "n": {
+      "place": "alveolar",
+      "manner": "nasal"
+    },
+    "ɲ": {
+      "place": "palatal",
+      "manner": "nasal"
+    },
+    "ŋ": {
+      "place": "velar",
+      "manner": "nasal"
+    },
+    "ɴ": {
+      "place": "uvular",
+      "manner": "nasal"
+    },
+
+
+    "p": {
+      "place": "bilabial",
+      "manner": "plosive",
+      "voiced": false
+    },
+    "t": {
+      "place": "alveolar",
+      "manner": "plosive",
+      "voiced": false
+    },
+    "k": {
+      "place": "velar",
+      "manner": "plosive",
+      "voiced": false
+    },
+    "q": {
+      "place": "uvular",
+      "manner": "plosive",
+      "voiced": false
+    },
+
+
+    "b": {
+      "place": "bilabial",
+      "manner": "plosive",
+      "voiced": true
+    },
+    "d": {
+      "place": "alveolar",
+      "manner": "plosive",
+      "voiced": true
+    },
+    "g": {
+      "place": "velar",
+      "manner": "plosive",
+      "voiced": true
+    },
+    "ɢ": {
+      "place": "uvular",
+      "manner": "plosive",
+      "voiced": true
+    },
+
+    "pʰ": {
+      "place": "bilabial",
+      "manner": "plosive",
+      "aspirated": true
+    },
+    "tʰ": {
+      "place": "alveolar",
+      "manner": "plosive",
+      "aspirated": true
+    },
+    "kʰ": {
+      "place": "velar",
+      "manner": "plosive",
+      "aspirated": true
+    },
+    "qʰ": {
+      "place": "uvular",
+      "manner": "plosive",
+      "aspirated": true
+    },
+
+    "p'": {
+      "place": "bilabial",
+      "manner": "plosive",
+      "ejective": true
+    },
+    "t'": {
+      "place": "alveolar",
+      "manner": "plosive",
+      "ejective": true
+    },
+    "k'": {
+      "place": "velar",
+      "manner": "plosive",
+      "ejective": true
+    },
+    "q'": {
+      "place": "uvular",
+      "manner": "plosive",
+      "ejective": true
+    },
+
+
+    "ɸ": {
+      "place": "bilabial",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "f": {
+      "place": "labiodental",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "θ": {
+      "place": "dental",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "s": {
+      "place": "alveolar",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "ʃ": {
+      "place": "postalveolar",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "x": {
+      "place": "velar",
+      "manner": "fricative",
+      "voiced": false
+    },
+    "χ": {
+      "place": "uvular",
+      "manner": "fricative",
+      "voiced": false
+    },
+
+    "β": {
+      "place": "bilabial",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "v": {
+      "place": "labiodental",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "ð": {
+      "place": "dental",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "z": {
+      "place": "postalveolar",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "ʒ": {
+      "place": "retroflex",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "ɣ": {
+      "place": "velar",
+      "manner": "fricative",
+      "voiced": true
+    },
+    "ʁ": {
+      "place": "uvular",
+      "manner": "fricative",
+      "voiced": true
+    },
+
+    "ɸ'": {
+      "place": "bilabial",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "f'": {
+      "place": "labiodental",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "θ'": {
+      "place": "dental",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "s'": {
+      "place": "alveolar",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "ʃ'": {
+      "place": "postalveolar",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "x'": {
+      "place": "velar",
+      "manner": "fricative",
+      "ejective": true
+    },
+    "χ'": {
+      "place": "uvular",
+      "manner": "fricative",
+      "ejective": true
+    },
+
+    "ʔ": {
+      "place": "glottal",
+      "manner": "plosive"
+    },
+    "h": {
+      "place": "glottal",
+      "manner": "fricative"
+    },
+
+
+
+    "j": {
+      "place": "palatal",
+      "manner": "semivowel"
+    },
+    "w": {
+      "place": "labiovelar",
+      "manner": "semivowel"
+    },
+    "ɰ": {
+      "place": "velar",
+      "manner": "semivowel"
+    },
+
+
+    "ɹ": {
+      "manner": "liquid"
+    },
+    "l": {
+      "manner": "liquid"
+    },
+
+
+    "r": {
+      "place": "alveolar",
+      "manner": "trill"
+    },
+    "ʀ": {
+      "place": "uvular",
+      "manner": "trill"
+    },
+    "ʜ": {
+      "place": "glottal",
+      "manner": "trill"
+    },
+
+    "ɾ": {
+      "place": "alveolar",
+      "manner": "tap"
+    },
+
+
+    "ɓ": {
+      "place": "bilabial",
+      "manner": "implosive"
+    },
+    "ɗ": {
+      "place": "alveolar",
+      "manner": "implosive"
+    },
+    "ɠ": {
+      "place": "velar",
+      "manner": "implosive"
+    },
+    "ʛ": {
+      "place": "uvular",
+      "manner": "implosive"
+    },
+
+
+    "ʘ": {
+      "place": "bilabial",
+      "manner": "click"
+    },
+    "ǀ": {
+      "place": "dental",
+      "manner": "click"
+    },
+    "!": {
+      "place": "alveolar",
+      "manner": "click"
+    },
+    "ǂ": {
+      "place": "palatal",
+      "manner": "click"
+    }
+  },
+  "vowels": {
+    "i": {
+      "height": "close",
+      "depth": "front",
+      "rounded": false
+    },
+    "y": {
+      "height": "close",
+      "depth": "front",
+      "rounded": true
+    },
+    "ɨ": {
+      "height": "close",
+      "depth": "central",
+      "rounded": false
+    },
+    "ʉ": {
+      "height": "close",
+      "depth": "central",
+      "rounded": true
+    },
+    "ɯ": {
+      "height": "close",
+      "depth": "back",
+      "rounded": false
+    },
+    "u": {
+      "height": "close",
+      "depth": "back",
+      "rounded": true
+    },
+    "ɪ": {
+      "height": "near-close",
+      "depth": "near-front",
+      "rounded": false
+    },
+    "ʏ": {
+      "height": "near-close",
+      "depth": "near-front",
+      "rounded": true
+    },
+    "ʊ": {
+      "height": "near-close",
+      "depth": "near-back",
+      "rounded": true
+    },
+    "e": {
+      "height": "close-mid",
+      "depth": "front",
+      "rounded": false
+    },
+    "ø": {
+      "height": "close-mid",
+      "depth": "front",
+      "rounded": true
+    },
+    "ɘ": {
+      "height": "close-mid",
+      "depth": "central",
+      "rounded": false
+    },
+    "ɵ": {
+      "height": "close-mid",
+      "depth": "central",
+      "rounded": true
+    },
+    "ɤ": {
+      "height": "close-mid",
+      "depth": "back",
+      "rounded": false
+    },
+    "o": {
+      "height": "close-mid",
+      "depth": "back",
+      "rounded": true
+    },
+    "ə": {
+      "height": "mid",
+      "depth": "central"
+    },
+    "ɛ": {
+      "height": "open-mid",
+      "depth": "front",
+      "rounded": false
+    },
+    "œ": {
+      "height": "open-mid",
+      "depth": "front",
+      "rounded": true
+    },
+    "ɜ": {
+      "height": "open-mid",
+      "depth": "central",
+      "rounded": false
+    },
+    "ɞ": {
+      "height": "open-mid",
+      "depth": "central",
+      "rounded": true
+    },
+    "ʌ": {
+      "height": "open-mid",
+      "depth": "back",
+      "rounded": false
+    },
+    "ɔ": {
+      "height": "open-mid",
+      "depth": "back",
+      "rounded": true
+    },
+    "æ": {
+      "height": "near-open",
+      "depth": "front",
+      "rounded": false
+    },
+    "ɐ": {
+      "height": "near-open",
+      "depth": "central"
+    },
+    "a": {
+      "height": "open",
+      "depth": "front",
+      "rounded": false
+    },
+    "ɶ": {
+      "height": "open",
+      "depth": "front",
+      "rounded": true
+    },
+    "ɑ": {
+      "height": "open",
+      "depth": "back",
+      "rounded": false
+    },
+    "ɒ": {
+      "height": "open",
+      "depth": "back",
+      "rounded": true
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "complexity_tiers": [
+    {
+      "consonants": {
+        "m": ["m"],
+        "n": ["n"],
+        "ŋ": ["ng"],
+        "p": ["p"],
+        "t": ["t"],
+        "k": ["k"],
+        "b": ["b"],
+        "g": ["g"],
+        "f": ["s"],
+        "θ": ["th"],
+        "ʃ": ["sh"],
+        "ʒ": ["j"],
+        "v": ["v"],
+        "z": ["z"],
+        "h": ["h"],
+        "j": ["y"],
+        "w": ["w"],
+        "ɹ": ["r"],
+        "l": ["l"]
+      },
+      "vowels": {
+        "ɪ": ["i,ih"],
+        "ɛ": ["e,eh"],
+        "i": ["i,ee"],
+        "e": ["ey,ay"],
+        "æ": ["a"],
+        "a": ["a,ah"],
+        "o": ["o"],
+        "ʌ": ["u,uh"],
+        "u": ["u,oo"]
+      },
+      "affricates": {
+        "tʃ": ["ch"],
+        "ks": ["x"],
+        "dʒ": ["j"]
+      },
+      "rewrite_rules": {
+        "(?<=[ptkbdg])y": "i",
+        "ay": "ai",
+        "(?<=[ptkbdg])r\b": "er"
+      },
+      "forbidden_rules": [
+        "p[jw]",
+        "b[jw]",
+        "t[ljw]",
+        "d[ljw]",
+
+        "f[jw]",
+        "v[ɹljw]",
+        "θ[ljw]",
+        "s[ɹj]",
+        "z[ɹljw]",
+        "ʃ[ɹljw]",
+        "ʒ[ɹljw]",
+        "h[ɹljw]",
+
+        "n[pb]",
+        "m[tdkg]"
+      ],
+      "syllables": {
+        "CV": 100000,
+        "V": 10000,
+        "CVC": 500,
+        "[kg]WV": 250,
+        "[nm]jV": 250,
+        "PLV": 200,
+        "sPLV": 150,
+        "FLV": 150,
+        "FWV": 150,
+        "[kg]WVC": 100,
+        "[nm]jVC": 100,
+        "PLVC": 75,
+        "FLVC": 50,
+        "FWVC": 50,
+        "sPLVC": 25,
+        "CV(N)P": 100,
+        "CV(N)s": 50,
+        "CV(N)Ps": 10,
+        "PLV(N)Ps": 10,
+        "FLV(N)Ps": 10,
+        "sPLV(N)Ps": 1
+      }
+    }
+  ]
+}
