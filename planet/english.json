@@ -86,7 +86,8 @@
         "CV(N)Ps": 10,
         "PLV(N)Ps": 10,
         "FLV(N)Ps": 10,
-        "sPLV(N)Ps": 1
+        "sPLV(N)Ps": 1,
+        "(P)ɹ": 10
       }
     }
   ]
