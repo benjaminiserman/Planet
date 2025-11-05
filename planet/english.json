@@ -43,7 +43,7 @@
         "ay": "ai",
         "(?<=[ptkbdg])r\b": "er"
       },
-      "forbidden_rules": [
+      "forbidden_cluster_rules": [
         "p[jw]",
         "b[jw]",
         "t[ljw]",
