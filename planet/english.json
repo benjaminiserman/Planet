@@ -41,7 +41,8 @@
       "rewrite_rules": {
         "(?<=[ptkbdg])y": "i",
         "ay": "ai",
-        "(?<=[ptkbdg])r\b": "er"
+        "(?<=[ptkbdg])r\b": "er",
+        "(?<=[aeiouy])s\b": "ss"
       },
       "forbidden_cluster_rules": [
         "p[jw]",
@@ -66,8 +67,8 @@
         "[ɪɛæʌ][yw]"
       ],
       "syllables": {
-        "CV": 100000,
-        "V": 10000,
+        "CV": 1000000,
+        "V": 100000,
         "CVC": 500,
         "[kg]WV": 250,
         "[nm]jV": 250,
