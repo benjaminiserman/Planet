@@ -442,5 +442,8 @@
       "depth": "back",
       "rounded": true
     }
+  },
+  "startSet": {
+    "consonants": "p,t,k,s,m,n,l,j,w"
   }
 }
