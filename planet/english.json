@@ -79,43 +79,9 @@
   },
   "complexity_tiers": [
     {
-      "consonants": {
-        "m": ["m"],
-        "n": ["n"],
-        "ŋ": ["ng"],
-        "p": ["p"],
-        "t": ["t"],
-        "k": ["k"],
-        "b": ["b"],
-        "g": ["g"],
-        "f": ["s"],
-        "θ": ["th"],
-        "ʃ": ["sh"],
-        "ʒ": ["j"],
-        "v": ["v"],
-        "z": ["z"],
-        "h": ["h"],
-        "j": ["y"],
-        "w": ["w"],
-        "ɹ": ["r"],
-        "l": ["l"]
-      },
-      "vowels": {
-        "ɪ": ["i,ih"],
-        "ɛ": ["e,eh"],
-        "i": ["i,ee"],
-        "e": ["ey,ay"],
-        "æ": ["a"],
-        "a": ["a,ah"],
-        "o": ["o"],
-        "ʌ": ["u,uh"],
-        "u": ["u,oo"]
-      },
-      "affricates": {
-        "tʃ": ["ch"],
-        "ks": ["x"],
-        "dʒ": ["j"]
-      },
+      "allowedConsonants": "m,n,ŋ,p,t,k,b,g,f,θ,ʃ,ʒ,v,z,h,j,w,ɹ,l",
+      "allowedVowels": "ɪ,ɛ,i,e,æ,a,o,ʌ,u",
+      "affricates": "tʃ,ks,dʒ,ts",
       "rewrite_rules": {
         "(?<=[ptkbdg])y": "i",
         "ay": "ai",
@@ -139,6 +105,7 @@
 
         "n[pb]",
         "m[tdkg]",
+        "ŋ.*[ɪɛieæaoʌu]",
 
         "uw",
         "i[yw]",
