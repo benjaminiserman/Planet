@@ -10,8 +10,6 @@ import dev.biserman.planet.topology.toTopology
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
-import godot.core.Vector3
-import kotlin.math.absoluteValue
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -81,6 +79,8 @@ class Planet(val seed: Int, val size: Int) {
 
     var convergenceZones: MutableMap<Int, ConvergenceZone> = mutableMapOf()
     var divergenceZones: MutableMap<Int, DivergenceZone> = mutableMapOf()
+
+    var oceanCurrents: MutableMap<Int, OceanCurrent> = mutableMapOf()
 
     var tectonicAge = 0
     var daysPassed = 0

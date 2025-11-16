@@ -42,7 +42,7 @@ object OceanCurrents {
     val minOceanTiles = 50
     val minScanlineProportion = 0.3
 
-    fun viaEarthlikeHeuristic(planet: Planet, numBands: Int) {
+    fun viaEarthlikeHeuristic(planet: Planet, numBands: Int): List<OceanCurrent> {
         val cells = numBands - 2
         val degreesPerCell = 150.0 / cells
         val equatorialCellIndex = cells / 2
@@ -59,9 +59,9 @@ object OceanCurrents {
             )
         }
 
-        planet.planetTiles.values.forEach { it.debugColor = Color.black }
+//        planet.planetTiles.values.forEach { it.debugColor = Color.black }
 
-        bands.forEach { band ->
+        val currents = bands.flatMap { band ->
             val oceans = band.region
                 .floodFillGroupBy { it.continentiality >= 0 }[false]
                 ?.filter { waterBody -> waterBody.tiles.minOf { it.continentiality } <= -minOceanRadius }
@@ -94,10 +94,10 @@ object OceanCurrents {
                 ?: listOf()
 
             if (band.centerLatitudeDegrees == 0.0) {
-                return@forEach
+                return@flatMap listOf()
             }
 
-            val currents = oceans.flatMap { ocean ->
+            oceans.flatMap { ocean ->
                 ocean.edgeTiles.map { edgeTile ->
                     val averageNeighbor = edgeTile.neighbors
                         .filter { it !in ocean.tiles }
@@ -122,11 +122,12 @@ object OceanCurrents {
                 }
             }
 
-            currents.forEach { current ->
-                current.planetTile.debugColor =
-                    if (current.temperature > 0) Color.red * current.temperature
-                    else Color.blue * current.temperature
-            }
+
+//            currents.forEach { current ->
+//                current.planetTile.debugColor =
+//                    if (current.temperature > 0) Color.red * current.temperature
+//                    else Color.blue * current.temperature
+//            }
 
 //            oceans.forEach { region ->
 //                val color = Color.randomHsv()
@@ -135,5 +136,7 @@ object OceanCurrents {
 //                }
 //            }
         }
+
+        return currents
     }
 }

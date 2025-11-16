@@ -1,7 +1,6 @@
 package dev.biserman.planet.planet
 
 import dev.biserman.planet.gui.Gui
-import kotlin.math.floor
 
 object ClimateSimulation {
     data class Band(val latitude: Double, val pressureDelta: Double)
@@ -39,6 +38,18 @@ object ClimateSimulation {
         planet.daysPassed += 10
         Gui.instance.daysPassedLabel.setText("${planet.daysPassed} — ${estimateMonth(planet, planet.daysPassed)}")
         Gui.instance.updateInfobox()
+
+        planet.oceanCurrents = OceanCurrents.viaEarthlikeHeuristic(planet, 7)
+            .distinctBy { it.planetTile }
+            .associate { it.planetTile.tileId to it }
+            .toMutableMap()
 //        Gui.instance.statsGraph.update(planet)
+    }
+
+    fun simulateMoisture(planet: Planet) {
+        val newMoisture = planet.planetTiles.values.map { tile ->
+            if (tile.isAboveWater) 0.0
+            else tile.insolation + (planet.oceanCurrents[tile.tileId]?.temperature ?: 0.0)
+        }
     }
 }

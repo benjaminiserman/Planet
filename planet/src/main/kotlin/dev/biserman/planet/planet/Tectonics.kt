@@ -457,8 +457,6 @@ object Tectonics {
 
         planet.tectonicAge += 1
 
-        OceanCurrents.viaEarthlikeHeuristic(planet, 7)
-
         Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
         Gui.instance.statsGraph.update(planet)
