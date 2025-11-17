@@ -153,6 +153,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }) { it.temperature },
         SimpleDoubleColorMode(
             this,
+            "moisture",
+            visibleByDefault = false,
+            colorFn = redWhenNull { Color(0.0, 0.0, it, 1.0) }) { it.moisture },
+        SimpleDoubleColorMode(
+            this,
             "hotspots",
             visibleByDefault = false,
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }) {
@@ -237,6 +242,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     ((ClimateSimulation.basePressure - airPressure) / 25).pow(3)
                 )
             }
+        },
+        SimpleColorMode(this, "ocean_currents", visibleByDefault = false) {
+            val current = planet.oceanCurrents[it.tile.id] ?: return@SimpleColorMode null
+            if (current.temperature > 0) Color.red * current.temperature
+            else Color.blue * current.temperature
         },
         SimpleColorMode(this, "debug_color", visibleByDefault = false) { it.debugColor },
     )

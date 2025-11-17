@@ -16,7 +16,6 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.sum
-import dev.biserman.planet.utils.toCardinal
 import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector3
@@ -231,6 +230,8 @@ class PlanetTile(
             }
 
     fun oppositeTile(border: Border) = planet.getTile(border.oppositeTile(tile))
+
+    fun slopeAboveWaterTo(other: PlanetTile) = max(planet.seaLevel, other.elevation) - max(planet.seaLevel, elevation)
 
     fun floodFill(
         visited: MutableSet<PlanetTile> = mutableSetOf(),
