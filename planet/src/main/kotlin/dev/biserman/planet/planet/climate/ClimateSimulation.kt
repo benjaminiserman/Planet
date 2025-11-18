@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet.climate
 
+import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
@@ -26,16 +27,7 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
 
-data class ClimateDatumMonth(
-    val minTemperature: Double, // minT, °C
-    val maxTemperature: Double, // maxT, °C
-    val insolation: Double, // W/m²
-    val precipitation: Double // mm
-) {
-    val averageTemperature = (minTemperature + maxTemperature) * 0.5 // °C
-}
 
-class ClimateDatum(val months: List<ClimateDatumMonth>)
 
 object ClimateSimulation {
     data class Band(val latitude: Double, val pressureDelta: Double)
