@@ -1,16 +1,14 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.tectonics
 
-import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.KeyDeserializer
-import com.fasterxml.jackson.databind.SerializerProvider
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.eulerPole
+import dev.biserman.planet.planet.DebugNameGenerator
+import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetRegion
+import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise

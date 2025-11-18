@@ -1,20 +1,18 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.climate
 
-import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toGeoPoint
-import dev.biserman.planet.utils.randomHsv
+import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetRegion
+import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.toCardinal
-import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
-import godot.global.GD
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sqrt
 
 class OceanCurrent(val planetTile: PlanetTile, val direction: Vector3, val temperature: Double)
 class OceanBand(

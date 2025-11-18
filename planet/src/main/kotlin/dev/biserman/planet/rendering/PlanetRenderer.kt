@@ -1,7 +1,7 @@
 package dev.biserman.planet.rendering
 
 import dev.biserman.planet.geometry.*
-import dev.biserman.planet.planet.ClimateSimulation
+import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
@@ -234,12 +234,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         },
         SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
             val airPressure = planetTile.airPressure
-            if (airPressure >= ClimateSimulation.basePressure) {
-                Color.black.transparent.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(3))
+            if (airPressure <= ClimateSimulation.basePressure) {
+                Color.black.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(2))
             } else {
-                Color.black.transparent.lerp(
+                Color.black.lerp(
                     Color.darkorange,
-                    ((ClimateSimulation.basePressure - airPressure) / 25).pow(3)
+                    ((ClimateSimulation.basePressure - airPressure) / 25).pow(2)
                 )
             }
         },

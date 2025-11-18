@@ -1,7 +1,6 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
-import dev.biserman.planet.utils.UtilityExtensions.radToDeg
 import kotlin.math.*
 
 @Suppress("MayBeConstant")
@@ -10,7 +9,7 @@ object Insolation {
     val solarConstant = 1.0 // 1361.0 // W/m^2
     val orbitEccentricity = 0.016718
     val axialTiltDeg = 23.45
-    val northSpringEquinox = 79.0
+    val northSpringEquinox = 261.0
     val yearLength = 365.242
     val opticalDepthConstant = -0.14
 
