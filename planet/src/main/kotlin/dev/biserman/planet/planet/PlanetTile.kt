@@ -4,28 +4,25 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.adjustRange
-import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
-import dev.biserman.planet.planet.ClimateSimulation.bands
-import dev.biserman.planet.planet.TectonicGlobals.tileInertia
+import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
+import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
+import dev.biserman.planet.planet.climate.Insolation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals
+import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
-import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.memo
-import dev.biserman.planet.utils.sum
-import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector3
 import kotlin.math.absoluteValue
-import kotlin.math.asin
-import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 @JsonIdentityInfo(
@@ -48,48 +45,8 @@ class PlanetTile(
     var temperature = 0.0
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo({ planet.tectonicAge }, { planet.daysPassed }) {
-        val latitude = tile.position.toGeoPoint().latitudeDegrees
-        val nearestBandAbove = bands.last { it.latitude >= latitude }
-        val nearestBandBelow = bands.first { it.latitude <= latitude }
-
-        val adjustedContinentiality = continentiality.toDouble() + 2.0
-
-        val seasonalAdjustment = -(2 / (1 + exp(
-            -(insolation - 0.6).signPow(1.01) * (adjustedContinentiality.absoluteValue + 1).pow(2.0) * 0.05
-        )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..15.0)
-
-        val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.002
-
-        val latitudeAdjustment =
-            tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
-                0.0..1.0,
-                -5.0..2.0
-            ) * (1 / (1 + exp(-adjustedContinentiality.signPow(0.5) * 0.3)))
-
-        ClimateSimulation.basePressure + lerp(
-            nearestBandBelow.pressureDelta,
-            nearestBandAbove.pressureDelta,
-            (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-        ) + seasonalAdjustment + latitudeAdjustment + elevationAdjustment
-    }
-    val prevailingWind by memo({ planet.tectonicAge }, { planet.daysPassed }) {
-        val pressureGradientForce = neighbors
-            .filter { it.airPressure < airPressure }
-            .map { (it.tile.position - tile.position).tangent(tile.position) * (airPressure - it.airPressure) * 0.1 }
-            .sum()
-
-        val latitudeRadians = asin(tile.position.y)
-        val coriolisParameter = 2.0 * planet.rotationRate * -sin(latitudeRadians)
-
-        // Deflection is perpendicular to both motion and local vertical
-        val coriolisDeflection = tile.position.cross(pressureGradientForce).normalized() *
-                coriolisParameter * pressureGradientForce.length()
-
-        val direction = pressureGradientForce + coriolisDeflection
-        direction.normalized() * direction.length()
-            .coerceIn(planet.topology.averageRadius * 0.25, planet.topology.averageRadius * 0.66)
-    }
+    val airPressure by memo({ planet.tectonicAge }, { planet.daysPassed }) { calculateAirPressure() }
+    val prevailingWind by memo({ planet.tectonicAge }, { planet.daysPassed }) { calculatePrevailingWind() }
 
     val isIceCap
         get() = elevation >= (1 - tile.position.y.absoluteValue).pow(0.5) * 6500 ||

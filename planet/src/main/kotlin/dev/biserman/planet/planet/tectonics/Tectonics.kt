@@ -1,31 +1,35 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.tectonics
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
-import dev.biserman.planet.planet.TectonicGlobals.continentSpringDamping
-import dev.biserman.planet.planet.TectonicGlobals.continentSpringSearchRadius
-import dev.biserman.planet.planet.TectonicGlobals.continentSpringStiffness
-import dev.biserman.planet.planet.TectonicGlobals.convergenceSearchRadius
-import dev.biserman.planet.planet.TectonicGlobals.depositLoss
-import dev.biserman.planet.planet.TectonicGlobals.depositStrength
-import dev.biserman.planet.planet.TectonicGlobals.depositionStartHeight
-import dev.biserman.planet.planet.TectonicGlobals.edgeInteractionStrength
-import dev.biserman.planet.planet.TectonicGlobals.elevationErosion
-import dev.biserman.planet.planet.TectonicGlobals.prominenceErosion
-import dev.biserman.planet.planet.TectonicGlobals.mantleConvectionStrength
-import dev.biserman.planet.planet.TectonicGlobals.maxElevation
-import dev.biserman.planet.planet.TectonicGlobals.minElevation
-import dev.biserman.planet.planet.TectonicGlobals.minPlateSize
-import dev.biserman.planet.planet.TectonicGlobals.oceanicSubsidence
-import dev.biserman.planet.planet.TectonicGlobals.plateMergeCutoff
-import dev.biserman.planet.planet.TectonicGlobals.plateTorqueScalar
-import dev.biserman.planet.planet.TectonicGlobals.riftCutoff
-import dev.biserman.planet.planet.TectonicGlobals.searchMaxResults
-import dev.biserman.planet.planet.TectonicGlobals.springPlateContributionStrength
-import dev.biserman.planet.planet.TectonicGlobals.tectonicElevationVariogram
-import dev.biserman.planet.planet.TectonicGlobals.tryHotspotEruption
-import dev.biserman.planet.planet.TectonicGlobals.waterErosion
+import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetRegion
+import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.PointForce
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringDamping
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringSearchRadius
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringStiffness
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.convergenceSearchRadius
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositLoss
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.mantleConvectionStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxElevation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.minElevation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPlateSize
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateTorqueScalar
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftCutoff
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.springPlateContributionStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVariogram
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.tryHotspotEruption
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.waterErosion
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -33,6 +37,12 @@ import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
+import kotlin.collections.associateWith
+import kotlin.collections.filter
+import kotlin.collections.iterator
+import kotlin.collections.map
+import kotlin.collections.mapValues
+import kotlin.collections.withIndex
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -187,7 +197,8 @@ object Tectonics {
     }
 
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>): Map<PlanetTile, Vector3> {
-        val continentalTilesRTree = tiles.filter { it.key.isContinentalCrust }.entries.toRTree { it.value.toPoint() to it }
+        val continentalTilesRTree =
+            tiles.filter { it.key.isContinentalCrust }.entries.toRTree { it.value.toPoint() to it }
         val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
 
         return tiles.mapValues { entry ->

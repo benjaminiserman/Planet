@@ -1,8 +1,9 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.tectonics
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
+import dev.biserman.planet.planet.PlanetTile
 import godot.common.util.lerp
 import kotlin.math.pow
 import kotlin.math.sqrt

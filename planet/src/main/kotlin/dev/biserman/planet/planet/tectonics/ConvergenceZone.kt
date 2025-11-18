@@ -1,7 +1,5 @@
-package dev.biserman.planet.planet
+package dev.biserman.planet.planet.tectonics
 
-import com.fasterxml.jackson.annotation.JacksonInject
-import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
@@ -12,12 +10,14 @@ import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverage
-import dev.biserman.planet.planet.TectonicGlobals.convergingElevationStrengthScale
-import dev.biserman.planet.planet.TectonicGlobals.overridingElevationStrengthScale
-import dev.biserman.planet.planet.TectonicGlobals.subductingElevationStrengthScale
+import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.PointForce
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.convergingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.overridingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
-import godot.global.GD
 import kotlin.math.absoluteValue
 import kotlin.math.min
 import kotlin.math.pow

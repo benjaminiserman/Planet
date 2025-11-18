@@ -4,6 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.planet.climate.OceanCurrent
+import dev.biserman.planet.planet.tectonics.ConvergenceZone
+import dev.biserman.planet.planet.tectonics.DivergenceZone
+import dev.biserman.planet.planet.tectonics.TectonicPlate
+import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
@@ -41,15 +46,15 @@ class Planet(val seed: Int, val size: Int) {
     @get:JsonIgnore
     val continentialityMap by memo({ tectonicAge }) {
         val tilesToFlip = contiguousRegions
-            .filter { region -> region.tiles.maxOf { it.edgeDepth } <= 1 }
+            .filter { region -> region.tiles.maxOf { it.edgeDepth } < 1 }
             .flatMap { it.tiles }
             .toSet()
 
         val isContinental = planetTiles.values.associateWith { tile ->
             if (tile in tilesToFlip) {
-                !(tile.isAboveWater || tile.isIceCap)
+                !tile.isAboveWater
             } else {
-                tile.isAboveWater || tile.isIceCap
+                tile.isAboveWater
             }
         }
 
