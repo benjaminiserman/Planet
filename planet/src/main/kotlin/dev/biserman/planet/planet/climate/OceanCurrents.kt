@@ -1,10 +1,12 @@
 package dev.biserman.planet.planet.climate
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.utils.memo
 import dev.biserman.planet.utils.toCardinal
 import godot.core.Vector2
 import godot.core.Vector3
@@ -136,5 +138,16 @@ object OceanCurrents {
         }
 
         return currents
+    }
+
+    fun (Planet).updateCurrentDistanceMap() {
+        warmCurrentDistanceMap = PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap {
+            val current = oceanCurrents[it.tileId]
+            current != null && current.temperature > 0
+        }.mapKeys { it.key.tileId }
+        coolCurrentDistanceMap = PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap {
+            val current = oceanCurrents[it.tileId]
+            current != null && current.temperature < 0
+        }.mapKeys { it.key.tileId }
     }
 }

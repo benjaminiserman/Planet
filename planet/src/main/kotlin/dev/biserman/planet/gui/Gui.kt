@@ -10,8 +10,10 @@ import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
 import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
+import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.Serialization
@@ -38,6 +40,7 @@ class Gui() : Node() {
     val projectButton by lazy { findChild("ProjectButton") as Button }
     val importButton by lazy { findChild("ImportButton") as Button }
     val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
+    val calculateClimateButton by lazy { findChild("CalculateClimateButton") as Button }
 
     val saveDialog by lazy { findChild("SaveDialog") as FileDialog }
     val loadDialog by lazy { findChild("LoadDialog") as FileDialog }
@@ -109,6 +112,11 @@ class Gui() : Node() {
                 Serialization.configMapper.writeValue(configFile, TectonicGlobals)
                 GD.print("No tectonics_config.json not found, created one with default values.")
             }
+        }
+        calculateClimateButton.pressed.connect {
+            Main.instance.planet.climateMap =
+                ClimateSimulation.calculateClimate(Main.instance.planet).mapKeys { it.key.tileId }
+            Main.instance.planetRenderer.update(Main.instance.planet)
         }
 
         projectButton.pressed.connect {

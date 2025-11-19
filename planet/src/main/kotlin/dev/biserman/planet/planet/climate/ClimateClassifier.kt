@@ -1,14 +1,13 @@
 package dev.biserman.planet.planet.climate
 
-import dev.biserman.planet.geometry.GeoPoint
-import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.Planet
 import godot.core.Color
 
 enum class MonthIndex {
     JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC;
 }
 
-fun (List<ClimateDatumMonth>).subList(from: MonthIndex, through: MonthIndex): List<ClimateDatumMonth> {
+fun <T> (List<T>).monthRange(from: MonthIndex, through: MonthIndex): List<T> {
     val fromIndex = from.ordinal
     val throughIndex = through.ordinal
     if (fromIndex > throughIndex) {
@@ -19,20 +18,19 @@ fun (List<ClimateDatumMonth>).subList(from: MonthIndex, through: MonthIndex): Li
 }
 
 data class ClimateDatumMonth(
-    val minTemperature: Double, // minT, °C
-    val maxTemperature: Double, // maxT, °C
+    val averageTemperature: Double, // avgT, °C
     val insolation: Double, // W/m²
     val precipitation: Double, // mm
-) {
-    val averageTemperature = (minTemperature + maxTemperature) * 0.5 // °C
-}
+    val minTemperature: Double? = null, // minT, °C
+    val maxTemperature: Double? = null, // maxT, °C
+)
 
-class ClimateDatum(val tile: PlanetTile, val months: List<ClimateDatumMonth>) {
+class ClimateDatum(val tileId: Int, val months: List<ClimateDatumMonth>) {
     val averageTemperature = months.map { it.averageTemperature }.average()
     val annualPrecipitation = months.map { it.precipitation }.sum()
 }
 
-data class Classification(val id: String, val name: String, val color: Color, val terrainColor: Color)
+data class ClimateClassification(val id: String, val name: String, val color: Color, val terrainColor: Color)
 interface ClimateClassifier {
-    fun classify(datum: ClimateDatum): Classification
+    fun classify(planet: Planet, datum: ClimateDatum): ClimateClassification
 }
