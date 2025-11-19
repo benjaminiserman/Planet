@@ -7,10 +7,15 @@ import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
+import dev.biserman.planet.planet.climate.ClimateClassification
+import dev.biserman.planet.planet.climate.ClimateSimulation
+import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.climate.Insolation
+import dev.biserman.planet.planet.climate.Koppen
+import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.topology.Border
@@ -19,6 +24,9 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
 import godot.core.Color
 import godot.core.Vector3
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
+import java.util.Optional
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -42,7 +50,7 @@ class PlanetTile(
         }
 
     val density get() = -elevation.scaleAndCoerceUnit(-5000.0..5000.0)
-    var temperature = 0.0
+    val temperature get() = averageTemperature
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
     val airPressure by memo({ planet.tectonicAge }, { planet.daysPassed }) { calculateAirPressure() }
@@ -85,6 +93,16 @@ class PlanetTile(
             planet.daysPassed % Insolation.yearLength,
             tile.position.toGeoPoint().latitude
         )
+
+    @get:JsonIgnore
+    val annualInsolation by memo({ planet.tectonicAge }) {
+        (1..12).map {
+            Insolation.directHorizontal(
+                it * 30 % Insolation.yearLength,
+                tile.position.toGeoPoint().latitude
+            )
+        }
+    }
 
     @get:JsonIgnore
     val isContinentalCrust get() = elevation > TectonicGlobals.continentElevationCutoff
@@ -233,11 +251,16 @@ class PlanetTile(
         return found
     }
 
+    @get:JsonIgnore
+    val koppen by memo<Optional<ClimateClassification>>({ planet.climateMap }) {
+        Optional.of(Koppen.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
+    }
+
     @JsonIgnore
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
         temperature: ${temperature.formatDigits()}
-        moisture: ${moisture.formatDigits()}
+        moisture: ${moisture.formatDigits(4)} (${(moisture * 2500).toInt()}mm)
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()})
         spring displacement: ${springDisplacement.formatDigits()}
@@ -249,14 +272,17 @@ class PlanetTile(
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My
         plate: ${tectonicPlate?.name ?: "null"}
-        insolation: ${insolation.formatDigits()}
+        insolation: ${insolation.formatDigits()} (avg: ${
+        annualInsolation.average()
+            .formatDigits()
+    }, min: ${annualInsolation.minOrNull()?.formatDigits()}, max: ${annualInsolation.maxOrNull()?.formatDigits()})
         edge depth: $edgeDepth tiles
         continentiality: $continentiality tiles
         hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
         deposit flow: ${depositFlow.formatDigits()}
         water flow: ${waterFlow.formatDigits()}
         airPressure: ${airPressure.formatDigits()}
-    """.trimIndent() + if (planet.convergenceZones.contains(tile.id)) {
+    """.trimIndent() + (if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """
         CONVERGENCE
@@ -265,5 +291,15 @@ class PlanetTile(
         subducting plates: ${convergenceZone.subductingPlates.size}
         subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()
+    } else "") + if (tileId in planet.climateMap) {
+        val climateDatum = planet.climateMap[tileId]!!
+        "\nclimate: ${koppen.getOrNull()?.name ?: "unclassified"} (${koppen.getOrNull()?.id ?: "null"})\n" +
+                climateDatum.months.mapIndexed { index, month ->
+                    MonthIndex.values()[index].name to "${
+                        month.averageTemperature.formatDigits(
+                            1
+                        )
+                    }°C, ${month.precipitation.toInt()}mm"
+                }.joinToString("\n") { "  ${it.first}: ${it.second}" }
     } else ""
 }

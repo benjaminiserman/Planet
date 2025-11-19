@@ -1,5 +1,6 @@
 package dev.biserman.planet.planet.climate
 
+import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
@@ -16,17 +17,20 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.startingMoist
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windBlockingSlope
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
+import godot.global.GD
 import kotlin.math.absoluteValue
 import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.sign
 import kotlin.math.sin
-
 
 
 object ClimateSimulation {
@@ -66,14 +70,18 @@ object ClimateSimulation {
         Gui.instance.daysPassedLabel.setText("${planet.daysPassed} — ${estimateMonth(planet, planet.daysPassed)}")
         Gui.instance.updateInfobox()
 
+        updatePlanetClimate(planet)
+        Main.instance.timerActive = "none"
+    }
+
+    fun updatePlanetClimate(planet: Planet) {
         planet.oceanCurrents = OceanCurrents.viaEarthlikeHeuristic(planet, 7)
             .distinctBy { it.planetTile }
             .associate { it.planetTile.tileId to it }
             .toMutableMap()
+        planet.updateCurrentDistanceMap()
 
         simulateMoisture(planet)
-
-//        Main.instance.timerActive = "none"
     }
 
     fun (PlanetTile).calculatePrevailingWind(): Vector3 {
@@ -148,8 +156,6 @@ object ClimateSimulation {
                         weight *
                                 (1 - (tile.slopeAboveWaterTo(neighbor) / windBlockingSlope))
                                     .coerceIn(1 - maxWindBlocking..1.0) *
-                                (1 - ((finalMoisture[neighbor] ?: 0.0) / saturationThreshold).pow(2))
-                                    .coerceIn(0.01..1.0) *
                                 tile.tile.borderFor(neighbor.tile).length.pow(0.1)
                     }
 
@@ -179,5 +185,56 @@ object ClimateSimulation {
                 .map { neighbor -> finalMoisture[neighbor] ?: 0.0 }
                 .average()
         }
+    }
+
+    val (PlanetTile).averageTemperature: Double
+        get() {
+            val geoPoint = tile.position.toGeoPoint()
+            val oceanTemperature = 273.15 + lerp(insolation, annualInsolation.average(), 0.5) * 33.0
+            val baseTemperature = 243.15 + insolation * 70.0
+
+            val warmCurrentAdjustment =
+                max(3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0), 0) * geoPoint.latitude.absoluteValue
+            val coolCurrentAdjustment =
+                -0.66 * max(3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0), 0) * geoPoint.latitude.absoluteValue
+
+            val elevationAdjustment = -0.0098 * elevation
+
+            val adjustedTemperature =
+                baseTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
+
+            val averageTemperature = if (continentiality < 0) {
+                oceanTemperature
+            } else {
+                lerp(oceanTemperature, adjustedTemperature, min((continentiality * 0.5).pow(0.3), 1.0))
+            }
+
+            return averageTemperature - 273.15
+        }
+
+    fun (PlanetTile).calculateClimateDatumMonth(): ClimateDatumMonth {
+        return ClimateDatumMonth(
+            averageTemperature,
+            insolation * 500.0,
+            moisture * 120.0
+        )
+    }
+
+    fun calculateClimate(planet: Planet): Map<PlanetTile, ClimateDatum> {
+        val startDate = planet.daysPassed
+
+        val monthToTileClimate = (0..<12).map { i ->
+            GD.print("${MonthIndex.values()[i].name}...")
+            planet.daysPassed = i * 30
+            updatePlanetClimate(planet)
+            planet.planetTiles.values.associateWith { it.calculateClimateDatumMonth() }
+        }
+
+        return planet.planetTiles.values.associateWith { tile ->
+            ClimateDatum(tile.tileId, monthToTileClimate.map { it[tile]!! })
+        }
+
+        planet.daysPassed = startDate
+        updatePlanetClimate(planet)
     }
 }

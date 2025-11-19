@@ -1,14 +1,15 @@
 package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.geometry.toGeoPoint
+import dev.biserman.planet.planet.Planet
 import godot.core.Color
 
-// average colors courtesy of u/paculino: https://www.reddit.com/r/MapPorn/comments/q4pv42/the_average_color_of_each_k%C3%B6ppen_climate/
+// average colors courtesy of https://github.com/syntax3rr/
 object Koppen : ClimateClassifier {
     fun getSummerAndWinter(datum: ClimateDatum): Pair<Set<ClimateDatumMonth>, Set<ClimateDatumMonth>> {
-        val groupA = MonthIndex.values().toList().subList(MonthIndex.APR.ordinal, MonthIndex.SEP.ordinal)
+        val groupA = MonthIndex.values().toList().monthRange(MonthIndex.APR, MonthIndex.SEP)
             .map { datum.months[it.ordinal] }
-        val groupB = MonthIndex.values().toList().subList(MonthIndex.OCT.ordinal, MonthIndex.MAR.ordinal)
+        val groupB = MonthIndex.values().toList().monthRange(MonthIndex.OCT, MonthIndex.MAR)
             .map { datum.months[it.ordinal] }
 
         return if (groupA.map { it.averageTemperature }.average() >=
@@ -20,27 +21,32 @@ object Koppen : ClimateClassifier {
         }
     }
 
-    override fun classify(datum: ClimateDatum): Classification {
+    override fun classify(planet: Planet, datum: ClimateDatum): ClimateClassification {
         val (summer, winter) = getSummerAndWinter(datum)
-        val geoPoint = datum.tile.tile.position.toGeoPoint()
+        val planetTile = planet.planetTiles[datum.tileId]!!
+        val geoPoint = planetTile.tile.position.toGeoPoint()
         val warmMonthCount = datum.months.count { it.averageTemperature >= 10.0 }
+
+        if (!planetTile.isAboveWater) {
+            return ClimateClassification("O", "ocean", Color.html("#000000"), Color.html("#030b21"))
+        }
 
         // Group E: Polar
         if (warmMonthCount == 0) {
             if (datum.months.any { it.averageTemperature >= 0.0 }) {
-                return Classification("ET", "tundra", Color.html("#b2b2b2"), Color.html("insert_here"))
+                return ClimateClassification("ET", "tundra", Color.html("#b2b2b2"), Color.html("#b0afa8"))
             } else {
-                return Classification("EF", "ice_cap", Color.html("#686868"), Color.html("insert_here"))
+                return ClimateClassification("EF", "ice_cap", Color.html("#686868"), Color.html("#b1afab"))
             }
         }
 
         // Group B: Desert and semi-arid
         val springSummerPrecipitation = when {
             geoPoint.latitude >= 0.0 -> datum.months
-                .subList(MonthIndex.APR, MonthIndex.SEP)
+                .monthRange(MonthIndex.APR, MonthIndex.SEP)
                 .sumOf { it.precipitation }
             else -> datum.months
-                .subList(MonthIndex.OCT, MonthIndex.MAR)
+                .monthRange(MonthIndex.OCT, MonthIndex.MAR)
                 .sumOf { it.precipitation }
         }
         val springSummerPrecipitationRatio = springSummerPrecipitation / datum.annualPrecipitation
@@ -52,14 +58,14 @@ object Koppen : ClimateClassifier {
         val aridityFactor = datum.annualPrecipitation / aridPrecipitationThreshold
         if (aridityFactor <= 0.5) {
             return if (datum.averageTemperature > 18.0)
-                Classification("BWh", "hot_desert", Color.html("#ff0000"), Color.html("insert_here"))
+                ClimateClassification("BWh", "hot_desert", Color.html("#ff0000"), Color.html("#cdaf80"))
             else
-                Classification("BWk", "cold_desert", Color.html("#ff9695"), Color.html("insert_here"))
+                ClimateClassification("BWk", "cold_desert", Color.html("#ff9695"), Color.html("#ab966d"))
         } else if (aridityFactor <= 1.0) {
             return if (datum.averageTemperature > 18.0)
-                Classification("BSh", "hot_semiarid", Color.html("#f5a301"), Color.html("insert_here"))
+                ClimateClassification("BSh", "hot_semiarid", Color.html("#f5a301"), Color.html("#746b3e"))
             else
-                Classification("BSk", "cold_semiarid", Color.html("#ffdb63"), Color.html("insert_here"))
+                ClimateClassification("BSk", "cold_semiarid", Color.html("#ffdb63"), Color.html("#6e6a3e"))
         }
 
         // Group A: Tropical
@@ -69,16 +75,16 @@ object Koppen : ClimateClassifier {
 
             return when {
                 datum.months.all { it.precipitation >= 60 } ->
-                    Classification("Af", "tropical_rainforest", Color.html("#0000ff"), Color.html("insert_here"))
+                    ClimateClassification("Af", "tropical_rainforest", Color.html("#0000ff"), Color.html("#293f11"))
                 driestMonth.precipitation >= tropicalPrecipitationThreshold ->
-                    Classification("Am", "tropical_monsoon", Color.html("#0077ff"), Color.html("insert_here"))
-                driestMonth in summer -> Classification(
+                    ClimateClassification("Am", "tropical_monsoon", Color.html("#0077ff"), Color.html("#344914"))
+                driestMonth in summer -> ClimateClassification(
                     "As",
                     "tropical_savanna",
                     Color.html("#79baec"),
-                    Color.html("insert_here")
+                    Color.html("#4a5521")
                 )
-                else -> Classification("Aw", "tropical_savanna", Color.html("#46a9fa"), Color.html("insert_here"))
+                else -> ClimateClassification("Aw", "tropical_savanna", Color.html("#46a9fa"), Color.html("#4a5521"))
             }
         }
 
@@ -90,28 +96,28 @@ object Koppen : ClimateClassifier {
 
         // Group C: Temperate
         if (datum.months.all { it.averageTemperature >= 0.0 }) {
-            val isHighland = datum.tile.elevation >= 1500
+            val isHighland = planetTile.elevation >= 1500
 
             // Mediterranean
             if (summerDriest.precipitation < 40.0 && winterWettest.precipitation >= summerDriest.precipitation * 3) {
                 return when {
-                    hasHotMonth -> Classification(
+                    hasHotMonth -> ClimateClassification(
                         "Csa",
                         "hot_summer_mediterranean",
                         Color.html("#ffff00"),
-                        Color.html("insert_here")
+                        Color.html("#51532a")
                     )
-                    warmMonthCount >= 4 -> Classification(
+                    warmMonthCount >= 4 -> ClimateClassification(
                         "Csb",
                         "warm_summer_mediterranean",
                         Color.html("#c6c700"),
-                        Color.html("insert_here")
+                        Color.html("#424a29")
                     )
-                    else -> Classification(
+                    else -> ClimateClassification(
                         "Csc",
                         "cool_summer_mediterranean",
                         Color.html("#969600"),
-                        Color.html("insert_here")
+                        Color.html("#656954")
                     )
                 }
             }
@@ -119,61 +125,61 @@ object Koppen : ClimateClassifier {
             // Monsoon
             if (summerWettest.precipitation >= winterDriest.precipitation * 10) {
                 return when {
-                    hasHotMonth -> Classification(
+                    hasHotMonth -> ClimateClassification(
                         "Cwa",
                         "humid_subtropical_monsoon",
                         Color.html("#96ff96"),
-                        Color.html("insert_here")
+                        Color.html("#42531c")
                     )
-                    warmMonthCount >= 4 -> if (isHighland) Classification(
+                    warmMonthCount >= 4 -> if (isHighland) ClimateClassification(
                         "Cwb",
                         "subtropical_highland",
                         Color.html("#63c764"),
-                        Color.html("insert_here")
-                    ) else Classification(
+                        Color.html("#50502a")
+                    ) else ClimateClassification(
                         "Cwb",
                         "temperate_oceanic_monsoon",
                         Color.html("#63c764"),
-                        Color.html("insert_here")
+                        Color.html("#50502a")
                     )
-                    else -> if (isHighland) Classification(
+                    else -> if (isHighland) ClimateClassification(
                         "Cwc",
                         "cold_subtropical_highland",
                         Color.html("#329633"),
-                        Color.html("insert_here")
-                    ) else Classification(
+                        Color.html("#987b50")
+                    ) else ClimateClassification(
                         "Cwc",
                         "subpolar_oceanic_monsoon",
                         Color.html("#329633"),
-                        Color.html("insert_here")
+                        Color.html("#987b50")
                     )
                 }
             }
 
             // Other
             return when {
-                hasHotMonth -> Classification(
+                hasHotMonth -> ClimateClassification(
                     "Cfa",
                     "humid_subtropical",
                     Color.html("#c6ff4e"),
-                    Color.html("insert_here")
+                    Color.html("#3c4d19")
                 )
-                warmMonthCount >= 4 -> if (isHighland) Classification(
+                warmMonthCount >= 4 -> if (isHighland) ClimateClassification(
                     "Cfb",
                     "subtropical_highland",
                     Color.html("#66ff33"),
-                    Color.html("insert_here")
-                ) else Classification(
+                    Color.html("#30401a")
+                ) else ClimateClassification(
                     "Cfb",
                     "temperate_oceanic",
                     Color.html("#66ff33"),
-                    Color.html("insert_here")
+                    Color.html("#30401a")
                 )
-                else -> Classification(
+                else -> ClimateClassification(
                     "Cfc",
                     "subpolar_oceanic",
                     Color.html("#33c701"),
-                    Color.html("insert_here")
+                    Color.html("#565d4e")
                 )
             }
         }
@@ -182,28 +188,28 @@ object Koppen : ClimateClassifier {
         // Mediterranean
         if (summerDriest.precipitation < 30.0 && winterWettest.precipitation >= summerDriest.precipitation * 3) {
             return when {
-                warmMonthCount >= 4 -> if (hasHotMonth) Classification(
+                warmMonthCount >= 4 -> if (hasHotMonth) ClimateClassification(
                     "Dsa",
                     "mediterranean_hot_summer_humid_continental",
                     Color.html("#ff00ff"),
-                    Color.html("insert_here")
-                ) else Classification(
+                    Color.html("#58592b")
+                ) else ClimateClassification(
                     "Dsb",
                     "mediterranean_warm_summer_humid_continental",
                     Color.html("#c600c7"),
-                    Color.html("insert_here")
+                    Color.html("#39421c")
                 )
-                datum.months.any { it.averageTemperature < -38.0 } -> Classification(
+                datum.months.any { it.averageTemperature < -38.0 } -> ClimateClassification(
                     "Dsd",
                     "mediterranean_extremely_cold_subartic",
                     Color.html("#966495"),
-                    Color.html("insert_here")
+                    Color.html("#4e4d27")
                 )
-                else -> Classification(
+                else -> ClimateClassification(
                     "Dsc",
                     "mediterranean_subartic",
                     Color.html("#963295"),
-                    Color.html("insert_here")
+                    Color.html("#4e4d27")
                 )
             }
         }
@@ -211,55 +217,55 @@ object Koppen : ClimateClassifier {
         // Monsoon
         if (summerWettest.precipitation >= winterDriest.precipitation * 10) {
             return when {
-                warmMonthCount >= 4 -> if (hasHotMonth) Classification(
+                warmMonthCount >= 4 -> if (hasHotMonth) ClimateClassification(
                     "Dwa",
                     "hot_summer_humid_continental_monsoon",
                     Color.html("#abb1ff"),
-                    Color.html("insert_here")
-                ) else Classification(
+                    Color.html("#3d5019")
+                ) else ClimateClassification(
                     "Dwb",
                     "warm_summer_humid_continental_monsoon",
                     Color.html("#5a77db"),
-                    Color.html("insert_here")
+                    Color.html("#374717")
                 )
-                datum.months.any { it.averageTemperature < -38.0 } -> Classification(
+                datum.months.any { it.averageTemperature < -38.0 } -> ClimateClassification(
                     "Dwd",
                     "extremely_cold_subartic_monsoon",
                     Color.html("#320087"),
-                    Color.html("insert_here")
+                    Color.html("#44461e")
                 )
-                else -> Classification(
+                else -> ClimateClassification(
                     "Dwc",
                     "subarctic_monsoon",
                     Color.html("#4c51b5"),
-                    Color.html("insert_here")
+                    Color.html("#545629")
                 )
             }
         }
 
         return when {
-            warmMonthCount >= 4 -> if (hasHotMonth) Classification(
+            warmMonthCount >= 4 -> if (hasHotMonth) ClimateClassification(
                 "Dfa",
                 "hot_summer_humid_continental",
                 Color.html("#00ffff"),
-                Color.html("insert_here")
-            ) else Classification(
+                Color.html("#2f4211")
+            ) else ClimateClassification(
                 "Dfb",
                 "warm_summer_humid_continental",
                 Color.html("#38c7ff"),
-                Color.html("insert_here")
+                Color.html("#2d3a11")
             )
-            datum.months.any { it.averageTemperature < -38.0 } -> Classification(
+            datum.months.any { it.averageTemperature < -38.0 } -> ClimateClassification(
                 "Dfd",
                 "extremely_cold_subartic",
                 Color.html("#00455e"),
-                Color.html("insert_here")
+                Color.html("#0c0c35")
             )
-            else -> Classification(
+            else -> ClimateClassification(
                 "Dfc",
                 "subarctic",
                 Color.html("#007e7d"),
-                Color.html("insert_here")
+                Color.html("#464a22")
             )
         }
     }

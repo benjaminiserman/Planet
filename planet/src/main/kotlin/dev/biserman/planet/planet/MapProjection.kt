@@ -44,7 +44,7 @@ object MapProjections {
                     planet.colorFn(
                         this.backward(
                             Vector2(
-                                (x.toDouble() / imageX) - 0.5,
+                                1 - ((x.toDouble() / imageX) - 0.5),
                                 y.toDouble() / imageY - 0.5,
                             )
                         ).toVector3()

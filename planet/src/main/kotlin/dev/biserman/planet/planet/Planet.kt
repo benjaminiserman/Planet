@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
@@ -66,6 +67,10 @@ class Planet(val seed: Int, val size: Int) {
             if (isContinental[tile]!!) edgeDepth else -edgeDepth - 1
         }
     }
+
+    var warmCurrentDistanceMap: Map<Int, Int> = mapOf()
+    var coolCurrentDistanceMap: Map<Int, Int> = mapOf()
+    var climateMap: Map<Int, ClimateDatum> = mapOf()
 
     val warpNoise by memo({ tectonicAge }) {
         VectorWarpNoise(

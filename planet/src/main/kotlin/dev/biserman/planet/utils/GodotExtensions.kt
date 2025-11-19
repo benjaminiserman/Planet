@@ -25,8 +25,8 @@ fun (FastNoiseLite).withSeed(seed: Int): FastNoiseLite = this.apply { this.setSe
 val (Color).transparent get() = Color(this).also { it.a = 0.0 }
 val (Color).opaque get() = Color(this).also { it.a = 1.0 }
 
-fun Iterable<Color>.average() = this.reduce { acc, color -> acc + color } / this.count().toDouble()
-fun Iterable<Color>.alphaAverage() = this.reduce { acc, color -> acc + (color * color.a).opaque }
+fun Iterable<Color>.average() = this.fold(Color.black) { acc, color -> acc + color } / this.count().toDouble()
+fun Iterable<Color>.alphaAverage() = this.fold(Color.black) { acc, color -> acc + (color * color.a).opaque }
 //fun Iterable<Color>.average(): Color {
 //    val color = this.reduce { acc, color -> acc + color * color } / this.count().toDouble()
 //    return Color(

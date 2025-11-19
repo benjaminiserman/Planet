@@ -4,6 +4,7 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
@@ -24,6 +25,7 @@ import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.collections.average
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.cos
@@ -132,6 +134,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "fast_biome", visibleByDefault = false
         ) { if (it.isAboveWater) Color.darkGreen else Color.darkBlue },
+        SimpleColorMode(
+            this, "koppen", visibleByDefault = false
+        ) { it.koppen.getOrNull()?.color },
+        SimpleColorMode(
+            this, "koppen_terrain", visibleByDefault = false
+        ) { it.koppen.getOrNull()?.terrainColor },
         SimpleDoubleColorMode(
             this, "elevation", visibleByDefault = false,
         ) {
@@ -150,12 +158,19 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this,
             "temperature",
             visibleByDefault = false,
-            colorFn = redWhenNull { Color(it, 0.0, 0.0, 1.0) }) { it.temperature },
+            colorFn = redWhenNull {
+                if (it > 0) Color(it / 40, 0.0, 0.0, 1.0) else Color(
+                    0.0,
+                    0.0,
+                    it.absoluteValue / 40,
+                    1.0
+                )
+            }) { it.temperature },
         SimpleDoubleColorMode(
             this,
             "moisture",
             visibleByDefault = false,
-            colorFn = redWhenNull { Color(0.0, 0.0, it, 1.0) }) { it.moisture },
+            colorFn = redWhenNull { if (it == 0.0) Color.yellow else Color(0.0, 0.0, it, 1.0) }) { it.moisture },
         SimpleDoubleColorMode(
             this,
             "hotspots",
@@ -220,6 +235,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "insolation", visibleByDefault = false,
         ) { planetTile ->
             Color.black.transparent.lerp(Color.orange, planetTile.insolation)
+        },
+        SimpleColorMode(
+            this, "annual_insolation", visibleByDefault = false,
+        ) { planetTile ->
+            Color.black.transparent.lerp(Color.orange, planetTile.annualInsolation.average())
         },
         SimpleColorMode(
             this, "edge_depth", visibleByDefault = false,
