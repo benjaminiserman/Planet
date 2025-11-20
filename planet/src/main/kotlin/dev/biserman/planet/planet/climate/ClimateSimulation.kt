@@ -113,7 +113,7 @@ object ClimateSimulation {
             -(insolation - 0.6).signPow(1.01) * (adjustedContinentiality + 1).signPow(3.0) * 0.01
         )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..15.0)
 
-        val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.002
+        val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.001
 
         val latitudeAdjustment =
             tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
@@ -131,8 +131,12 @@ object ClimateSimulation {
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
             val geoPoint = tile.tile.position.toGeoPoint()
-            val equatorEffect = 2.5 * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 1.0 * max(0.0, 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 5.0)
+            val equatorEffect =
+                3.0 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
+            val ferrelEffect = 1.1 * tile.insolation.pow(0.75) * max(
+                0.0,
+                1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
+            )
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
                 val coolCurrentEffect = -0.3 * max(5 - (planet.coolCurrentDistanceMap[tile.tileId] ?: 10), 0)
@@ -142,8 +146,7 @@ object ClimateSimulation {
                         (tile.insolation.pow(2) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
                         3.0
                     ),
-                    (1 - tile.insolation).pow(2) * 3
-//                    minStartingMoisture
+                    minStartingMoisture
                 )
             }
             equatorEffect + ferrelEffect + oceanEffect
