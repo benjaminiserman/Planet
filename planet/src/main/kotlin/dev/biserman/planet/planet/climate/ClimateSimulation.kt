@@ -130,11 +130,13 @@ object ClimateSimulation {
 
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
-            if (tile.isAboveWater) 0.0
+            val geoPoint = tile.tile.position.toGeoPoint()
+            val equatorEffect = 2.5 * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
+            val ferrelEffect = 1.0 * max(0.0, 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 5.0)
+            val oceanEffect = if (tile.isAboveWater) 0.0
             else {
                 val coolCurrentEffect = -0.3 * max(5 - (planet.coolCurrentDistanceMap[tile.tileId] ?: 10), 0)
                 val warmCurrentEffect = 1.5 * max(2 - (planet.warmCurrentDistanceMap[tile.tileId] ?: 10), 0)
-                val equatorEffect = 3.0 * max(0.0, 1 - 20 * tile.tile.position.y)
                 max(
                     min(
                         (tile.insolation.pow(2) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
@@ -144,6 +146,7 @@ object ClimateSimulation {
 //                    minStartingMoisture
                 )
             }
+            equatorEffect + ferrelEffect + oceanEffect
         }
         val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
 
