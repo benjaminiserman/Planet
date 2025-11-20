@@ -9,13 +9,14 @@ object Insolation {
     val solarConstant = 1.0 // 1361.0 // W/m^2
     val orbitEccentricity = 0.016718
     val axialTiltDeg = 23.45
-    val northSpringEquinox = 261.0
+    val periapsis = 3.5
+    val northSpringEquinox = 286.0
     val yearLength = 365.242
     val opticalDepthConstant = -0.14
 
     // Earth–Sun distance correction
     fun eccentricityFactor(dayOfYear: Double): Double {
-        return 1.0 + orbitEccentricity * 2 * cos(2.0 * Math.PI * dayOfYear / 365.0)
+        return 1.0 + orbitEccentricity * 2 * cos(2.0 * Math.PI * (dayOfYear + periapsis) / 365.0)
     }
 
     // Solar declination (radians, Cooper’s formula)
