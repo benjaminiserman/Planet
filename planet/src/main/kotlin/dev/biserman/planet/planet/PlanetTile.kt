@@ -282,6 +282,8 @@ class PlanetTile(
         deposit flow: ${depositFlow.formatDigits()}
         water flow: ${waterFlow.formatDigits()}
         airPressure: ${airPressure.formatDigits()}
+        warm current distance: ${planet.warmCurrentDistanceMap[tileId] ?: "null"}
+        cool current distance: ${planet.coolCurrentDistanceMap[tileId] ?: "null"}
     """.trimIndent() + (if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """

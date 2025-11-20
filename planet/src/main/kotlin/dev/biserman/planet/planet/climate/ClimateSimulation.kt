@@ -131,10 +131,19 @@ object ClimateSimulation {
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
             if (tile.isAboveWater) 0.0
-            else max(
-                (tile.insolation.pow(2) + (planet.oceanCurrents[tile.tileId]?.temperature
-                    ?: 0.0)) * startingMoistureMultiplier, minStartingMoisture
-            )
+            else {
+                val coolCurrentEffect = -0.3 * max(5 - (planet.coolCurrentDistanceMap[tile.tileId] ?: 10), 0)
+                val warmCurrentEffect = 1.5 * max(2 - (planet.warmCurrentDistanceMap[tile.tileId] ?: 10), 0)
+                val equatorEffect = 3.0 * max(0.0, 1 - 20 * tile.tile.position.y)
+                max(
+                    min(
+                        (tile.insolation.pow(2) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
+                        3.0
+                    ),
+                    (1 - tile.insolation).pow(2) * 3
+//                    minStartingMoisture
+                )
+            }
         }
         val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
 
@@ -164,14 +173,17 @@ object ClimateSimulation {
                     val moistureProvided = if (totalWeight == 0.0) 0.0 else moisture * weight / totalWeight
                     val precipitation =
                         moistureProvided *
-                                (tile.slopeAboveWaterTo(neighbor) / maxPrecipitationSlope)
-                                    .pow(2.0)
-                                    .coerceIn(minPrecipitation..1.0) *
-                                (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
-                                    .coerceIn(0.01..1.0) *
-                                (1 - tile.prevailingWind.length().pow(0.1))
+                                max(
+                                    minPrecipitation,
+                                    (tile.slopeAboveWaterTo(neighbor) / maxPrecipitationSlope)
+                                        .pow(2.0)
+                                        .coerceIn(0.0..1.0) *
+                                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
+                                                .coerceIn(0.0..1.0)
+//                                            (1 - tile.prevailingWind.length().pow(0.1))
+                                )
                     finalMoisture[tile] = (finalMoisture[tile] ?: 0.0) + precipitation
-                    nextStep[neighbor] = (nextStep[neighbor] ?: 0.0) + moistureProvided - precipitation
+                    nextStep[neighbor] = (nextStep[neighbor] ?: 0.0) + moistureProvided * 1.03 - precipitation
                 }
             }
 
@@ -190,15 +202,25 @@ object ClimateSimulation {
     val (PlanetTile).averageTemperature: Double
         get() {
             val geoPoint = tile.position.toGeoPoint()
-            val oceanTemperature = 273.15 + lerp(insolation, annualInsolation.average(), 0.5) * 33.0
             val baseTemperature = 243.15 + insolation * 70.0
 
             val warmCurrentAdjustment =
-                max(3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0), 0) * geoPoint.latitude.absoluteValue
+                3.0 * max(
+                    3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
+                    0
+                ) * geoPoint.latitude.absoluteValue.pow(0.5)
             val coolCurrentAdjustment =
-                -0.66 * max(3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0), 0) * geoPoint.latitude.absoluteValue
+                -2.2 * max(
+                    3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
+                    0
+                ) * geoPoint.latitude.absoluteValue.pow(0.5)
 
-            val elevationAdjustment = -0.0098 * elevation
+            val elevationAdjustment = -0.0098 * 0.5 * elevation
+
+            val oceanTemperature = max(
+                271.1,
+                249.55 + lerp(insolation, annualInsolation.average(), 0.5) * 61.56
+            ) + warmCurrentAdjustment + coolCurrentAdjustment
 
             val adjustedTemperature =
                 baseTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
