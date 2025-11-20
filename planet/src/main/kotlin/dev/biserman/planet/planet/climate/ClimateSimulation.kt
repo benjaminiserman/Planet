@@ -221,12 +221,12 @@ object ClimateSimulation {
                     0
                 ) * geoPoint.latitude.absoluteValue.pow(0.5)
 
-            val elevationAdjustment = -0.0098 * 0.5 * elevation
+            val elevationAdjustment = -0.0098 * 0.5 * max(0.0, elevation)
 
             val oceanTemperature = max(
                 271.1,
                 249.55 + lerp(insolation, annualInsolation.average(), 0.5) * 61.56
-            ) + warmCurrentAdjustment + coolCurrentAdjustment
+            ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val adjustedTemperature =
                 baseTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
