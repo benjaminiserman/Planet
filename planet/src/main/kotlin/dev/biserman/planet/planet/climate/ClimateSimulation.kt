@@ -1,6 +1,7 @@
 package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.Main
+import dev.biserman.planet.geometry.adjustRange
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
@@ -206,6 +207,10 @@ object ClimateSimulation {
             currentMoisture = nextStep
         }
 
+        finalMoisture.mapValuesTo(finalMoisture) { (tile, moisture) ->
+            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 3.0).adjustRange(0.0..1.0, 1.0..3.0)
+            moisture * itczEffect
+        }
         planet.planetTiles.values.forEach { tile ->
             tile.moisture = tile.neighbors
                 .plus(tile)
@@ -279,7 +284,7 @@ object ClimateSimulation {
     // inter-tropical convergence zone
     fun (Planet).calculateItcz(): Path<PlanetTile> {
         fun costFn(_1: PlanetTile, tile: PlanetTile): Double =
-            1 - lerp(tile.insolation, tile.averageInsolation, 0.05) - max(0.0, tile.continentiality * 0.01)
+            1 - lerp(tile.insolation, tile.averageInsolation, 0.2) - max(0.0, tile.continentiality * 0.015)
 
         fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
             val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
@@ -296,6 +301,9 @@ object ClimateSimulation {
         fun heuristic(tile: PlanetTile) = costFn(tile, tile)
 
         val path = AStar.path(startTile, ::goalFn, ::heuristic, ::costFn, ::neighborFn)
+        if (path.nodes.size == 0) {
+            throw Exception("No path found!")
+        }
         return path
     }
 }
