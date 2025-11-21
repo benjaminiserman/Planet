@@ -29,6 +29,7 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.measureTime
@@ -251,6 +252,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         ) { planetTile ->
             if (planetTile.continentiality >= 0) Color.red * (planetTile.continentiality / 40.0)
             else Color.blue * (-planetTile.continentiality / 40.0)
+        },
+        SimpleColorMode(
+            this, "itcz", visibleByDefault = false,
+        ) { planetTile ->
+            val distance = planet.itczDistanceMap[planetTile.tile.id] ?: return@SimpleColorMode null
+            if (distance == -1) Color.red else Color.blue * max(0.0, 1 - distance / 5.0)
         },
         SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
             val airPressure = planetTile.airPressure

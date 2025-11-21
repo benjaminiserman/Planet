@@ -94,6 +94,15 @@ class PlanetTile(
             tile.position.toGeoPoint().latitude
         )
 
+    val averageInsolation by memo {
+        (0..<12).map { it * 30.0 }.map {
+            Insolation.directHorizontal(
+                it,
+                tile.position.toGeoPoint().latitude
+            )
+        }.average()
+    }
+
     @get:JsonIgnore
     val annualInsolation by memo({ planet.tectonicAge }) {
         (1..12).map {
@@ -284,6 +293,7 @@ class PlanetTile(
         airPressure: ${airPressure.formatDigits()}
         warm current distance: ${planet.warmCurrentDistanceMap[tileId] ?: "null"}
         cool current distance: ${planet.coolCurrentDistanceMap[tileId] ?: "null"}
+        itcz distance: ${planet.itczDistanceMap[tileId] ?: "null"}
     """.trimIndent() + (if (planet.convergenceZones.contains(tile.id)) {
         val convergenceZone = planet.convergenceZones[tile.id]!!
         "\n" + """

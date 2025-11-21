@@ -1,5 +1,8 @@
 package dev.biserman.planet.utils
 
+import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
+import godot.global.GD
 import java.util.PriorityQueue
 
 data class Path<T>(val nodes: List<T>, val distance: Double)
@@ -36,8 +39,9 @@ object AStar {
         }
 
         while (openQueue.isNotEmpty()) {
-            val current = openQueue.poll().node
-            val gotPriority = openSet[current] ?: continue
+            val next = openQueue.poll()
+            val current = next.node
+            val gotPriority = next.priority
 
             if (gotPriority > (distanceFromGoalEstimate[current] ?: Double.POSITIVE_INFINITY)) {
                 continue
@@ -63,11 +67,12 @@ object AStar {
                 val distanceFromStart = (bestPathTo[current] ?: Double.POSITIVE_INFINITY) + distance(current, neighbor)
                 if (distanceFromStart < (bestPathTo[neighbor] ?: Double.POSITIVE_INFINITY)) {
                     val previous = cameFrom[neighbor]
-                    if (previous != null && previous == current) {
+                    if (previous == current) {
+//                        GD.print(neighbors(current).map { (it as PlanetTile).tile.position.formatDigits() }.toList())
                         return Path(bestPathThusFar.nodes, Double.NEGATIVE_INFINITY)
                     }
 
-                    //println("$current => $neighbor, $distanceFromStart")
+//                    println("$current => $neighbor, $distanceFromStart")
                     cameFrom[neighbor] = current
                     bestPathTo[neighbor] = distanceFromStart
                     val distanceEstimate = distanceFromStart + heuristic(neighbor)
@@ -75,7 +80,7 @@ object AStar {
 
                     val neighborPriority = openSet[neighbor]
                     if (neighborPriority == null || neighborPriority > distanceEstimate) {
-                        //println("$neighbor: $distanceFromStart, nodes: $nodesExplored, ${distanceFromGoalEstimate[neighbor]}")
+//                        println("$neighbor: $distanceFromStart, ${distanceFromGoalEstimate[neighbor]}")
                         openSet[neighbor] = distanceEstimate
                         openQueue.add(QueueNode(neighbor, distanceEstimate))
                     }

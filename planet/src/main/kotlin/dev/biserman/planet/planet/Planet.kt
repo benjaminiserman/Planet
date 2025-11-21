@@ -13,6 +13,7 @@ import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
+import dev.biserman.planet.utils.Path
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -43,7 +44,6 @@ class Planet(val seed: Int, val size: Int) {
         PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
     }
 
-
     @get:JsonIgnore
     val continentialityMap by memo({ tectonicAge }) {
         val tilesToFlip = contiguousRegions
@@ -71,6 +71,7 @@ class Planet(val seed: Int, val size: Int) {
     var warmCurrentDistanceMap: Map<Int, Int> = mapOf()
     var coolCurrentDistanceMap: Map<Int, Int> = mapOf()
     var climateMap: Map<Int, ClimateDatum> = mapOf()
+    var itczDistanceMap: Map<Int, Int> = mapOf()
 
     val warpNoise by memo({ tectonicAge }) {
         VectorWarpNoise(

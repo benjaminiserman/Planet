@@ -1,7 +1,6 @@
 package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.Main
-import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
@@ -16,8 +15,12 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.saturationThr
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.startingMoistureMultiplier
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windBlockingSlope
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
+import dev.biserman.planet.utils.AStar
+import dev.biserman.planet.utils.AStar.path
+import dev.biserman.planet.utils.Path
 import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
@@ -29,7 +32,6 @@ import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.sign
 import kotlin.math.sin
 
 
@@ -38,13 +40,13 @@ object ClimateSimulation {
 
     @Suppress("UnusedUnaryOperator")
     val bands = listOf(
-        +90 to +5,
-        +60 to -10,
-        +30 to +10,
-        0 to +5,
-        -30 to +10,
-        -60 to -10,
-        -90 to +5,
+        +90 to +2.5,
+        +60 to -7.5,
+        +30 to +5.0,
+        0 to +0.0,
+        -30 to +5.0,
+        -60 to -7.5,
+        -90 to +2.5,
     ).map { Band(it.first.toDouble(), it.second.toDouble()) }
     val basePressure = 1010.0
 
@@ -80,6 +82,12 @@ object ClimateSimulation {
             .associate { it.planetTile.tileId to it }
             .toMutableMap()
         planet.updateCurrentDistanceMap()
+
+        val itcz = planet.calculateItcz().nodes.toSet()
+        planet.itczDistanceMap = PlanetRegion(planet, planet.planetTiles.values.toMutableSet())
+            .calculateEdgeDepthMap { it in itcz }
+            .mapValues { it.value + if (it.key in itcz) -1 else 0 }
+            .mapKeys { it.key.tileId }
 
         simulateMoisture(planet)
     }
@@ -121,18 +129,20 @@ object ClimateSimulation {
                 -5.0..2.0
             ) * (1 / (1 + exp(-adjustedContinentiality.signPow(0.5) * 0.3)))
 
+        val ictzAdjustment = -7.5 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
+
         return basePressure + lerp(
             nearestBandBelow.pressureDelta,
             nearestBandAbove.pressureDelta,
             (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-        ) + seasonalAdjustment + latitudeAdjustment + elevationAdjustment
+        ) + seasonalAdjustment + latitudeAdjustment + elevationAdjustment + ictzAdjustment
     }
 
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
-                3.0 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
+                2.5 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
             val ferrelEffect = 1.1 * tile.insolation.pow(0.75) * max(
                 0.0,
                 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
@@ -143,7 +153,7 @@ object ClimateSimulation {
                 val warmCurrentEffect = 1.5 * max(2 - (planet.warmCurrentDistanceMap[tile.tileId] ?: 10), 0)
                 max(
                     min(
-                        (tile.insolation.pow(2) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
+                        (tile.insolation.pow(3) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
                         3.0
                     ),
                     minStartingMoisture
@@ -264,5 +274,28 @@ object ClimateSimulation {
 
         planet.daysPassed = startDate
         updatePlanetClimate(planet)
+    }
+
+    // inter-tropical convergence zone
+    fun (Planet).calculateItcz(): Path<PlanetTile> {
+        fun costFn(_1: PlanetTile, tile: PlanetTile): Double =
+            1 - lerp(tile.insolation, tile.averageInsolation, 0.05) - max(0.0, tile.continentiality * 0.01)
+
+        fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
+            val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
+            val crossProduct = tile.tile.position.cross(tileToNeighbor)
+            val dotProduct = crossProduct.dot(Vector3.UP)
+            dotProduct > 0
+        }
+
+        val startTile = planetTiles.values.minBy { costFn(it, it) }
+        val validStartNeighbors = neighborFn(startTile)
+        val goal = startTile.neighbors.filter { it !in validStartNeighbors }.maxBy { costFn(it, it) }
+
+        fun goalFn(tile: PlanetTile): Boolean = tile == goal
+        fun heuristic(tile: PlanetTile) = costFn(tile, tile)
+
+        val path = AStar.path(startTile, ::goalFn, ::heuristic, ::costFn, ::neighborFn)
+        return path
     }
 }
