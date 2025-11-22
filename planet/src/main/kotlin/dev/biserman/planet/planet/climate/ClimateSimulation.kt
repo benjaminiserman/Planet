@@ -130,7 +130,7 @@ object ClimateSimulation {
                 -5.0..2.0
             ) * (1 / (1 + exp(-adjustedContinentiality.signPow(0.5) * 0.3)))
 
-        val ictzAdjustment = -7.5 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
+        val ictzAdjustment = -10.0 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
 
         return basePressure + lerp(
             nearestBandBelow.pressureDelta,
@@ -144,7 +144,7 @@ object ClimateSimulation {
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
                 2.5 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 1.1 * tile.insolation.pow(0.75) * max(
+            val ferrelEffect = 1.0 * tile.insolation.pow(0.6) * max(
                 0.0,
                 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
             )
@@ -208,7 +208,8 @@ object ClimateSimulation {
         }
 
         finalMoisture.mapValuesTo(finalMoisture) { (tile, moisture) ->
-            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 3.0).adjustRange(0.0..1.0, 1.0..3.0)
+            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 5.0)
+                .adjustRange(0.0..1.0, 1.0..2.0)
             moisture * itczEffect
         }
         planet.planetTiles.values.forEach { tile ->
@@ -223,10 +224,13 @@ object ClimateSimulation {
     val (PlanetTile).averageTemperature: Double
         get() {
             val geoPoint = tile.position.toGeoPoint()
-            val baseTemperature = 243.15 + insolation * 70.0
+            val baseTemperature =
+                243.15 + insolation * 80.0
+            val moistureAdjustedTemperature =
+                lerp(273.15, baseTemperature, max(0.0, 1 - moisture).pow(1.5).scaleAndCoerceIn(0.0..1.0, 0.85..1.0))
 
             val warmCurrentAdjustment =
-                3.0 * max(
+                4.5 * max(
                     3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0
                 ) * geoPoint.latitude.absoluteValue.pow(0.5)
@@ -236,7 +240,7 @@ object ClimateSimulation {
                     0
                 ) * geoPoint.latitude.absoluteValue.pow(0.5)
 
-            val elevationAdjustment = -0.0098 * 0.5 * max(0.0, elevation)
+            val elevationAdjustment = -0.0098 * 0.75 * max(0.0, elevation)
 
             val oceanTemperature = max(
                 271.1,
@@ -244,12 +248,19 @@ object ClimateSimulation {
             ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val adjustedTemperature =
-                baseTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
+                moistureAdjustedTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val averageTemperature = if (continentiality < 0) {
                 oceanTemperature
+            } else if (continentiality == 0) {
+                lerp(
+                    oceanTemperature,
+                    adjustedTemperature,
+                    (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
+                        .adjustRange(0.0..1.0, 0.0..0.15)
+                )
             } else {
-                lerp(oceanTemperature, adjustedTemperature, min((continentiality * 0.5).pow(0.3), 1.0))
+                lerp(oceanTemperature, adjustedTemperature, min(continentiality * 0.4, 1.0))
             }
 
             return averageTemperature - 273.15
@@ -284,7 +295,7 @@ object ClimateSimulation {
     // inter-tropical convergence zone
     fun (Planet).calculateItcz(): Path<PlanetTile> {
         fun costFn(_1: PlanetTile, tile: PlanetTile): Double =
-            1 - lerp(tile.insolation, tile.averageInsolation, 0.2) - max(0.0, tile.continentiality * 0.015)
+            1 - lerp(tile.insolation, tile.averageInsolation, 0.4) - max(0.0, tile.continentiality * 0.015)
 
         fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
             val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
