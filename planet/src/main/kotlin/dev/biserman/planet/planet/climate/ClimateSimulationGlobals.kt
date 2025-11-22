@@ -4,7 +4,7 @@ package dev.biserman.planet.planet.climate
 object ClimateSimulationGlobals {
     val maxMoistureSteps = 50
     val startingMoistureMultiplier = 1.75
-    val minStartingMoisture = 0.25
+    val minStartingMoisture = 0.15
 
     val windBlockingSlope = 750.0
     val maxWindBlocking = 1.0
