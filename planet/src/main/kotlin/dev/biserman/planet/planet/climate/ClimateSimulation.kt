@@ -113,48 +113,44 @@ object ClimateSimulation {
 
     fun (PlanetTile).calculateAirPressure(): Double {
         val latitude = tile.position.toGeoPoint().latitudeDegrees
-        val nearestBandAbove = bands.last { it.latitude >= latitude }
-        val nearestBandBelow = bands.first { it.latitude <= latitude }
+        val adjustedLatitude = latitude + Insolation.solarDeclination(planet.daysPassed % Insolation.yearLength) * 2.0
+        val nearestBandAbove = bands.last { it.latitude >= adjustedLatitude }
+        val nearestBandBelow = bands.first { it.latitude <= adjustedLatitude }
 
-        val adjustedContinentiality = continentiality.toDouble() + 2.0
-
+        val adjustedContinentiality = continentiality.toDouble()
         val seasonalAdjustment = -(2 / (1 + exp(
             -(insolation - 0.6).signPow(1.01) * (adjustedContinentiality + 1).signPow(3.0) * 0.01
         )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..15.0)
 
         val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.001
 
-        val latitudeAdjustment =
-            tile.position.y.absoluteValue.pow(2).scaleAndCoerceIn(
-                0.0..1.0,
-                -5.0..2.0
-            ) * (1 / (1 + exp(-adjustedContinentiality.signPow(0.5) * 0.3)))
-
-        val ictzAdjustment = -10.0 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
+        val ictzAdjustment = -20.0 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
 
         return basePressure + lerp(
             nearestBandBelow.pressureDelta,
             nearestBandAbove.pressureDelta,
-            (latitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-        ) + seasonalAdjustment + latitudeAdjustment + elevationAdjustment + ictzAdjustment
+            (adjustedLatitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
+        ) + seasonalAdjustment + elevationAdjustment + ictzAdjustment
     }
 
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
-                2.5 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 1.0 * tile.insolation.pow(0.6) * max(
+                2.8 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
+            val ferrelEffect = 0.9 * tile.insolation.pow(0.5) * max(
                 0.0,
                 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
             )
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
-                val coolCurrentEffect = -0.3 * max(5 - (planet.coolCurrentDistanceMap[tile.tileId] ?: 10), 0)
-                val warmCurrentEffect = 1.5 * max(2 - (planet.warmCurrentDistanceMap[tile.tileId] ?: 10), 0)
+                val coolCurrentEffect =
+                    -0.3 * tile.insolation * max(5 - (planet.coolCurrentDistanceMap[tile.tileId] ?: 10), 0)
+                val warmCurrentEffect =
+                    2.0 * tile.insolation * max(2 - (planet.warmCurrentDistanceMap[tile.tileId] ?: 10), 0)
                 max(
                     min(
-                        (tile.insolation.pow(3) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
+                        (tile.insolation.pow(1.5) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier,
                         3.0
                     ),
                     minStartingMoisture
@@ -225,26 +221,35 @@ object ClimateSimulation {
         get() {
             val geoPoint = tile.position.toGeoPoint()
             val baseTemperature =
-                243.15 + insolation * 80.0
+                243.15 + insolation.pow(1.2) * 82.0
             val moistureAdjustedTemperature =
-                lerp(273.15, baseTemperature, max(0.0, 1 - moisture).pow(1.5).scaleAndCoerceIn(0.0..1.0, 0.85..1.0))
+                lerp(
+                    273.15,
+                    baseTemperature,
+                    max(0.0, 1 - moisture)
+                        .pow(1.5)
+                        .scaleAndCoerceIn(0.0..1.0, 0.85..1.0)
+                )
 
+            val currentContinentialityFactor = if (continentiality >= 0) 1.0 else {
+                max(0.0, 1.2 + continentiality * 0.2)
+            }
             val warmCurrentAdjustment =
-                4.5 * max(
+                6.5 * max(
                     3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0
-                ) * geoPoint.latitude.absoluteValue.pow(0.5)
+                ) * insolation * (1.0 - averageInsolation) * currentContinentialityFactor
             val coolCurrentAdjustment =
-                -2.2 * max(
-                    3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
+                -2.5 * max(
+                    3 - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
                     0
-                ) * geoPoint.latitude.absoluteValue.pow(0.5)
+                ) * insolation * averageInsolation * currentContinentialityFactor
 
-            val elevationAdjustment = -0.0098 * 0.75 * max(0.0, elevation)
+            val elevationAdjustment = -0.0098 * 0.66 * max(0.0, elevation)
 
             val oceanTemperature = max(
                 271.1,
-                249.55 + lerp(insolation, annualInsolation.average(), 0.5) * 61.56
+                249.55 + lerp(insolation, annualInsolation.average(), 0.66).pow(0.75) * 57.5
             ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val adjustedTemperature =
@@ -257,13 +262,14 @@ object ClimateSimulation {
                     oceanTemperature,
                     adjustedTemperature,
                     (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
-                        .adjustRange(0.0..1.0, 0.0..0.15)
+                        .adjustRange(0.0..1.0, 0.0..0.25)
                 )
             } else {
                 lerp(oceanTemperature, adjustedTemperature, min(continentiality * 0.4, 1.0))
             }
 
-            return averageTemperature - 273.15
+            val celsius = averageTemperature - 273.15
+            return celsius
         }
 
     fun (PlanetTile).calculateClimateDatumMonth(): ClimateDatumMonth {

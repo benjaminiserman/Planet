@@ -4,7 +4,6 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
@@ -35,6 +34,28 @@ import kotlin.math.sin
 import kotlin.time.measureTime
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
+    fun colorTemperature(temperature: Double): Color = when {
+        temperature > 30 -> Color.html("D31FB4")
+        temperature > 27.5 -> Color.html("93197E")
+        temperature > 25 -> Color.html("DA171D")
+        temperature > 22.5 -> Color.html("EF6943")
+        temperature > 20 -> Color.html("F0894F")
+        temperature > 17.5 -> Color.html("FFB669")
+        temperature > 15 -> Color.html("FDC878")
+        temperature > 12.5 -> Color.html("FFD28E")
+        temperature > 10 -> Color.html("FFE19E")
+        temperature > 7.5 -> Color.html("FFF2AE")
+        temperature > 5 -> Color.html("FFFFBF")
+        temperature > 2.50 -> Color.html("F2FBBC")
+        temperature > 0 -> Color.html("E0F4B9")
+        temperature > -2.5 -> Color.html("D1EDB0")
+        temperature > -5 -> Color.html("C5E6AF")
+        temperature > -7.5 -> Color.html("B6E2A7")
+        temperature > -10 -> Color.html("A1D5A5")
+        temperature > -20 -> Color.html("87C5AC")
+        else -> Color.html("2D82BB")
+    }
+
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         SimpleDebugRenderer(parent, "tectonic_boundary_movement") { planet ->
@@ -159,14 +180,14 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this,
             "temperature",
             visibleByDefault = false,
-            colorFn = redWhenNull {
-                if (it > 0) Color(it / 40, 0.0, 0.0, 1.0) else Color(
-                    0.0,
-                    0.0,
-                    it.absoluteValue / 40,
-                    1.0
-                )
-            }) { it.temperature },
+            colorFn = redWhenNull { colorTemperature(it) }
+        ) { it.temperature },
+        SimpleDoubleColorMode(
+            this,
+            "average_temperature",
+            visibleByDefault = false,
+            colorFn = redWhenNull { colorTemperature(it) }
+        ) { planet.climateMap[it.tileId]?.averageTemperature },
         SimpleDoubleColorMode(
             this,
             "moisture",

@@ -3,6 +3,7 @@ package dev.biserman.planet.planet.climate
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.Planet
 import godot.core.Color
+import kotlin.math.max
 
 // average colors courtesy of https://github.com/syntax3rr/
 object Koppen : ClimateClassifier {
@@ -50,11 +51,11 @@ object Koppen : ClimateClassifier {
                 .sumOf { it.precipitation }
         }
         val springSummerPrecipitationRatio = springSummerPrecipitation / datum.annualPrecipitation
-        val aridPrecipitationThreshold = datum.averageTemperature * 20 + when {
+        val aridPrecipitationThreshold = max(1.0, datum.averageTemperature * 20 + when {
             springSummerPrecipitationRatio >= 0.7 -> 280.0
             springSummerPrecipitationRatio >= 0.3 -> 140.0
             else -> 0.0
-        }
+        })
         val aridityFactor = datum.annualPrecipitation / aridPrecipitationThreshold
         if (aridityFactor <= 0.5) {
             return if (datum.averageTemperature > 18.0)
