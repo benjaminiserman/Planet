@@ -12,4 +12,10 @@ object UtilityExtensions {
     fun (Double).degToRad() = this * Math.PI / 180.0
     fun (Double).radToDeg() = this * 180.0 / Math.PI
     fun (Double).signPow(exp: Double) = abs(this).pow(exp).withSign(this)
+
+    fun (List<Pair<Double, Double>>).weightedAverage(): Double {
+        val totalWeight = this.sumOf { it.second }
+        val contributions = this.map { (weight, value) -> value * weight }
+        return contributions.sum() / totalWeight
+    }
 }
