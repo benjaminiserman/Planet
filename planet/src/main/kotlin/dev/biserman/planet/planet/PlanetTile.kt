@@ -8,7 +8,6 @@ import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.climate.ClimateClassification
-import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
@@ -16,6 +15,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.climate.Insolation
 import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
+import dev.biserman.planet.planet.climate.monthRange
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.topology.Border
@@ -24,7 +24,6 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
 import godot.core.Color
 import godot.core.Vector3
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.absoluteValue
@@ -241,7 +240,6 @@ class PlanetTile(
             }
         }) else planetTileFn
 
-
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
             for (neighbor in current.tile.tiles) {
@@ -305,13 +303,16 @@ class PlanetTile(
         """.trimIndent()
     } else "") + if (tileId in planet.climateMap) {
         val climateDatum = planet.climateMap[tileId]!!
-        "\nclimate: ${koppen.getOrNull()?.name ?: "unclassified"} (${koppen.getOrNull()?.id ?: "null"})\n" +
-                climateDatum.months.mapIndexed { index, month ->
-                    MonthIndex.values()[index].name to "${
-                        month.averageTemperature.formatDigits(
-                            1
-                        )
-                    }°C, ${month.precipitation.toInt()}mm"
-                }.joinToString("\n") { "  ${it.first}: ${it.second}" }
+        "\n" + """
+        climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
+        average temperature: ${climateDatum.averageTemperature.formatDigits()}°C
+        annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
+        """.trimIndent() + "\n${
+            climateDatum.months.mapIndexed { index, month ->
+                MonthIndex.values()[index].name to "${
+                    month.averageTemperature.formatDigits(1)
+                }°C, ${month.precipitation.toInt()}mm"
+            }.joinToString("\n") { "  ${it.first}: ${it.second}" }
+        }"
     } else ""
 }
