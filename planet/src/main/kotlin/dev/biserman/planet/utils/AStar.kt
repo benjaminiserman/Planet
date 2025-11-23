@@ -66,13 +66,6 @@ object AStar {
             for (neighbor in neighbors(current)) {
                 val distanceFromStart = (bestPathTo[current] ?: Double.POSITIVE_INFINITY) + distance(current, neighbor)
                 if (distanceFromStart < (bestPathTo[neighbor] ?: Double.POSITIVE_INFINITY)) {
-                    val previous = cameFrom[neighbor]
-                    if (previous == current) {
-//                        GD.print(neighbors(current).map { (it as PlanetTile).tile.position.formatDigits() }.toList())
-                        return Path(bestPathThusFar.nodes, Double.NEGATIVE_INFINITY)
-                    }
-
-//                    println("$current => $neighbor, $distanceFromStart")
                     cameFrom[neighbor] = current
                     bestPathTo[neighbor] = distanceFromStart
                     val distanceEstimate = distanceFromStart + heuristic(neighbor)
@@ -80,7 +73,7 @@ object AStar {
 
                     val neighborPriority = openSet[neighbor]
                     if (neighborPriority == null || neighborPriority > distanceEstimate) {
-//                        println("$neighbor: $distanceFromStart, ${distanceFromGoalEstimate[neighbor]}")
+                        println("$neighbor: $distanceFromStart, ${distanceFromGoalEstimate[neighbor]}")
                         openSet[neighbor] = distanceEstimate
                         openQueue.add(QueueNode(neighbor, distanceEstimate))
                     }

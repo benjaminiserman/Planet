@@ -74,7 +74,6 @@ object ClimateSimulation {
         Gui.instance.updateInfobox()
 
         updatePlanetClimate(planet)
-        Main.instance.timerActive = "none"
     }
 
     fun updatePlanetClimate(planet: Planet) {
@@ -193,7 +192,6 @@ object ClimateSimulation {
                                         .coerceIn(0.0..1.0) *
                                             (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
                                                 .coerceIn(0.0..1.0)
-//                                            (1 - tile.prevailingWind.length().pow(0.1))
                                 )
                     finalMoisture[tile] = (finalMoisture[tile] ?: 0.0) + precipitation
                     nextStep[neighbor] = (nextStep[neighbor] ?: 0.0) + moistureProvided * 1.03 - precipitation
