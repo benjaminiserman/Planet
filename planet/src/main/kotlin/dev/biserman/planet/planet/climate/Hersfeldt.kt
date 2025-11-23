@@ -1,8 +1,10 @@
 package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.UtilityExtensions.weightedAverage
 import godot.common.util.lerp
+import godot.global.GD
 import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
@@ -10,22 +12,26 @@ import kotlin.math.min
 // a climate classification scheme developed by Nikolai Hersfeldt
 // see: https://worldbuildingpasta.blogspot.com/2025/03/beyond-koppen-geiger-climate.html#climateparameters
 // included with permission
-class Hersfeldt : ClimateClassifier {
+object Hersfeldt : ClimateClassifier {
+    enum class WinterType { FRIGID, COLD, COOL, MILD }
+    enum class SummerType { WARM, HOT, TORRID, BOILING }
+    enum class GrowthLevel { LOW, HIGH }
+
     // I've provided simplified alternatives to some of Hersfeldt's climate names for accessibility
     var alternateNames = false
 
     fun winterType(averageTemperature: Double) = when {
-        averageTemperature < -30 -> "frigid"
-        averageTemperature < 0 -> "cold"
-        averageTemperature < 17 -> "cool"
-        else -> "mild"
+        averageTemperature < -30 -> WinterType.FRIGID
+        averageTemperature < 0 -> WinterType.COLD
+        averageTemperature < 17 -> WinterType.COOL
+        else -> WinterType.MILD
     }
 
     fun summerType(averageTemperature: Double) = when {
-        averageTemperature < 40 -> "warm"
-        averageTemperature < 60 -> "hot"
-        averageTemperature < 90 -> "torrid"
-        else -> "boiling"
+        averageTemperature < 40 -> SummerType.WARM
+        averageTemperature < 60 -> SummerType.HOT
+        averageTemperature < 90 -> SummerType.TORRID
+        else -> SummerType.BOILING
     }
 
     fun linearGraph(vararg points: Pair<Double, Double>): (Double) -> Double {
@@ -60,9 +66,12 @@ class Hersfeldt : ClimateClassifier {
         val totalGddz: Double,
         val totalGint: Double,
     )
+
     fun gdd(datum: ClimateDatum): GddResults {
-        val monthlyGdd = datum.months.map { minOf(gddGraph(it.averageTemperature), gddiGraph(it.insolation)) * monthLength }
-        val monthlyGddz = datum.months.map { minOf(gddzGraph(it.averageTemperature), gddizGraph(it.insolation)) * monthLength }
+        val monthlyGdd =
+            datum.months.map { minOf(gddGraph(it.averageTemperature), gddiGraph(it.insolation)) * monthLength }
+        val monthlyGddz =
+            datum.months.map { minOf(gddzGraph(it.averageTemperature), gddizGraph(it.insolation)) * monthLength }
         val monthlyGint = monthlyGddz.map { max(0.0, 15 * monthLength - it) }
 
         var totalGdd = 0.0
@@ -111,6 +120,8 @@ class Hersfeldt : ClimateClassifier {
                 (238.8 / (595.5 - 0.55 * averageTemperature))
     }
 
+    fun koppenlikePet(averageTemperature: Double) = max(0.0, 7 * averageTemperature)
+
     // heuristic for estimating actual evapotranspiration
     fun estimateAet(
         datum: ClimateDatum,
@@ -128,16 +139,25 @@ class Hersfeldt : ClimateClassifier {
                     soilMoisture = min(soilMoisture, 500.0)
                     aet[i] = pet[i]
                 } else {
-                    soilMoisture -= pet[i] - precipitation
-                    soilMoisture = max(soilMoisture, 0.0)
-                    val soilEvaporation = min(soilMoisture, (pet[i] - precipitation) * soilMoisture / 25.0)
+                    val soilEvaporation =
+                        if (soilMoisture < 250) min(soilMoisture, (pet[i] - precipitation) * soilMoisture / 250.0)
+                        else pet[i] - precipitation
+                    soilMoisture = max(soilMoisture - soilEvaporation, 0.0)
                     aet[i] = precipitation + soilEvaporation
                 }
             }
 
-            if ((soilMoisture - startSoilMoisture).absoluteValue <= 1.0) {
+            if ((soilMoisture - startSoilMoisture).absoluteValue <= 10.0) {
                 break
             }
+        }
+
+        if (aet.zip(pet).any { it.first > it.second + 0.01 }) {
+            GD.print("temperature: ${datum.months.map { it.averageTemperature.formatDigits() }}")
+            GD.print("precipitation: ${datum.months.map { it.precipitation.formatDigits() }}")
+            GD.print("AET: ${aet.map { it.formatDigits() }}")
+            GD.print("PET: ${pet.map { it.formatDigits() }}")
+            throw Error("AET is greater than PET")
         }
 
         return aet
@@ -165,14 +185,44 @@ class Hersfeldt : ClimateClassifier {
         aet: List<Double>
     ) = aet.sum() / datum.annualPrecipitation
 
-    fun iceCover(planet: Planet, datum: ClimateDatum) =
-        if (planet.planetTiles[datum.tileId]!!.isAboveWater) datum.months.maxOf { it.averageTemperature } <= 0.0
-        else datum.months.maxOf { it.averageTemperature } <= -2.0
+    fun minIce(planet: Planet, datum: ClimateDatum): Double {
+        val threshold = if (planet.planetTiles[datum.tileId]!!.isAboveWater) 0.0 else -2.0
+        return if (datum.months.maxOf { it.averageTemperature } <= threshold) 1.0 else 0.0
+    }
+
+    fun maxIce(planet: Planet, datum: ClimateDatum): Double {
+        val threshold = if (planet.planetTiles[datum.tileId]!!.isAboveWater) 0.0 else -2.0
+        return if (datum.months.minOf { it.averageTemperature } <= threshold) 1.0 else 0.0
+    }
 
     override fun classify(
         planet: Planet,
         datum: ClimateDatum
     ): ClimateClassification {
-        throw NotImplementedError("not yet implemented")
+        // climate parameters
+        val pet = datum.months.map { koppenlikePet(it.averageTemperature) }
+        val aet = estimateAet(datum, pet)
+        val aridityFactor = aridityFactor(pet, aet)
+        val evaporationRatio = evaporationRatio(datum, aet)
+        val minIce = minIce(planet, datum)
+        val maxIce = maxIce(planet, datum)
+
+        val gddResults = gdd(datum)
+
+        val growthSupplyValue = growthSupply(datum, gddResults.monthlyGdd, aet)
+        val growthAridityFactor = growthAridityFactor(pet, gddResults.monthlyGdd, aet)
+
+        // tuned thresholds
+        val winterType = winterType(datum.months.minOf { it.averageTemperature })
+        val summerType = summerType(datum.months.maxOf { it.averageTemperature })
+        val growthSupply = if (growthSupplyValue < 1.15) GrowthLevel.LOW else GrowthLevel.HIGH
+
+        // classification
+        val tile = planet.planetTiles[datum.tileId]!!
+        if (!tile.isAboveWater) {
+
+        }
+
+        throw NotImplementedError("Hersfeldt classification not yet implemented")
     }
 }

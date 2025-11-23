@@ -34,3 +34,5 @@ data class ClimateClassification(val id: String, val name: String, val color: Co
 interface ClimateClassifier {
     fun classify(planet: Planet, datum: ClimateDatum): ClimateClassification
 }
+
+val UNKNOWN_CLIMATE = ClimateClassification("UNKNOWN", "unknown", Color.black, Color.black)

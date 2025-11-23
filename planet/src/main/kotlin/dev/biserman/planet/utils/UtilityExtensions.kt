@@ -15,7 +15,7 @@ object UtilityExtensions {
 
     fun (List<Pair<Double, Double>>).weightedAverage(): Double {
         val totalWeight = this.sumOf { it.second }
-        val contributions = this.map { (weight, value) -> value * weight }
+        val contributions = this.map { (value, weight) -> value * weight }
         return contributions.sum() / totalWeight
     }
 }
