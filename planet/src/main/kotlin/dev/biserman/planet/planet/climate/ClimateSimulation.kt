@@ -138,7 +138,7 @@ object ClimateSimulation {
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
                 2.8 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 0.9 * tile.insolation.pow(0.5) * max(
+            val ferrelEffect = 0.8 * tile.insolation.pow(0.5) * max(
                 0.0,
                 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
             )
@@ -221,26 +221,26 @@ object ClimateSimulation {
         get() {
             val geoPoint = tile.position.toGeoPoint()
             val baseTemperature =
-                243.15 + insolation.pow(1.2) * 82.0
+                240.15 + insolation * 83.0
             val moistureAdjustedTemperature =
                 lerp(
                     273.15,
                     baseTemperature,
                     max(0.0, 1 - moisture)
                         .pow(1.5)
-                        .scaleAndCoerceIn(0.0..1.0, 0.85..1.0)
+                        .scaleAndCoerceIn(0.0..1.0, 0.75..1.0)
                 )
 
             val currentContinentialityFactor = if (continentiality >= 0) 1.0 else {
                 max(0.0, 1.2 + continentiality * 0.2)
             }
             val warmCurrentAdjustment =
-                6.5 * max(
+                5.5 * max(
                     3 - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0
                 ) * insolation * (1.0 - averageInsolation) * currentContinentialityFactor
             val coolCurrentAdjustment =
-                -2.5 * max(
+                -1.5 * max(
                     3 - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
                     0
                 ) * insolation * averageInsolation * currentContinentialityFactor
