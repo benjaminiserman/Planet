@@ -15,6 +15,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.climate.Insolation
 import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
+import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -260,7 +261,7 @@ class PlanetTile(
 
     @get:JsonIgnore
     val koppen by memo<Optional<ClimateClassification>>({ planet.climateMap }) {
-        Optional.of(Koppen.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
+        Optional.of(UnproxiedKoppen.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
     }
 
     @JsonIgnore
