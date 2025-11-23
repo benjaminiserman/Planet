@@ -51,11 +51,13 @@ object Koppen : ClimateClassifier {
                 .sumOf { it.precipitation }
         }
         val springSummerPrecipitationRatio = springSummerPrecipitation / datum.annualPrecipitation
-        val aridPrecipitationThreshold = max(1.0, datum.averageTemperature * 20 + when {
-            springSummerPrecipitationRatio >= 0.7 -> 280.0
-            springSummerPrecipitationRatio >= 0.3 -> 140.0
-            else -> 0.0
-        })
+        val aridPrecipitationThreshold = max(
+            1.0, datum.averageTemperature * 20 + when {
+                springSummerPrecipitationRatio >= 0.7 -> 280.0
+                springSummerPrecipitationRatio >= 0.3 -> 140.0
+                else -> 0.0
+            }
+        )
         val aridityFactor = datum.annualPrecipitation / aridPrecipitationThreshold
         if (aridityFactor <= 0.5) {
             return if (datum.averageTemperature > 18.0)
@@ -134,7 +136,7 @@ object Koppen : ClimateClassifier {
                     )
                     warmMonthCount >= 4 -> if (isHighland) ClimateClassification(
                         "Cwb",
-                        "subtropical_highland",
+                        "subtropical_highland_monsoon",
                         Color.html("#63c764"),
                         Color.html("#50502a")
                     ) else ClimateClassification(
@@ -143,12 +145,7 @@ object Koppen : ClimateClassifier {
                         Color.html("#63c764"),
                         Color.html("#50502a")
                     )
-                    else -> if (isHighland) ClimateClassification(
-                        "Cwc",
-                        "cold_subtropical_highland",
-                        Color.html("#329633"),
-                        Color.html("#987b50")
-                    ) else ClimateClassification(
+                    else -> ClimateClassification(
                         "Cwc",
                         "subpolar_oceanic_monsoon",
                         Color.html("#329633"),
