@@ -35,25 +35,39 @@ import kotlin.time.measureTime
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     fun colorTemperature(temperature: Double): Color = when {
-        temperature > 30 -> Color.html("D31FB4")
-        temperature > 27.5 -> Color.html("93197E")
-        temperature > 25 -> Color.html("DA171D")
-        temperature > 22.5 -> Color.html("EF6943")
-        temperature > 20 -> Color.html("F0894F")
-        temperature > 17.5 -> Color.html("FFB669")
-        temperature > 15 -> Color.html("FDC878")
-        temperature > 12.5 -> Color.html("FFD28E")
-        temperature > 10 -> Color.html("FFE19E")
-        temperature > 7.5 -> Color.html("FFF2AE")
-        temperature > 5 -> Color.html("FFFFBF")
-        temperature > 2.50 -> Color.html("F2FBBC")
-        temperature > 0 -> Color.html("E0F4B9")
-        temperature > -2.5 -> Color.html("D1EDB0")
-        temperature > -5 -> Color.html("C5E6AF")
-        temperature > -7.5 -> Color.html("B6E2A7")
-        temperature > -10 -> Color.html("A1D5A5")
-        temperature > -20 -> Color.html("87C5AC")
+        temperature >= 30 -> Color.html("D31FB4")
+        temperature >= 27.5 -> Color.html("93197E")
+        temperature >= 25 -> Color.html("DA171D")
+        temperature >= 22.5 -> Color.html("EF6943")
+        temperature >= 20 -> Color.html("F0894F")
+        temperature >= 17.5 -> Color.html("FFB669")
+        temperature >= 15 -> Color.html("FDC878")
+        temperature >= 12.5 -> Color.html("FFD28E")
+        temperature >= 10 -> Color.html("FFE19E")
+        temperature >= 7.5 -> Color.html("FFF2AE")
+        temperature >= 5 -> Color.html("FFFFBF")
+        temperature >= 2.50 -> Color.html("F2FBBC")
+        temperature >= 0 -> Color.html("E0F4B9")
+        temperature >= -2.5 -> Color.html("D1EDB0")
+        temperature >= -5 -> Color.html("C5E6AF")
+        temperature >= -7.5 -> Color.html("B6E2A7")
+        temperature >= -10 -> Color.html("A1D5A5")
+        temperature >= -20 -> Color.html("87C5AC")
         else -> Color.html("2D82BB")
+    }
+
+    fun colorAirPressure(airPressure: Double): Color = when {
+        airPressure >= 1030 -> Color.html("954814")
+        airPressure >= 1025 -> Color.html("CB6F18")
+        airPressure >= 1020 -> Color.html("FDB863")
+        airPressure >= 1015 -> Color.html("FDDAAA")
+        airPressure >= 1010 -> Color.html("F7F7F7")
+        airPressure >= 1005 -> Color.html("E7E8F1")
+        airPressure >= 1000 -> Color.html("C5C2DE")
+        airPressure >= 995 -> Color.html("998FBF")
+        airPressure >= 990 -> Color.html("6B5A9A")
+        airPressure >= 985 -> Color.html("4C307B")
+        else -> Color.html("321954")
     }
 
     val planetDebugRenders = listOf(
@@ -284,21 +298,23 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             if (distance == -1) Color.red else Color.blue * max(0.0, 1 - distance / 5.0)
         },
         SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
-            val airPressure = planetTile.airPressure
-            if (airPressure <= ClimateSimulation.basePressure) {
-                Color.black.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(2))
-            } else {
-                Color.black.lerp(
-                    Color.darkorange,
-                    ((ClimateSimulation.basePressure - airPressure) / 25).pow(2)
-                )
-            }
+            colorAirPressure(planetTile.airPressure)
+//            if (airPressure <= ClimateSimulation.basePressure) {
+//                Color.black.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(2))
+//            } else {
+//                Color.black.lerp(
+//                    Color.darkorange,
+//                    ((ClimateSimulation.basePressure - airPressure) / 25).pow(2)
+//                )
+//            }
+
         },
         SimpleColorMode(this, "ocean_currents", visibleByDefault = false) {
             val current = planet.oceanCurrents[it.tile.id] ?: return@SimpleColorMode null
             if (current.temperature > 0) Color.red * current.temperature
             else Color.blue * current.temperature
         },
+        SimpleColorMode(this, "grey_land", visibleByDefault = false) { if (it.isAboveWater) Color.dimGray else Color.black },
         SimpleColorMode(this, "debug_color", visibleByDefault = false) { it.debugColor },
     )
 

@@ -10,6 +10,7 @@ import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
 import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
@@ -116,6 +117,7 @@ class Gui() : Node() {
         calculateClimateButton.pressed.connect {
             Main.instance.planet.climateMap =
                 ClimateSimulation.calculateClimate(Main.instance.planet).mapKeys { it.key.tileId }
+            ClimateClassifier.printCachedStats(Main.instance.planet)
             Main.instance.planetRenderer.update(Main.instance.planet)
         }
 

@@ -2,6 +2,7 @@ package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.geometry.scaleAndCoerce01
 import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
@@ -22,6 +23,8 @@ import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.AStar.path
 import dev.biserman.planet.utils.Path
+import dev.biserman.planet.utils.UtilityExtensions.formatDigits
+import dev.biserman.planet.utils.UtilityExtensions.formatGeo
 import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
@@ -44,7 +47,7 @@ object ClimateSimulation {
         +90 to +2.5,
         +60 to -7.5,
         +30 to +5.0,
-        0 to +0.0,
+        0 to +5.0,
         -30 to +5.0,
         -60 to -7.5,
         -90 to +2.5,
@@ -112,32 +115,44 @@ object ClimateSimulation {
 
     fun (PlanetTile).calculateAirPressure(): Double {
         val latitude = tile.position.toGeoPoint().latitudeDegrees
-        val adjustedLatitude = latitude + Insolation.solarDeclination(planet.daysPassed % Insolation.yearLength) * 2.0
+        val adjustedLatitude = latitude + Insolation.solarDeclination(planet.daysPassed % Insolation.yearLength)
         val nearestBandAbove = bands.last { it.latitude >= adjustedLatitude }
         val nearestBandBelow = bands.first { it.latitude <= adjustedLatitude }
 
+        val oceanCurrentAdjustment = if (isAboveWater) 0.0 else {
+            val warmContinentialityFactor = max(0.0, 5.0 + continentiality) * 0.2
+            val coolContinentialityFactor = max(0.0, 5.0 - (-3 - continentiality).absoluteValue) * 0.2
+            val warmCurrentStrength =
+                (5.0 - planet.warmCurrentDistanceMap[tileId]!!)
+                    .scaleAndCoerce01(0.0..5.0) * warmContinentialityFactor * insolation
+            val coolCurrentStrength =
+                (5.0 - planet.coolCurrentDistanceMap[tileId]!!)
+                    .scaleAndCoerce01(0.0..5.0) * coolContinentialityFactor * (1 - insolation)
+            warmCurrentStrength * -2.5 + coolCurrentStrength * 4.0
+        }
+
         val adjustedContinentiality = continentiality.toDouble()
         val seasonalAdjustment = -(2 / (1 + exp(
-            -(insolation - 0.6).signPow(1.01) * (adjustedContinentiality + 1).signPow(3.0) * 0.01
-        )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..15.0)
+            -(insolation - 0.6).signPow(1.01) * adjustedContinentiality.signPow(3.2) * 0.008
+        )) - 1) * adjustedContinentiality.scaleAndCoerceIn(-2.0..2.0, 5.0..20.0)
 
         val elevationAdjustment = if (elevation < 2000) 0.0 else (elevation - 2000) * 0.001
 
-        val ictzAdjustment = -20.0 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
+        val ictzAdjustment = -12.5 * ((10 - planet.itczDistanceMap[tileId]!!) / 10.0).coerceIn(0.0..1.0)
 
         return basePressure + lerp(
             nearestBandBelow.pressureDelta,
             nearestBandAbove.pressureDelta,
             (adjustedLatitude - nearestBandBelow.latitude) / (nearestBandAbove.latitude - nearestBandBelow.latitude)
-        ) + seasonalAdjustment + elevationAdjustment + ictzAdjustment
+        ) + seasonalAdjustment + elevationAdjustment + ictzAdjustment + oceanCurrentAdjustment
     }
 
     fun simulateMoisture(planet: Planet) {
         var currentMoisture = planet.planetTiles.values.associateWith { tile ->
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
-                2.8 * tile.insolation.pow(5) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 0.8 * tile.insolation.pow(0.5) * max(
+                2.8 * tile.insolation.pow(4) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
+            val ferrelEffect = 0.7 * tile.insolation.pow(0.5) * max(
                 0.0,
                 1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
             )
@@ -204,7 +219,8 @@ object ClimateSimulation {
         finalMoisture.mapValuesTo(finalMoisture) { (tile, moisture) ->
             val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 5.0)
                 .adjustRange(0.0..1.0, 1.0..2.0)
-            moisture * itczEffect
+            val oceanRainModifier = if (tile.isAboveWater) 1.0 else 0.5
+            moisture * itczEffect * oceanRainModifier
         }
         planet.planetTiles.values.forEach { tile ->
             tile.moisture = tile.neighbors
@@ -254,13 +270,13 @@ object ClimateSimulation {
                 moistureAdjustedTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val averageTemperature = if (continentiality < 0) {
-                oceanTemperature
+                lerp(oceanTemperature, adjustedTemperature, 0.05)
             } else if (continentiality == 0) {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
                     (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
-                        .adjustRange(0.0..1.0, 0.0..0.25)
+                        .adjustRange(0.0..1.0, 0.1..0.25)
                 )
             } else {
                 lerp(oceanTemperature, adjustedTemperature, min(continentiality * 0.4, 1.0))
@@ -288,12 +304,106 @@ object ClimateSimulation {
             planet.planetTiles.values.associateWith { it.calculateClimateDatumMonth() }
         }
 
-        return planet.planetTiles.values.associateWith { tile ->
+        val climateData = planet.planetTiles.values.associateWith { tile ->
             ClimateDatum(tile.tileId, monthToTileClimate.map { it[tile]!! })
         }
 
-        planet.daysPassed = startDate
-        updatePlanetClimate(planet)
+//        planet.daysPassed = startDate
+//        updatePlanetClimate(planet)
+
+        GD.print("CLIMATE DATA")
+        GD.print("==============================")
+
+        val maxTempTile = climateData.values.maxBy { it.months.maxOf { month -> month.averageTemperature } }
+        val maxTempMonth = maxTempTile.months.indexOf(maxTempTile.months.maxBy { month -> month.averageTemperature })
+        GD.print("Max temp: ${planet.planetTiles[maxTempTile.tileId]!!.tile.position.formatGeo()}, ${MonthIndex.values()[maxTempMonth].name}: ${maxTempTile.months[maxTempMonth].averageTemperature}°C")
+        val minTempTile = climateData.values.minBy { it.months.minOf { month -> month.averageTemperature } }
+        val minTempMonth = minTempTile.months.indexOf(minTempTile.months.minBy { month -> month.averageTemperature })
+        GD.print("Min temp: ${planet.planetTiles[minTempTile.tileId]!!.tile.position.formatGeo()}, ${MonthIndex.values()[minTempMonth].name}: ${minTempTile.months[minTempMonth].averageTemperature}°C")
+        val maxAverageTempTile = climateData.values.maxBy { it.averageTemperature }
+        GD.print("Max avg temp: ${planet.planetTiles[maxAverageTempTile.tileId]!!.tile.position.formatGeo()}: ${maxAverageTempTile.averageTemperature}°C")
+        val minAverageTempTile = climateData.values.minBy { it.averageTemperature }
+        GD.print("Min avg temp: ${planet.planetTiles[minAverageTempTile.tileId]!!.tile.position.formatGeo()}: ${minAverageTempTile.averageTemperature}°C")
+
+        val maxPrecipTile = climateData.values.maxBy { it.months.maxOf { month -> month.precipitation } }
+        val maxPrecipMonth = maxPrecipTile.months.indexOf(maxPrecipTile.months.maxBy { month -> month.precipitation })
+        GD.print(
+            "Max precipitation: ${planet.planetTiles[maxPrecipTile.tileId]!!.tile.position.formatGeo()}, ${MonthIndex.values()[maxPrecipMonth].name}: ${
+                maxPrecipTile.months[maxPrecipMonth].precipitation.formatDigits(
+                    1
+                )
+            }mm"
+        )
+        val minPrecipTile = climateData.values.minBy { it.months.minOf { month -> month.precipitation } }
+        val minPrecipMonth = minPrecipTile.months.indexOf(minPrecipTile.months.minBy { month -> month.precipitation })
+        GD.print(
+            "Min precipitation: ${planet.planetTiles[minPrecipTile.tileId]!!.tile.position.formatGeo()}, ${MonthIndex.values()[minPrecipMonth].name}: ${
+                minPrecipTile.months[minPrecipMonth].precipitation.formatDigits(
+                    1
+                )
+            }mm"
+        )
+        val maxAveragePrecipTile = climateData.values.maxBy { it.annualPrecipitation }
+        GD.print(
+            "Max annual precipitation: ${planet.planetTiles[maxAveragePrecipTile.tileId]!!.tile.position.formatGeo()}: ${
+                maxAveragePrecipTile.annualPrecipitation.formatDigits(
+                    1
+                )
+            }mm"
+        )
+        val minAveragePrecipTile = climateData.values.minBy { it.annualPrecipitation }
+        GD.print(
+            "Min annual precipitation: ${planet.planetTiles[minAveragePrecipTile.tileId]!!.tile.position.formatGeo()}: ${
+                minAveragePrecipTile.annualPrecipitation.formatDigits(
+                    1
+                )
+            }mm"
+        )
+
+        val maxTempRangeTile = climateData.values.maxBy { it.temperatureRange }
+        GD.print(
+            "Max temperature range: ${planet.planetTiles[maxTempRangeTile.tileId]!!.tile.position.formatGeo()}: ${
+                maxTempRangeTile.temperatureRange.formatDigits(
+                    1
+                )
+            }°C"
+        )
+        val minTempRangeTile = climateData.values.minBy { it.temperatureRange }
+        GD.print(
+            "Min temperature range: ${planet.planetTiles[minTempRangeTile.tileId]!!.tile.position.formatGeo()}: ${
+                minTempRangeTile.temperatureRange.formatDigits(
+                    1
+                )
+            }°C"
+        )
+
+        val maxPrecipRangeTile = climateData.values.maxBy { it.precipitationRange }
+        GD.print(
+            "Max precipitation range: ${planet.planetTiles[maxPrecipRangeTile.tileId]!!.tile.position.formatGeo()}: ${
+                maxPrecipRangeTile.precipitationRange.formatDigits(
+                    1
+                )
+            }mm"
+        )
+        val minPrecipRangeTile = climateData.values.minBy { it.precipitationRange }
+        GD.print(
+            "Min precipitation range: ${planet.planetTiles[minPrecipRangeTile.tileId]!!.tile.position.formatGeo()}: ${
+                minPrecipRangeTile.precipitationRange.formatDigits(
+                    1
+                )
+            }mm"
+        )
+
+        val continentalRain =
+            climateData.values.filter { planet.planetTiles[it.tileId]!!.isAboveWater }.sumOf { it.annualPrecipitation }
+        val oceanicRain =
+            climateData.values.filter { !planet.planetTiles[it.tileId]!!.isAboveWater }.sumOf { it.annualPrecipitation }
+        val percentRainOnOcean = oceanicRain / (continentalRain + oceanicRain)
+        GD.print(
+            "Percent rain on ocean: ${percentRainOnOcean.formatDigits(1)}"
+        )
+
+        return climateData
     }
 
     // inter-tropical convergence zone
