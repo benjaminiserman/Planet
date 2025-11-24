@@ -596,7 +596,7 @@ object Hersfeldt : ClimateClassifier {
     }
 
     val gddGraph = linearGraph(5.0 to 0.0, 25.0 to 20.0, 40.0 to 20.0, 50.0 to 0.0)
-    val gddzGraph = linearGraph(0.0 to 0.0, 20.0 to 20.0, 40.0 to 40.0, 60.0 to 0.0)
+    val gddzGraph = linearGraph(0.0 to 0.0, 20.0 to 20.0, 40.0 to 20.0, 60.0 to 0.0)
     val gddiGraph = linearGraph(20.0 to 0.0, 220.0 to 20.0)
     val gddizGraph = linearGraph(0.0 to 0.0, 200.0 to 20.0)
     val monthLength = 30
