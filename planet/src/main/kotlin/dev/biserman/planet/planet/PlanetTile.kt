@@ -11,6 +11,7 @@ import dev.biserman.planet.planet.climate.ClimateClassification
 import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
+import dev.biserman.planet.planet.climate.Hersfeldt
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.climate.Insolation
 import dev.biserman.planet.planet.climate.Koppen
@@ -264,6 +265,11 @@ class PlanetTile(
         Optional.of(UnproxiedKoppen.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
     }
 
+    @get:JsonIgnore
+    val hersfeldt by memo<Optional<ClimateClassification>>({ planet.climateMap }) {
+        Optional.of(Hersfeldt.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
+    }
+
     @JsonIgnore
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
@@ -305,7 +311,8 @@ class PlanetTile(
     } else "") + if (tileId in planet.climateMap) {
         val climateDatum = planet.climateMap[tileId]!!
         "\n" + """
-        climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
+        koppen climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
+        hersfeldt climate: ${hersfeldt.getOrNull()?.name ?: "unclassified"}(${hersfeldt.getOrNull()?.id ?: "null"})
         average temperature: ${climateDatum.averageTemperature.formatDigits()}°C
         annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
         """.trimIndent() + "\n${

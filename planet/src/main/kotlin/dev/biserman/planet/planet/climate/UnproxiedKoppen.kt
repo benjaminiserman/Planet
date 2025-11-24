@@ -50,6 +50,10 @@ import dev.biserman.planet.planet.climate.Koppen.WARM_SUMMER_HUMID_CONTINENTAL_M
 import dev.biserman.planet.planet.climate.Koppen.WARM_SUMMER_MEDITERRANEAN
 import dev.biserman.planet.planet.climate.Koppen.highlandElevationThreshold
 
+// a climate classification scheme developed by Nikolai Hersfeldt
+// see: https://worldbuildingpasta.blogspot.com/2025/03/beyond-koppen-geiger-climate.html#climateparameters
+// included with permission
+// I've tweaked the growth supply threshold for mediterranean climates to better fit this project's generated data
 object UnproxiedKoppen : ClimateClassifier {
     override fun classify(
         planet: Planet,
@@ -73,8 +77,8 @@ object UnproxiedKoppen : ClimateClassifier {
         // tuned thresholds
         val winterType = winterType(datum.months.minOf { it.averageTemperature })
         val summerType = summerType(datum.months.maxOf { it.averageTemperature })
-        // using tweaked growthSupplyThreshold of 1.0 instead of 1.15
-        val growthSupply = if (growthSupplyValue < 1.0) GrowthLevel.LOW else GrowthLevel.HIGH
+        // using tweaked growthSupplyThreshold of 0.9 instead of 1.15
+        val growthSupply = if (growthSupplyValue < 0.9) GrowthLevel.LOW else GrowthLevel.HIGH
 
         // koppen-specific thresholds
         val lowGrowth = growthSupply == GrowthLevel.LOW

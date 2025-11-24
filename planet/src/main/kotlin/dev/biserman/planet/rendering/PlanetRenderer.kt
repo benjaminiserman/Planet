@@ -160,6 +160,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "koppen", visibleByDefault = false
         ) { it.koppen.getOrNull()?.color },
         SimpleColorMode(
+            this, "hersfeldt", visibleByDefault = false
+        ) { it.hersfeldt.getOrNull()?.color },
+        SimpleColorMode(
             this, "koppen_terrain", visibleByDefault = false
         ) { it.koppen.getOrNull()?.terrainColor },
         SimpleDoubleColorMode(
