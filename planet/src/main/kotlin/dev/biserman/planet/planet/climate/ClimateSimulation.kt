@@ -152,9 +152,9 @@ object ClimateSimulation {
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect =
                 2.8 * tile.insolation.pow(4) * max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / 5.0)
-            val ferrelEffect = 0.7 * tile.insolation.pow(0.5) * max(
+            val ferrelEffect = 0.5 * tile.insolation.pow(0.4) * max(
                 0.0,
-                1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 15.0
+                1 - ((geoPoint.latitudeDegrees.absoluteValue - 60).absoluteValue) / 17.5
             )
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
@@ -217,8 +217,9 @@ object ClimateSimulation {
         }
 
         finalMoisture.mapValuesTo(finalMoisture) { (tile, moisture) ->
-            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 5.0)
-                .adjustRange(0.0..1.0, 1.0..2.0)
+            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / 7.0)
+                .pow(2.0)
+                .adjustRange(0.0..1.0, 1.0..2.5)
             val oceanRainModifier = if (tile.isAboveWater) 1.0 else 0.5
             moisture * itczEffect * oceanRainModifier
         }
@@ -240,9 +241,9 @@ object ClimateSimulation {
                 lerp(
                     273.15,
                     baseTemperature,
-                    max(0.0, 1 - moisture)
+                    max(0.0, 1 - (moisture * 0.5))
                         .pow(1.5)
-                        .scaleAndCoerceIn(0.0..1.0, 0.75..1.0)
+                        .scaleAndCoerceIn(0.0..1.0, 0.66..1.0)
                 )
 
             val currentContinentialityFactor = if (continentiality >= 0) 1.0 else {
@@ -259,7 +260,7 @@ object ClimateSimulation {
                     0
                 ) * insolation * averageInsolation * currentContinentialityFactor
 
-            val elevationAdjustment = -0.0098 * 0.66 * max(0.0, elevation)
+            val elevationAdjustment = -0.0098 * 0.6 * max(0.0, elevation)
 
             val oceanTemperature = max(
                 271.1,
