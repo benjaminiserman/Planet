@@ -42,10 +42,12 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTe
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRate
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRateScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectInsolationExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectLatitude
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
@@ -240,13 +242,15 @@ object ClimateSimulation {
             val geoPoint = tile.tile.position.toGeoPoint()
             val equatorEffect = equatorMoistureEffectScalar *
                     tile.insolation.pow(equatorMoistureEffectInsolationExp) *
-                    max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / equatorMoistureEffectMaxDistance)
+                    max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / equatorMoistureEffectMaxDistance) *
+                    max(0.0, 1 - (tile.continentiality / equatorMoistureEffectMaxContinentiality))
             val ferrelEffect = ferrelMoistureEffectScalar *
                     tile.insolation.pow(ferrelMoistureEffectInsolationExp) *
                     max(
                         0.0,
                         1 - ((geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue) / ferrelMoistureEffectMaxDistance
-                    )
+                    ) *
+                    max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
                 val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentMoistureContinentiality
