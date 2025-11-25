@@ -102,10 +102,12 @@ object ClimateSimulationGlobals {
     val itczMoistureExp = 3.0 // higher exp -> less ITCZ effect & faster effect decay with distance
     val itczMoistureScalar = 3.0 // how much is moisture multiplied by directly under the ITCZ
 
+    val equatorMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for equator moisture effect
     val equatorMoistureEffectScalar = 2.8 // maximum amount that equator can effect moisture
     val equatorMoistureEffectInsolationExp = 4.0 // higher exp -> lower moisture effect at equator & faster drop-off
     val equatorMoistureEffectMaxDistance = 5.0 // max distance that equatorial updraft effects moisture, in °latitude
 
+    val ferrelMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for ferrel moisture effect
     val ferrelMoistureEffectScalar = 0.25 // maximum amount that ferrel cell updraft can effect moisture
     val ferrelMoistureEffectInsolationExp = 0.4 // higher exp -> lower ferrel moisture effect & faster drop-off
     val ferrelMoistureEffectMaxDistance = 17.5 // max distance that ferrel cell updraft effects moisture
