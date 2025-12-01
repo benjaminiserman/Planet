@@ -2,18 +2,18 @@ package dev.biserman.planet.language
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import dev.biserman.planet.language.Language.SyllableConstructor.symbolResults
-import dev.biserman.planet.language.Language.SyllableConstructor.topLevelSymbolsFilters
 import dev.biserman.planet.utils.memoize
 import java.io.File
 import kotlin.text.indexOf
+
+typealias InventoryTransformation = (Set<Segment>) -> Set<Segment>
 
 enum class SegmentType { CONSONANT, VOWEL, AFFRICATE }
 enum class Manner { NASAL, PLOSIVE, FRICATIVE, SEMIVOWEL, LIQUID, TRILL, TAP, IMPLOSIVE, CLICK }
 enum class Height { CLOSE, NEAR_CLOSE, CLOSE_MID, MID, OPEN_MID, NEAR_OPEN, OPEN }
 enum class Depth { FRONT, NEAR_FRONT, CENTRAL, NEAR_BACK, BACK }
-data class Segment(
-    val symbol: String,
+enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL }
+data class SegmentData(
     val type: SegmentType,
     val place: String?,
     val manner: Manner?,
@@ -23,6 +23,11 @@ data class Segment(
     val height: Height?,
     val depth: Depth?,
     val rounded: Boolean?
+)
+
+data class Segment(
+    val symbol: String,
+    val data: SegmentData
 )
 
 data class PhonemeData(
@@ -85,25 +90,30 @@ class Language(
                     ).map { option + it }
                 }
             }
-            pattern[0] in topLevelSymbolsFilters -> symbolResults(pattern[0].toString())
+            pattern[0] in SyllableConstructor.topLevelSymbolsFilters -> SyllableConstructor.symbolResults(pattern[0].toString())
             pattern[0].isLowerCase() -> generateSyllables(pattern.substring(1)).map { pattern[0] + it }
             else -> listOf("")
         }
     }
+}
 
-    object SyllableConstructor {
-        val languageSettings: LanguageSettingsJson by lazy {
-            val mapper = jacksonObjectMapper()
-            mapper.readValue(File("english.json"))
-        }
+object SyllableConstructor {
+    var languageFile = "english.json"
+    var phonemeFile = "phonemes.json"
 
-        val segments: List<Segment> by lazy {
-            val mapper = jacksonObjectMapper()
-            val phonemeJson: PhonemeJson = mapper.readValue(File("phonemes.json"))
+    val languageSettings: LanguageSettingsJson by lazy {
+        val mapper = jacksonObjectMapper()
+        mapper.readValue(File(languageFile))
+    }
 
-            val consonants = phonemeJson.consonants.map { (symbol, data) ->
-                Segment(
-                    symbol = symbol,
+    val segments: Map<String, Segment> by lazy {
+        val mapper = jacksonObjectMapper()
+        val phonemeJson: PhonemeJson = mapper.readValue(File(phonemeFile))
+
+        val consonants = phonemeJson.consonants.map { (symbol, data) ->
+            Segment(
+                symbol = symbol,
+                SegmentData(
                     type = SegmentType.CONSONANT,
                     place = data.place,
                     manner = data.manner?.uppercase()?.let { Manner.valueOf(it) },
@@ -114,11 +124,13 @@ class Language(
                     depth = null,
                     rounded = null
                 )
-            }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
+            )
+        }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
 
-            val vowels = phonemeJson.vowels.map { (symbol, data) ->
-                Segment(
-                    symbol = symbol,
+        val vowels = phonemeJson.vowels.map { (symbol, data) ->
+            Segment(
+                symbol = symbol,
+                SegmentData(
                     type = SegmentType.VOWEL,
                     place = null,
                     manner = null,
@@ -129,50 +141,50 @@ class Language(
                     depth = data.depth?.replace("-", "_")?.uppercase()?.let { Depth.valueOf(it) },
                     rounded = data.rounded
                 )
-            }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
+            )
+        }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 
-            consonants + vowels
-        }
+        (consonants + vowels).associateBy { it.symbol }
+    }
 
-        val topLevelSymbolsFilters = mapOf<Char, (Segment) -> Boolean>(
-            'C' to { it.type == SegmentType.CONSONANT },
-            'V' to { it.type == SegmentType.VOWEL },
-            'A' to { it.type == SegmentType.AFFRICATE },
-            'N' to { it.manner == Manner.NASAL },
-            'P' to { it.manner == Manner.PLOSIVE },
-            'F' to { it.manner == Manner.FRICATIVE },
-            'W' to { it.manner == Manner.SEMIVOWEL },
-            'L' to { it.manner == Manner.LIQUID },
-            'T' to { it.manner == Manner.TRILL },
-            'X' to { it.manner == Manner.TAP },
-            'I' to { it.manner == Manner.IMPLOSIVE },
-            'Q' to { it.manner == Manner.CLICK },
-        )
+    val topLevelSymbolsFilters = mapOf<Char, (Segment) -> Boolean>(
+        'C' to { it.data.type == SegmentType.CONSONANT },
+        'V' to { it.data.type == SegmentType.VOWEL },
+        'A' to { it.data.type == SegmentType.AFFRICATE },
+        'N' to { it.data.manner == Manner.NASAL },
+        'P' to { it.data.manner == Manner.PLOSIVE },
+        'F' to { it.data.manner == Manner.FRICATIVE },
+        'W' to { it.data.manner == Manner.SEMIVOWEL },
+        'L' to { it.data.manner == Manner.LIQUID },
+        'T' to { it.data.manner == Manner.TRILL },
+        'X' to { it.data.manner == Manner.TAP },
+        'I' to { it.data.manner == Manner.IMPLOSIVE },
+        'Q' to { it.data.manner == Manner.CLICK },
+    )
 
-        val clarifiers = mapOf<String, (Segment) -> Boolean>(
-            "V" to { it.voiced == true },
-            "NV" to { it.voiced == false },
-            "A" to { it.isAspirated == true },
-            "NA" to { it.isAspirated == false },
-            "E" to { it.isEjective == true },
-            "NE" to { it.isEjective == false },
-            "CL" to { it.height == Height.CLOSE },
-            "NC" to { it.height == Height.NEAR_CLOSE },
-            "CM" to { it.height == Height.CLOSE_MID },
-            "MI" to { it.height == Height.MID },
-            "OM" to { it.height == Height.OPEN_MID },
-            "NO" to { it.height == Height.NEAR_OPEN },
-            "OP" to { it.height == Height.OPEN },
-            "FR" to { it.depth == Depth.FRONT },
-            "NF" to { it.depth == Depth.NEAR_FRONT },
-            "CE" to { it.depth == Depth.CENTRAL },
-            "NB" to { it.depth == Depth.NEAR_BACK },
-            "BA" to { it.depth == Depth.BACK },
-            "R" to { it.rounded == true },
-            "NR" to { it.rounded == false })
+    val clarifiers = mapOf<String, (Segment) -> Boolean>(
+        "V" to { it.data.voiced == true },
+        "NV" to { it.data.voiced == false },
+        "A" to { it.data.isAspirated == true },
+        "NA" to { it.data.isAspirated == false },
+        "E" to { it.data.isEjective == true },
+        "NE" to { it.data.isEjective == false },
+        "CL" to { it.data.height == Height.CLOSE },
+        "NC" to { it.data.height == Height.NEAR_CLOSE },
+        "CM" to { it.data.height == Height.CLOSE_MID },
+        "MI" to { it.data.height == Height.MID },
+        "OM" to { it.data.height == Height.OPEN_MID },
+        "NO" to { it.data.height == Height.NEAR_OPEN },
+        "OP" to { it.data.height == Height.OPEN },
+        "FR" to { it.data.depth == Depth.FRONT },
+        "NF" to { it.data.depth == Depth.NEAR_FRONT },
+        "CE" to { it.data.depth == Depth.CENTRAL },
+        "NB" to { it.data.depth == Depth.NEAR_BACK },
+        "BA" to { it.data.depth == Depth.BACK },
+        "R" to { it.data.rounded == true },
+        "NR" to { it.data.rounded == false })
 
-        val symbolResults: (String) -> List<String> = memoize { symbol ->
-            segments.filter { topLevelSymbolsFilters[symbol[0]]!!(it) }.map { it.symbol }
-        }
+    val symbolResults: (String) -> List<String> = memoize { symbol ->
+        segments.values.filter { topLevelSymbolsFilters[symbol[0]]!!(it) }.map { it.symbol }
     }
 }
