@@ -12,9 +12,9 @@ import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
-import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.rendering.SimpleDebugRenderer
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.Serialization
@@ -105,13 +105,22 @@ class Gui() : Node() {
         saveButton.pressed.connect { saveDialog.popup() }
         loadButton.pressed.connect { loadDialog.popup() }
         refreshConfigButton.pressed.connect {
-            val configFile = File("tectonics_config.json")
-            if (configFile.exists()) {
-                Serialization.configMapper.readValue<TectonicGlobals>(configFile)
+            val tectonicsConfig = File("tectonics_config.json")
+            if (tectonicsConfig.exists()) {
+                Serialization.configMapper.readValue<TectonicGlobals>(tectonicsConfig)
                 GD.print("Config refreshed!")
             } else {
-                Serialization.configMapper.writeValue(configFile, TectonicGlobals)
-                GD.print("No tectonics_config.json not found, created one with default values.")
+                Serialization.configMapper.writeValue(tectonicsConfig, TectonicGlobals)
+                GD.print("No tectonics_config.json file found, created one with default values.")
+            }
+
+            val climateConfig = File("climate_config.json")
+            if (climateConfig.exists()) {
+                Serialization.configMapper.readValue<ClimateSimulationGlobals>(climateConfig)
+                GD.print("Config refreshed!")
+            } else {
+                Serialization.configMapper.writeValue(climateConfig, ClimateSimulationGlobals)
+                GD.print("No climate_config.json file found, created one with default values.")
             }
         }
         calculateClimateButton.pressed.connect {

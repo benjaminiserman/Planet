@@ -1,19 +1,17 @@
 package dev.biserman.planet.planet.climate
 
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.axialTiltDeg
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.northSpringEquinox
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.opticalDepthConstant
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.orbitEccentricity
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.periapsis
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.solarConstant
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import kotlin.math.*
 
 @Suppress("MayBeConstant")
 object Insolation {
-
-    val solarConstant = 1.0 // 1361.0 // W/m^2
-    val orbitEccentricity = 0.016718
-    val axialTiltDeg = 23.45
-    val periapsis = 3.5
-    val northSpringEquinox = 286.0
-    val yearLength = 365.242
-    val opticalDepthConstant = -0.14
-
     // Earth–Sun distance correction
     fun eccentricityFactor(dayOfYear: Double): Double {
         return 1.0 + orbitEccentricity * 2 * cos(2.0 * Math.PI * (dayOfYear + periapsis) / 365.0)

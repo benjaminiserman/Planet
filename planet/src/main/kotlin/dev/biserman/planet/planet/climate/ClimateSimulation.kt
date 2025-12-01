@@ -88,6 +88,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentMo
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentMoistureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.Path
@@ -124,7 +125,7 @@ object ClimateSimulation {
     val basePressure = 1010.0
 
     fun estimateMonth(planet: Planet, daysPassed: Number): String =
-        when (((daysPassed.toDouble() % Insolation.yearLength) / (365.242 / 12.0)).toInt() + 1) {
+        when (((daysPassed.toDouble() % yearLength) / (365.242 / 12.0)).toInt() + 1) {
             1 -> "Jan"
             2 -> "Feb"
             3 -> "Mar"
@@ -185,7 +186,7 @@ object ClimateSimulation {
     fun (PlanetTile).calculateAirPressure(): Double {
         val latitude = tile.position.toGeoPoint().latitudeDegrees
         val adjustedLatitude = latitude +
-                Insolation.solarDeclination(planet.daysPassed % Insolation.yearLength)
+                Insolation.solarDeclination(planet.daysPassed % yearLength)
                     .radToDeg() * airPressureSolarDeclinationScalar
         val nearestBandAbove = bands.lastOrNull { it.latitude >= adjustedLatitude } ?: bands.last()
         val nearestBandBelow = bands.firstOrNull { it.latitude <= adjustedLatitude } ?: bands.last()

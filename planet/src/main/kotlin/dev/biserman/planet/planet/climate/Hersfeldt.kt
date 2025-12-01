@@ -798,6 +798,10 @@ object Hersfeldt : ClimateClassifier {
             }
         }
 
+        if (minIce >= 0.8) {
+            return ICE
+        }
+
         // Arid climates (very low aridity factor)
         if (aridityFactor < 0.2) {
             // Hyperarid desert
@@ -890,28 +894,49 @@ object Hersfeldt : ClimateClassifier {
                     SummerType.HOT -> HOT_PARCH
                     SummerType.TORRID -> TORRID_PARCH
                     SummerType.BOILING -> BOILING_PARCH
-                    else -> UNKNOWN_CLIMATE
+                    else -> throw Error("Invalid summer type")
                 }
             }
 
-            // Swelter (above GInt threshold, well-watered)
-            if (gddResults.totalGint >= 1250 && growthAridityFactor >= 0.5) {
+            // Semiarid hot climates
+            if (growthAridityFactor < 0.5) {
+                // Paramediterranean
+                if (growthSupply < 0.8) {
+                    return when (summerType) {
+                        SummerType.HOT -> HOT_PARAMEDITERRANEAN
+                        SummerType.TORRID -> TORRID_PARAMEDITERRANEAN
+                        SummerType.BOILING -> BOILING_PARAMEDITERRANEAN
+                        else -> throw Error("Invalid summer type")
+                    }
+                }
+
+                // Dry savanna / Steppe
                 return when (summerType) {
                     SummerType.HOT ->
-                        if (evaporationRatio < 0.45) HOT_PLUVIAL_SWELTER
-                        else HOT_SWELTER
+                        if (evaporationRatio < 0.45) HOT_DRY_MONSOON_SAVANNA
+                        else HOT_DRY_SAVANNA
                     SummerType.TORRID ->
-                        if (evaporationRatio < 0.45) TORRID_PLUVIAL_SWELTER
-                        else TORRID_SWELTER
+                        if (evaporationRatio < 0.45) TORRID_PLUVIAL_STEPPE
+                        else TORRID_STEPPE
                     SummerType.BOILING ->
-                        if (evaporationRatio < 0.45) BOILING_PLUVIAL_SWELTER
-                        else BOILING_SWELTER
-                    else -> UNKNOWN_CLIMATE
+                        if (evaporationRatio < 0.45) BOILING_PLUVIAL_STEPPE
+                        else BOILING_STEPPE
+                    else -> throw Error("Invalid summer type")
                 }
             }
 
-            // Supertropical (below GInt threshold, well-watered)
-            if (growthSupply >= 0.8 && growthAridityFactor >= 0.5) {
+            // Subparamediterranean
+            if (growthSupply < 0.8) {
+                return when (summerType) {
+                    SummerType.HOT -> HOT_SUBPARAMEDITERRANEAN
+                    SummerType.TORRID -> TORRID_SUBPARAMEDITERRANEAN
+                    SummerType.BOILING -> BOILING_SUBPARAMEDITERRANEAN
+                    else -> throw Error("Invalid summer type")
+                }
+            }
+
+            // Supertropical
+            if (gddResults.totalGint >= 1250 && growthSupply >= 0.8) {
                 return when {
                     summerType == SummerType.HOT && aridityFactor >= 0.75 ->
                         if (evaporationRatio < 0.45) SUPERTROPICAL_MONSOON_FOREST
@@ -919,43 +944,22 @@ object Hersfeldt : ClimateClassifier {
                     aridityFactor <= 0.75 ->
                         if (evaporationRatio < 0.45) SUPERTROPICAL_MOIST_MONSOON_SAVANNA
                         else SUPERTROPICAL_MOIST_SAVANNA
-                    else -> UNKNOWN_CLIMATE
+                    else -> throw Error("Invalid summer type")
                 }
             }
 
-            // Subparamediterranean (low growth supply)
-            if (growthSupply < 0.8 && growthAridityFactor >= 0.5) {
-                return when (summerType) {
-                    SummerType.HOT -> HOT_SUBPARAMEDITERRANEAN
-                    SummerType.TORRID -> TORRID_SUBPARAMEDITERRANEAN
-                    SummerType.BOILING -> BOILING_SUBPARAMEDITERRANEAN
-                    else -> UNKNOWN_CLIMATE
-                }
-            }
-
-            // Semiarid hot climates
-            // Paramediterranean (low growth supply)
-            if (growthSupply < 0.8) {
-                return when (summerType) {
-                    SummerType.HOT -> HOT_PARAMEDITERRANEAN
-                    SummerType.TORRID -> TORRID_PARAMEDITERRANEAN
-                    SummerType.BOILING -> BOILING_PARAMEDITERRANEAN
-                    else -> UNKNOWN_CLIMATE
-                }
-            }
-
-            // Dry savanna / Steppe
+            // Swelter
             return when (summerType) {
                 SummerType.HOT ->
-                    if (evaporationRatio < 0.45) HOT_DRY_MONSOON_SAVANNA
-                    else HOT_DRY_SAVANNA
+                    if (evaporationRatio < 0.45) HOT_PLUVIAL_SWELTER
+                    else HOT_SWELTER
                 SummerType.TORRID ->
-                    if (evaporationRatio < 0.45) TORRID_PLUVIAL_STEPPE
-                    else TORRID_STEPPE
+                    if (evaporationRatio < 0.45) TORRID_PLUVIAL_SWELTER
+                    else TORRID_SWELTER
                 SummerType.BOILING ->
-                    if (evaporationRatio < 0.45) BOILING_PLUVIAL_STEPPE
-                    else BOILING_STEPPE
-                else -> UNKNOWN_CLIMATE
+                    if (evaporationRatio < 0.45) BOILING_PLUVIAL_SWELTER
+                    else BOILING_SWELTER
+                else -> throw Error("Invalid summer type")
             }
         }
 
@@ -972,39 +976,9 @@ object Hersfeldt : ClimateClassifier {
                 return if (isHyperseasonal) HYPERSEASONAL_PULSE else SUPERSEASONAL_PULSE
             }
 
-            // Extracontinental (above GInt threshold, well-watered)
-            if (gddResults.totalGint >= 1250 && growthAridityFactor >= 0.5) {
-                return if (isHyperseasonal) {
-                    if (evaporationRatio < 0.45) HYPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
-                    else HYPERSEASONAL_EXTRACONTINENTAL
-                } else {
-                    if (evaporationRatio < 0.45) SUPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
-                    else SUPERSEASONAL_EXTRACONTINENTAL
-                }
-            }
-
-            // Extratropical (below GInt threshold, well-watered)
-            if (gddResults.totalGint < gintThreshold && growthAridityFactor >= 0.5) {
-                return when {
-                    !isHyperseasonal ->
-                        if (evaporationRatio < 0.45) EXTRATROPICAL_MONSOON_FOREST
-                        else EXTRATROPICAL_FOREST
-                    aridityFactor <= 0.75 ->
-                        if (evaporationRatio < 0.45) EXTRATROPICAL_MOIST_MONSOON_SAVANNA
-                        else EXTRATROPICAL_MOIST_SAVANNA
-                    else -> UNKNOWN_CLIMATE
-                }
-            }
-
-            // Subextramediterranean (low growth supply)
-            if (growthSupply < 0.8 && growthAridityFactor >= 0.5) {
-                return if (isHyperseasonal) HYPERSEASONAL_SUBEXTRAMEDITERRANEAN
-                else SUPERSEASONAL_SUBEXTRAMEDITERRANEAN
-            }
-
             // Semiarid extraseasonal
             if (growthAridityFactor < 0.5) {
-                // Extramediterranean (low growth supply)
+                // Extramediterranean
                 if (growthSupply < 0.8) {
                     return if (isHyperseasonal) HYPERSEASONAL_EXTRAMEDITERRANEAN
                     else SUPERSEASONAL_EXTRAMEDITERRANEAN
@@ -1020,7 +994,33 @@ object Hersfeldt : ClimateClassifier {
                 }
             }
 
-            return UNKNOWN_CLIMATE
+            // Subextramediterranean
+            if (growthSupply < 0.8 && growthAridityFactor >= 0.5) {
+                return if (isHyperseasonal) HYPERSEASONAL_SUBEXTRAMEDITERRANEAN
+                else SUPERSEASONAL_SUBEXTRAMEDITERRANEAN
+            }
+
+            // Extratropical
+            if (gddResults.totalGint < gintThreshold && growthAridityFactor >= 0.5 && !isHyperseasonal) {
+                return if (aridityFactor >= 0.75) {
+                    if (evaporationRatio < 0.45) EXTRATROPICAL_MONSOON_FOREST
+                    else EXTRATROPICAL_FOREST
+                } else {
+                    if (evaporationRatio < 0.45) EXTRATROPICAL_MOIST_MONSOON_SAVANNA
+                    else EXTRATROPICAL_MOIST_SAVANNA
+                }
+            }
+
+            // Extracontinental
+            if (growthAridityFactor >= 0.5) {
+                return if (isHyperseasonal) {
+                    if (evaporationRatio < 0.45) HYPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
+                    else HYPERSEASONAL_EXTRACONTINENTAL
+                } else {
+                    if (evaporationRatio < 0.45) SUPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
+                    else SUPERSEASONAL_EXTRACONTINENTAL
+                }
+            }
         }
 
         // Cold climates (cool/cold/frigid winters, warm summers)
@@ -1028,7 +1028,7 @@ object Hersfeldt : ClimateClassifier {
             summerType == SummerType.WARM
         ) {
             if (gddResults.totalGddz < 50) {
-                return if (minIce >= 0.8) ICE else COLD_BARREN
+                return COLD_BARREN
             }
             // Check for marginal cold
             if (gddResults.totalGdd < 350) {
@@ -1036,56 +1036,11 @@ object Hersfeldt : ClimateClassifier {
                 return if (isOceanic) OCEANIC_TUNDRA else CONTINENTAL_TUNDRA
             }
 
-            // Boreal (above GInt threshold, below 1300 GDD, well-watered)
-            if (gddResults.totalGint >= gintThreshold && gddResults.totalGdd < 1300 && growthAridityFactor >= 0.5) {
-                return when (winterType) {
-                    WinterType.COOL ->
-                        if (evaporationRatio < 0.45) OCEANIC_BOREAL_RAINFOREST
-                        else OCEANIC_BOREAL
-                    WinterType.COLD ->
-                        if (evaporationRatio < 0.45) CONTINENTAL_BOREAL_RAINFOREST
-                        else CONTINENTAL_BOREAL
-                    WinterType.FRIGID ->
-                        if (evaporationRatio < 0.45) PERCONTINENTAL_BOREAL_RAINFOREST
-                        else PERCONTINENTAL_BOREAL
-                    else -> UNKNOWN_CLIMATE
-                }
-            }
-
             val isOceanic = winterType == WinterType.COOL
-
-            // Temperate (above GInt threshold, above 1300 GDD, well-watered)
-            if (gddResults.totalGint >= gintThreshold && gddResults.totalGdd >= 1300 && growthAridityFactor >= 0.5) {
-                return if (isOceanic) {
-                    if (evaporationRatio < 0.45) OCEANIC_TEMPERATE_RAINFOREST
-                    else OCEANIC_TEMPERATE
-                } else {
-                    if (evaporationRatio < 0.45) CONTINENTAL_TEMPERATE_RAINFOREST
-                    else CONTINENTAL_TEMPERATE
-                }
-            }
-
-            // Subtropical (below GInt threshold, cool winters only)
-            if (gddResults.totalGint < gintThreshold && growthAridityFactor >= 0.5) {
-                return when {
-                    isOceanic && aridityFactor >= 0.75 ->
-                        if (evaporationRatio < 0.45) SUBTROPICAL_MONSOON_FOREST
-                        else SUBTROPICAL_FOREST
-                    aridityFactor <= 0.75 ->
-                        if (evaporationRatio < 0.45) SUBTROPICAL_MOIST_MONSOON_SAVANNA
-                        else SUBTROPICAL_MOIST_SAVANNA
-                    else -> UNKNOWN_CLIMATE
-                }
-            }
-
-            // Submediterranean (low growth supply, well-watered)
-            if (growthAridityFactor >= 0.5 && growthSupply < 0.8) {
-                return if (isOceanic) OCEANIC_SUBMEDITERRANEAN else CONTINENTAL_SUBMEDITERRANEAN
-            }
 
             // Cold semiarid
             if (growthAridityFactor < 0.5) {
-                // Mediterranean (low growth supply)
+                // Mediterranean
                 if (growthSupply < 0.8) {
                     return if (isOceanic) OCEANIC_MEDITERRANEAN else CONTINENTAL_MEDITERRANEAN
                 }
@@ -1098,7 +1053,46 @@ object Hersfeldt : ClimateClassifier {
                 }
             }
 
-            return UNKNOWN_CLIMATE
+            // Submediterranean
+            if (growthSupply < 0.8) {
+                return if (isOceanic) OCEANIC_SUBMEDITERRANEAN else CONTINENTAL_SUBMEDITERRANEAN
+            }
+
+            // Subtropical
+            if (gddResults.totalGint < gintThreshold && isOceanic) {
+                return if (aridityFactor >= 0.75) {
+                    if (evaporationRatio < 0.45) SUBTROPICAL_MONSOON_FOREST
+                    else SUBTROPICAL_FOREST
+                } else {
+                    if (evaporationRatio < 0.45) SUBTROPICAL_MOIST_MONSOON_SAVANNA
+                    else SUBTROPICAL_MOIST_SAVANNA
+                }
+            }
+
+            // Temperate
+            if (gddResults.totalGint >= gintThreshold && gddResults.totalGdd >= 1300) {
+                return if (isOceanic) {
+                    if (evaporationRatio < 0.45) OCEANIC_TEMPERATE_RAINFOREST
+                    else OCEANIC_TEMPERATE
+                } else {
+                    if (evaporationRatio < 0.45) CONTINENTAL_TEMPERATE_RAINFOREST
+                    else CONTINENTAL_TEMPERATE
+                }
+            }
+
+            // Boreal
+            return when (winterType) {
+                WinterType.COOL ->
+                    if (evaporationRatio < 0.45) OCEANIC_BOREAL_RAINFOREST
+                    else OCEANIC_BOREAL
+                WinterType.COLD ->
+                    if (evaporationRatio < 0.45) CONTINENTAL_BOREAL_RAINFOREST
+                    else CONTINENTAL_BOREAL
+                WinterType.FRIGID ->
+                    if (evaporationRatio < 0.45) PERCONTINENTAL_BOREAL_RAINFOREST
+                    else PERCONTINENTAL_BOREAL
+                else -> throw Error("Invalid winter type")
+            }
         }
 
         return UNKNOWN_CLIMATE
