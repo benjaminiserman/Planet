@@ -11,6 +11,7 @@ import dev.biserman.planet.planet.climate.ClimateClassification
 import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.planet.climate.Hersfeldt
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
 import dev.biserman.planet.planet.climate.Insolation
@@ -91,7 +92,7 @@ class PlanetTile(
     @get:JsonIgnore
     val insolation
         get() = Insolation.directHorizontal(
-            planet.daysPassed % Insolation.yearLength,
+            planet.daysPassed % yearLength,
             tile.position.toGeoPoint().latitude
         )
 
@@ -108,7 +109,7 @@ class PlanetTile(
     val annualInsolation by memo({ planet.tectonicAge }) {
         (1..12).map {
             Insolation.directHorizontal(
-                it * 30 % Insolation.yearLength,
+                it * 30 % yearLength,
                 tile.position.toGeoPoint().latitude
             )
         }
