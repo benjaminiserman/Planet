@@ -8,27 +8,59 @@ import kotlin.text.indexOf
 
 typealias InventoryTransformation = (Set<Segment>) -> Set<Segment>
 
-enum class SegmentType { CONSONANT, VOWEL, AFFRICATE }
+enum class SegmentType { CONSONANT, VOWEL }
 enum class Manner { NASAL, PLOSIVE, FRICATIVE, SEMIVOWEL, LIQUID, TRILL, TAP, IMPLOSIVE, CLICK }
 enum class Height { CLOSE, NEAR_CLOSE, CLOSE_MID, MID, OPEN_MID, NEAR_OPEN, OPEN }
 enum class Depth { FRONT, NEAR_FRONT, CENTRAL, NEAR_BACK, BACK }
-enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL }
+enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL, RETROFLEX }
+
+data class Glide(
+    val place: Place?,
+    val manner: Manner
+) {
+    fun display(voiced: Boolean?) =
+        SyllableConstructor.glideMap[this to voiced] ?: SyllableConstructor.glideMap[this to null]
+
+    companion object {
+        fun from(data: SegmentData): Glide = Glide(data.place, data.manner!!)
+    }
+}
+
 data class SegmentData(
     val type: SegmentType,
-    val place: String?,
+    val place: Place?,
     val manner: Manner?,
     val voiced: Boolean?,
     val isAspirated: Boolean?,
     val isEjective: Boolean?,
     val height: Height?,
     val depth: Depth?,
-    val rounded: Boolean?
-)
+    val rounded: Boolean?,
+    val consonantGlide: Glide?,
+    val onGlide: Glide?,
+    val offGlide: Glide?
+) {
+    fun strip() = this.copy(consonantGlide = null, onGlide = null, offGlide = null)
+}
 
 data class Segment(
     val symbol: String,
     val data: SegmentData
-)
+) {
+    fun copyData(transform: (SegmentData) -> SegmentData) =
+        transform(data).let { transformed ->
+            Segment(SyllableConstructor.segments.values.find {
+                it.data == transformed.strip()
+            }!!.symbol, transformed)
+        }
+
+    val display by lazy {
+        val onGlide = data.onGlide?.display(data.voiced) ?: ""
+        val affricateGlide = data.consonantGlide?.display(data.voiced) ?: ""
+        val offGlide = data.offGlide?.display(data.voiced) ?: ""
+        "$onGlide$symbol$affricateGlide$offGlide"
+    }
+}
 
 data class PhonemeData(
     val place: String? = null,
@@ -115,14 +147,17 @@ object SyllableConstructor {
                 symbol = symbol,
                 SegmentData(
                     type = SegmentType.CONSONANT,
-                    place = data.place,
+                    place = data.place?.uppercase()?.let { Place.valueOf(it) },
                     manner = data.manner?.uppercase()?.let { Manner.valueOf(it) },
                     voiced = data.voiced,
-                    isAspirated = data.aspirated,
-                    isEjective = data.ejective,
+                    isAspirated = data.aspirated ?: false,
+                    isEjective = data.ejective ?: false,
                     height = null,
                     depth = null,
-                    rounded = null
+                    rounded = null,
+                    consonantGlide = null,
+                    onGlide = null,
+                    offGlide = null
                 )
             )
         }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
@@ -139,7 +174,10 @@ object SyllableConstructor {
                     isEjective = null,
                     height = data.height?.replace("-", "_")?.uppercase()?.let { Height.valueOf(it) },
                     depth = data.depth?.replace("-", "_")?.uppercase()?.let { Depth.valueOf(it) },
-                    rounded = data.rounded
+                    rounded = data.rounded,
+                    consonantGlide = null,
+                    onGlide = null,
+                    offGlide = null
                 )
             )
         }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
@@ -147,10 +185,17 @@ object SyllableConstructor {
         (consonants + vowels).associateBy { it.symbol }
     }
 
+    val glideMap: Map<Pair<Glide, Boolean?>, String> by lazy {
+        segments
+            .filterValues { it.data.manner == Manner.FRICATIVE || it.data.manner == Manner.SEMIVOWEL || it.data.manner == Manner.LIQUID }
+            .filterValues { it.data.place != Place.GLOTTAL }
+            .entries
+            .associate { Pair(Glide.from(it.value.data), it.value.data.voiced) to it.key }
+    }
+
     val topLevelSymbolsFilters = mapOf<Char, (Segment) -> Boolean>(
         'C' to { it.data.type == SegmentType.CONSONANT },
         'V' to { it.data.type == SegmentType.VOWEL },
-        'A' to { it.data.type == SegmentType.AFFRICATE },
         'N' to { it.data.manner == Manner.NASAL },
         'P' to { it.data.manner == Manner.PLOSIVE },
         'F' to { it.data.manner == Manner.FRICATIVE },
