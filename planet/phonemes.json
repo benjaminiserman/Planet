@@ -160,12 +160,12 @@
       "voiced": true
     },
     "z": {
-      "place": "postalveolar",
+      "place": "alveolar",
       "manner": "fricative",
       "voiced": true
     },
     "ʒ": {
-      "place": "retroflex",
+      "place": "postalveolar",
       "manner": "fricative",
       "voiced": true
     },
@@ -242,9 +242,11 @@
 
 
     "ɹ": {
+      "place": "retroflex",
       "manner": "liquid"
     },
     "l": {
+      "place": "alveolar",
       "manner": "liquid"
     },
 
