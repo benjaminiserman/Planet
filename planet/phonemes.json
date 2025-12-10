@@ -2,447 +2,536 @@
   "consonants": {
     "m": {
       "place": "bilabial",
-      "manner": "nasal"
+      "manner": "nasal",
+      "prevalence": 0.97
     },
     "n": {
       "place": "alveolar",
-      "manner": "nasal"
+      "manner": "nasal",
+      "prevalence": 0.97
     },
     "ɲ": {
       "place": "palatal",
-      "manner": "nasal"
+      "manner": "nasal",
+      "prevalence": 0.47
     },
     "ŋ": {
       "place": "velar",
-      "manner": "nasal"
+      "manner": "nasal",
+      "prevalence": 0.69
     },
     "ɴ": {
       "place": "uvular",
-      "manner": "nasal"
+      "manner": "nasal",
+      "prevalence": 0.01
     },
 
 
     "p": {
       "place": "bilabial",
       "manner": "plosive",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.95
     },
     "t": {
       "place": "alveolar",
       "manner": "plosive",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.99
     },
     "k": {
       "place": "velar",
       "manner": "plosive",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.99
     },
     "q": {
       "place": "uvular",
       "manner": "plosive",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.10
     },
 
 
     "b": {
       "place": "bilabial",
       "manner": "plosive",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.70
     },
     "d": {
       "place": "alveolar",
       "manner": "plosive",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.70
     },
     "ɡ": {
       "place": "velar",
       "manner": "plosive",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.64
     },
     "ɢ": {
       "place": "uvular",
       "manner": "plosive",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.02
     },
 
     "pʰ": {
       "place": "bilabial",
       "manner": "plosive",
-      "aspirated": true
+      "aspirated": true,
+      "prevalence": 0.20
     },
     "tʰ": {
       "place": "alveolar",
       "manner": "plosive",
-      "aspirated": true
+      "aspirated": true,
+      "prevalence": 0.21
     },
     "kʰ": {
       "place": "velar",
       "manner": "plosive",
-      "aspirated": true
+      "aspirated": true,
+      "prevalence": 0.21
     },
     "qʰ": {
       "place": "uvular",
       "manner": "plosive",
-      "aspirated": true
+      "aspirated": true,
+      "prevalence": 0.02
     },
 
     "p'": {
       "place": "bilabial",
       "manner": "plosive",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.09
     },
     "t'": {
       "place": "alveolar",
       "manner": "plosive",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.09
     },
     "k'": {
       "place": "velar",
       "manner": "plosive",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.09
     },
     "q'": {
       "place": "uvular",
       "manner": "plosive",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.01
     },
 
 
     "ɸ": {
       "place": "bilabial",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.06
     },
     "f": {
       "place": "labiodental",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.46
     },
     "θ": {
       "place": "dental",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.04
     },
     "s": {
       "place": "alveolar",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.80
     },
     "ʃ": {
       "place": "postalveolar",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.54
     },
     "x": {
       "place": "velar",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.21
     },
     "χ": {
       "place": "uvular",
       "manner": "fricative",
-      "voiced": false
+      "voiced": false,
+      "prevalence": 0.08
     },
 
     "β": {
       "place": "bilabial",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.13
     },
     "v": {
       "place": "labiodental",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.30
     },
     "ð": {
       "place": "dental",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.06
     },
     "z": {
       "place": "alveolar",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.40
     },
     "ʒ": {
       "place": "postalveolar",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.37
     },
     "ɣ": {
       "place": "velar",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.15
     },
     "ʁ": {
       "place": "uvular",
       "manner": "fricative",
-      "voiced": true
+      "voiced": true,
+      "prevalence": 0.05
     },
 
     "ɸ'": {
       "place": "bilabial",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.01
     },
     "f'": {
       "place": "labiodental",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.04
     },
     "θ'": {
       "place": "dental",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.01
     },
     "s'": {
       "place": "alveolar",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.07
     },
     "ʃ'": {
       "place": "postalveolar",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.05
     },
     "x'": {
       "place": "velar",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.02
     },
     "χ'": {
       "place": "uvular",
       "manner": "fricative",
-      "ejective": true
+      "ejective": true,
+      "prevalence": 0.01
     },
 
     "ʔ": {
       "place": "glottal",
-      "manner": "plosive"
+      "manner": "plosive",
+      "prevalence": 0.40
     },
     "h": {
       "place": "glottal",
-      "manner": "fricative"
+      "manner": "fricative",
+      "prevalence": 0.60
     },
 
 
 
     "j": {
       "place": "palatal",
-      "manner": "semivowel"
+      "manner": "semivowel",
+      "prevalence": 0.92
     },
     "w": {
       "place": "labiovelar",
-      "manner": "semivowel"
+      "manner": "semivowel",
+      "prevalence": 0.86
     },
     "ɰ": {
       "place": "velar",
-      "manner": "semivowel"
+      "manner": "semivowel",
+      "prevalence": 0.03
     },
 
 
     "ɹ": {
       "place": "retroflex",
-      "manner": "liquid"
+      "manner": "liquid",
+      "prevalence": 0.06
     },
     "l": {
       "place": "alveolar",
-      "manner": "liquid"
+      "manner": "liquid",
+      "prevalence": 0.83
     },
 
 
     "r": {
       "place": "alveolar",
-      "manner": "trill"
+      "manner": "trill",
+      "prevalence": 0.56
     },
     "ʀ": {
       "place": "uvular",
-      "manner": "trill"
+      "manner": "trill",
+      "prevalence": 0.01
     },
     "ʜ": {
       "place": "glottal",
-      "manner": "trill"
+      "manner": "trill",
+      "prevalence": 0.01
     },
 
     "ɾ": {
       "place": "alveolar",
-      "manner": "tap"
+      "manner": "tap",
+      "prevalence": 0.30
     },
 
 
     "ɓ": {
       "place": "bilabial",
-      "manner": "implosive"
+      "manner": "implosive",
+      "prevalence": 0.12
     },
     "ɗ": {
       "place": "alveolar",
-      "manner": "implosive"
+      "manner": "implosive",
+      "prevalence": 0.11
     },
     "ɠ": {
       "place": "velar",
-      "manner": "implosive"
+      "manner": "implosive",
+      "prevalence": 0.01
     },
     "ʛ": {
       "place": "uvular",
-      "manner": "implosive"
+      "manner": "implosive",
+      "prevalence": 0.01
     },
 
 
     "ʘ": {
       "place": "bilabial",
-      "manner": "click"
+      "manner": "click",
+      "prevalence": 0.01
     },
     "ǀ": {
       "place": "dental",
-      "manner": "click"
+      "manner": "click",
+      "prevalence": 0.01
     },
     "!": {
       "place": "alveolar",
-      "manner": "click"
+      "manner": "click",
+      "prevalence": 0.01
     },
     "ǂ": {
       "place": "palatal",
-      "manner": "click"
+      "manner": "click",
+      "prevalence": 0.01
     }
   },
   "vowels": {
     "i": {
       "height": "close",
       "depth": "front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.98
     },
     "y": {
       "height": "close",
       "depth": "front",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.07
     },
     "ɨ": {
       "height": "close",
       "depth": "central",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.2
     },
     "ʉ": {
       "height": "close",
       "depth": "central",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.03
     },
     "ɯ": {
       "height": "close",
       "depth": "back",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.08
     },
     "u": {
       "height": "close",
       "depth": "back",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.94
     },
     "ɪ": {
       "height": "near-close",
       "depth": "near-front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.18
     },
     "ʏ": {
       "height": "near-close",
       "depth": "near-front",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.01
     },
     "ʊ": {
       "height": "near-close",
       "depth": "near-back",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.17
     },
     "e": {
       "height": "close-mid",
       "depth": "front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.78
     },
     "ø": {
       "height": "close-mid",
       "depth": "front",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.05
     },
     "ɘ": {
       "height": "close-mid",
       "depth": "central",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.02
     },
     "ɵ": {
       "height": "close-mid",
       "depth": "central",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.02
     },
     "ɤ": {
       "height": "close-mid",
       "depth": "back",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.04
     },
     "o": {
       "height": "close-mid",
       "depth": "back",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.77
     },
     "ə": {
       "height": "mid",
-      "depth": "central"
+      "depth": "central",
+      "prevalence": 0.27
     },
     "ɛ": {
       "height": "open-mid",
       "depth": "front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.43
     },
     "œ": {
       "height": "open-mid",
       "depth": "front",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.03
     },
     "ɜ": {
       "height": "open-mid",
       "depth": "central",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.02
     },
     "ɞ": {
       "height": "open-mid",
       "depth": "central",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.01
     },
     "ʌ": {
       "height": "open-mid",
       "depth": "back",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.06
     },
     "ɔ": {
       "height": "open-mid",
       "depth": "back",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.41
     },
     "æ": {
       "height": "near-open",
       "depth": "front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.10
     },
     "ɐ": {
       "height": "near-open",
-      "depth": "central"
+      "depth": "central",
+      "prevalence": 0.03
     },
     "a": {
       "height": "open",
       "depth": "front",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.95
     },
     "ɶ": {
       "height": "open",
       "depth": "front",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.01
     },
     "ɑ": {
       "height": "open",
       "depth": "back",
-      "rounded": false
+      "rounded": false,
+      "prevalence": 0.11
     },
     "ɒ": {
       "height": "open",
       "depth": "back",
-      "rounded": true
+      "rounded": true,
+      "prevalence": 0.02
     }
   }
 }
