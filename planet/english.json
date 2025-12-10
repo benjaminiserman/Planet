@@ -79,7 +79,7 @@
   },
   "complexity_tiers": [
     {
-      "allowedConsonants": "m,n,ŋ,p,t,k,b,d,ɡ,f,θ,s,ʃ,v,z,ʒ,h,j,w,ɹ,l",
+      "allowedConsonants": "m,n,ŋ,p,t,k,b,d,ɡ,ʔ,f,θ,s,ʃ,v,z,ʒ,h,j,w,ɹ,l",
       "allowedVowels": "ɪ,ɛ,i,e,æ,a,o,ʌ,u",
       "affricates": "tʃ,ks,dʒ,ts",
       "rewrite_rules": {
