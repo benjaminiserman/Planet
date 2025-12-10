@@ -38,20 +38,22 @@ data class SegmentData(
     val rounded: Boolean?,
     val consonantGlide: Glide?,
     val onGlide: Glide?,
-    val offGlide: Glide?
+    val offGlide: Glide?,
 ) {
     fun strip() = this.copy(consonantGlide = null, onGlide = null, offGlide = null)
 }
 
 data class Segment(
     val symbol: String,
-    val data: SegmentData
+    val data: SegmentData,
+    val prevalence: Double
 ) {
     fun copyData(transform: (SegmentData) -> SegmentData) =
         transform(data).let { transformed ->
-            Segment(SyllableConstructor.segments.values.find {
+            val found = SyllableConstructor.segments.values.find {
                 it.data == transformed.strip()
-            }!!.symbol, transformed)
+            }!!
+            Segment(found.symbol, transformed, found.prevalence)
         }
 
     val display by lazy {
@@ -70,7 +72,8 @@ data class PhonemeData(
     val ejective: Boolean? = null,
     val height: String? = null,
     val depth: String? = null,
-    val rounded: Boolean? = null
+    val rounded: Boolean? = null,
+    val prevalence: Double? = null
 )
 
 data class PhonemeJson(
@@ -158,7 +161,8 @@ object SyllableConstructor {
                     consonantGlide = null,
                     onGlide = null,
                     offGlide = null
-                )
+                ),
+                prevalence = data.prevalence ?: 0.0
             )
         }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
 
@@ -177,8 +181,9 @@ object SyllableConstructor {
                     rounded = data.rounded,
                     consonantGlide = null,
                     onGlide = null,
-                    offGlide = null
-                )
+                    offGlide = null,
+                ),
+                prevalence = data.prevalence ?: 0.0
             )
         }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 

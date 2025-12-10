@@ -261,14 +261,15 @@
     "ʔ": {
       "place": "glottal",
       "manner": "plosive",
+      "voiced": false,
       "prevalence": 0.40
     },
     "h": {
       "place": "glottal",
       "manner": "fricative",
+      "voiced": false,
       "prevalence": 0.60
     },
-
 
 
     "j": {
