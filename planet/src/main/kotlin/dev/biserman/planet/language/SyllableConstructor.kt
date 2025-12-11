@@ -15,7 +15,7 @@ enum class Depth { FRONT, NEAR_FRONT, CENTRAL, NEAR_BACK, BACK }
 enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL, RETROFLEX }
 
 data class Glide(
-    val place: Place?,
+    val place: Place,
     val manner: Manner
 ) {
     fun display(voiced: Boolean?) =
