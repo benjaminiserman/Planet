@@ -9,7 +9,7 @@ import kotlin.text.indexOf
 typealias InventoryTransformation = (Set<Segment>) -> Set<Segment>
 
 enum class SegmentType { CONSONANT, VOWEL }
-enum class Manner { NASAL, PLOSIVE, FRICATIVE, SEMIVOWEL, LIQUID, TRILL, TAP, IMPLOSIVE, CLICK }
+enum class Manner { SEMIVOWEL, GLIDE, LIQUID, NASAL, FRICATIVE, TAP, TRILL, PLOSIVE, IMPLOSIVE, CLICK }
 enum class Height { CLOSE, NEAR_CLOSE, CLOSE_MID, MID, OPEN_MID, NEAR_OPEN, OPEN }
 enum class Depth { FRONT, NEAR_FRONT, CENTRAL, NEAR_BACK, BACK }
 enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL, RETROFLEX }
