@@ -1,7 +1,7 @@
 {
   "consonants": {
     "m": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "nasal",
       "prevalence": 0.97
     },
@@ -28,7 +28,7 @@
 
 
     "p": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "plosive",
       "voiced": false,
       "prevalence": 0.95
@@ -54,7 +54,7 @@
 
 
     "b": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "plosive",
       "voiced": true,
       "prevalence": 0.70
@@ -79,7 +79,7 @@
     },
 
     "pʰ": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "plosive",
       "aspirated": true,
       "prevalence": 0.20
@@ -104,7 +104,7 @@
     },
 
     "p'": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "plosive",
       "ejective": true,
       "prevalence": 0.09
@@ -128,15 +128,8 @@
       "prevalence": 0.01
     },
 
-
-    "ɸ": {
-      "place": "bilabial",
-      "manner": "fricative",
-      "voiced": false,
-      "prevalence": 0.06
-    },
     "f": {
-      "place": "labiodental",
+      "place": "labial",
       "manner": "fricative",
       "voiced": false,
       "prevalence": 0.46
@@ -172,14 +165,8 @@
       "prevalence": 0.08
     },
 
-    "β": {
-      "place": "bilabial",
-      "manner": "fricative",
-      "voiced": true,
-      "prevalence": 0.13
-    },
     "v": {
-      "place": "labiodental",
+      "place": "labial",
       "manner": "fricative",
       "voiced": true,
       "prevalence": 0.30
@@ -215,14 +202,8 @@
       "prevalence": 0.05
     },
 
-    "ɸ'": {
-      "place": "bilabial",
-      "manner": "fricative",
-      "ejective": true,
-      "prevalence": 0.01
-    },
     "f'": {
-      "place": "labiodental",
+      "place": "labial",
       "manner": "fricative",
       "ejective": true,
       "prevalence": 0.04
@@ -273,12 +254,12 @@
 
 
     "j": {
-      "place": "palatal",
+      "place": "alveolar",
       "manner": "semivowel",
       "prevalence": 0.92
     },
     "w": {
-      "place": "labiovelar",
+      "place": "labial",
       "manner": "semivowel",
       "prevalence": 0.86
     },
@@ -325,7 +306,7 @@
 
 
     "ɓ": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "implosive",
       "prevalence": 0.12
     },
@@ -347,7 +328,7 @@
 
 
     "ʘ": {
-      "place": "bilabial",
+      "place": "labial",
       "manner": "click",
       "prevalence": 0.01
     },
@@ -358,11 +339,6 @@
     },
     "!": {
       "place": "alveolar",
-      "manner": "click",
-      "prevalence": 0.01
-    },
-    "ǂ": {
-      "place": "palatal",
       "manner": "click",
       "prevalence": 0.01
     }
