@@ -16,13 +16,13 @@ enum class Place { BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATA
 
 data class Glide(
     val place: Place,
-    val manner: Manner
+    val manner: Manner,
 ) {
     fun display(voiced: Boolean?) =
         SyllableConstructor.glideMap[this to voiced] ?: SyllableConstructor.glideMap[this to null]
 
     companion object {
-        fun from(data: SegmentData): Glide = Glide(data.place, data.manner!!)
+        fun from(data: SegmentData): Glide = Glide(data.place!!, data.manner!!)
     }
 }
 
