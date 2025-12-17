@@ -39,6 +39,8 @@ data class SegmentData(
     val consonantGlide: Glide?,
     val onGlide: Glide?,
     val offGlide: Glide?,
+    val nasalized: Boolean?,
+    val lengthened: Boolean?,
 ) {
     fun strip() = this.copy(consonantGlide = null, onGlide = null, offGlide = null)
 }
@@ -60,7 +62,9 @@ data class Segment(
         val onGlide = data.onGlide?.display(data.voiced) ?: ""
         val affricateGlide = data.consonantGlide?.display(data.voiced) ?: ""
         val offGlide = data.offGlide?.display(data.voiced) ?: ""
-        "$onGlide$symbol$affricateGlide$offGlide"
+        val nasalizedDiacritic = if (data.nasalized == true) "̃" else ""
+        val lengthenedDiacritic = if (data.lengthened == true) "ː" else ""
+        "$onGlide$symbol$nasalizedDiacritic$lengthenedDiacritic$affricateGlide$offGlide"
     }
 }
 
@@ -160,7 +164,9 @@ object SyllableConstructor {
                     rounded = null,
                     consonantGlide = null,
                     onGlide = null,
-                    offGlide = null
+                    offGlide = null,
+                    nasalized = null,
+                    lengthened = null,
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
@@ -182,6 +188,8 @@ object SyllableConstructor {
                     consonantGlide = null,
                     onGlide = null,
                     offGlide = null,
+                    nasalized = null,
+                    lengthened = null,
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
