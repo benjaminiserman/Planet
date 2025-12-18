@@ -17,12 +17,40 @@ enum class Place { LABIAL, BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR
 data class Glide(
     val place: Place,
     val manner: Manner,
+    val isOnGlide: Boolean,
 ) {
-    fun display(voiced: Boolean?) =
-        SyllableConstructor.glideMap[this to voiced] ?: SyllableConstructor.glideMap[this to null]
+    fun display(segment: Segment): String {
+        return when (segment.data.type) {
+            SegmentType.CONSONANT -> when (manner) {
+                Manner.SEMIVOWEL -> when (place) {
+                    Place.PALATAL -> "ʲ"
+                    Place.LABIAL, Place.LABIOVELAR -> "ʷ"
+                    else -> "?"
+                }
+                Manner.LIQUID -> when (place) {
+                    Place.ALVEOLAR -> "ˡ"
+                    Place.RETROFLEX -> "ʳ"
+                    else -> "?"
+                }
+                Manner.FRICATIVE -> "͡" + SyllableConstructor.segments.values
+                    .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                    .display
+                else -> "?"
+            }
+            SegmentType.VOWEL -> when {
+                manner != Manner.SEMIVOWEL -> "?"
+                place == Place.PALATAL -> "i"
+                place == Place.LABIAL ->
+                    if (isOnGlide) "u"
+                    else "o"
+                else -> "?"
+            } + "̯"
+        }
+    }
+
 
     companion object {
-        fun from(data: SegmentData): Glide = Glide(data.place!!, data.manner!!)
+        fun from(data: SegmentData, isOnGlide: Boolean): Glide = Glide(data.place!!, data.manner!!, isOnGlide)
     }
 }
 
@@ -59,9 +87,9 @@ data class Segment(
         }
 
     val display by lazy {
-        val onGlide = data.onGlide?.display(data.voiced) ?: ""
-        val affricateGlide = data.consonantGlide?.display(data.voiced) ?: ""
-        val offGlide = data.offGlide?.display(data.voiced) ?: ""
+        val onGlide = data.onGlide?.display(this) ?: ""
+        val affricateGlide = data.consonantGlide?.display(this) ?: ""
+        val offGlide = data.offGlide?.display(this) ?: ""
         val nasalizedDiacritic = if (data.nasalized == true) "̃" else ""
         val lengthenedDiacritic = if (data.lengthened == true) "ː" else ""
         "$onGlide$symbol$nasalizedDiacritic$lengthenedDiacritic$affricateGlide$offGlide"
@@ -196,14 +224,6 @@ object SyllableConstructor {
         }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 
         (consonants + vowels).associateBy { it.symbol }
-    }
-
-    val glideMap: Map<Pair<Glide, Boolean?>, String> by lazy {
-        segments
-            .filterValues { it.data.manner == Manner.FRICATIVE || it.data.manner == Manner.SEMIVOWEL || it.data.manner == Manner.LIQUID }
-            .filterValues { it.data.place != Place.GLOTTAL }
-            .entries
-            .associate { Pair(Glide.from(it.value.data), it.value.data.voiced) to it.key }
     }
 
     val topLevelSymbolsFilters = mapOf<Char, (Segment) -> Boolean>(
