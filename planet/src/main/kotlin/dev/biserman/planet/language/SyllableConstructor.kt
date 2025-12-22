@@ -23,19 +23,20 @@ data class Glide(
         return when (segment.data.type) {
             SegmentType.CONSONANT -> when (manner) {
                 Manner.SEMIVOWEL -> when (place) {
-                    Place.PALATAL -> "ʲ"
+                    Place.PALATAL, Place.ALVEOLAR -> "ʲ"
                     Place.LABIAL, Place.LABIOVELAR -> "ʷ"
-                    else -> "?"
+                    Place.VELAR -> "ˠ"
+                    else -> "?s"
                 }
                 Manner.LIQUID -> when (place) {
                     Place.ALVEOLAR -> "ˡ"
                     Place.RETROFLEX -> "ʳ"
-                    else -> "?"
+                    else -> "?l"
                 }
                 Manner.FRICATIVE -> "͡" + SyllableConstructor.segments.values
                     .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
                     .display
-                else -> "?"
+                else -> "?f"
             }
             SegmentType.VOWEL -> when {
                 manner != Manner.SEMIVOWEL -> "?"
@@ -43,26 +44,27 @@ data class Glide(
                 place == Place.LABIAL ->
                     if (isOnGlide) "u"
                     else "o"
-                else -> "?"
+                else -> "?v"
             } + "̯"
         }
     }
 
     fun symbol(segment: Segment) = when (manner) {
             Manner.SEMIVOWEL -> when (place) {
-                Place.PALATAL -> "j"
+                Place.PALATAL, Place.ALVEOLAR -> "j"
                 Place.LABIAL, Place.LABIOVELAR -> "w"
-                else -> "?"
+                Place.VELAR -> "ɰ"
+                else -> "?s"
             }
             Manner.LIQUID -> when (place) {
                 Place.ALVEOLAR -> "l"
                 Place.RETROFLEX -> "r"
-                else -> "?"
+                else -> "?l"
             }
             Manner.FRICATIVE -> SyllableConstructor.segments.values
                 .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
                 .symbol
-            else -> "?"
+            else -> "?f"
         }
 
     companion object {
@@ -214,7 +216,7 @@ object SyllableConstructor {
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
-        }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
+        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
 
         val vowels = phonemeJson.vowels.map { (symbol, data) ->
             Segment(
@@ -237,7 +239,7 @@ object SyllableConstructor {
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
-        }.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
+        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 
         (consonants + vowels).associateBy { it.symbol }
     }

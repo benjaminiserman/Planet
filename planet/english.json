@@ -84,8 +84,10 @@
       "affricates": "tʃ,ks,dʒ,ts",
       "rewrite_rules": {
         "(?<=[ptkbdg])y": "i",
-        "ay": "ai",
         "(?<=[ptkbdg])r\b": "er",
+        "(?<=[ptkbdg])n\b": "en",
+        "(?<=[ptkbdg])m\b": "em",
+        "(?<=[ptkbdg])l\b": "el",
         "(?<=[aeiouy])s\b": "ss"
       },
       "forbidden_cluster_rules": [
