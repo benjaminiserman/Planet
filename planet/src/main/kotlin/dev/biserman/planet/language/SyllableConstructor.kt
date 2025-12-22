@@ -48,6 +48,22 @@ data class Glide(
         }
     }
 
+    fun symbol(segment: Segment) = when (manner) {
+            Manner.SEMIVOWEL -> when (place) {
+                Place.PALATAL -> "j"
+                Place.LABIAL, Place.LABIOVELAR -> "w"
+                else -> "?"
+            }
+            Manner.LIQUID -> when (place) {
+                Place.ALVEOLAR -> "l"
+                Place.RETROFLEX -> "r"
+                else -> "?"
+            }
+            Manner.FRICATIVE -> SyllableConstructor.segments.values
+                .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                .symbol
+            else -> "?"
+        }
 
     companion object {
         fun from(data: SegmentData, isOnGlide: Boolean): Glide = Glide(data.place!!, data.manner!!, isOnGlide)
@@ -56,19 +72,19 @@ data class Glide(
 
 data class SegmentData(
     val type: SegmentType,
-    val place: Place?,
-    val manner: Manner?,
-    val voiced: Boolean?,
-    val isAspirated: Boolean?,
-    val isEjective: Boolean?,
-    val height: Height?,
-    val depth: Depth?,
-    val rounded: Boolean?,
-    val consonantGlide: Glide?,
-    val onGlide: Glide?,
-    val offGlide: Glide?,
-    val nasalized: Boolean?,
-    val lengthened: Boolean?,
+    val place: Place? = null,
+    val manner: Manner? = null,
+    val voiced: Boolean? = null,
+    val isAspirated: Boolean? = null,
+    val isEjective: Boolean? = null,
+    val height: Height? = null,
+    val depth: Depth? = null,
+    val rounded: Boolean? = null,
+    val consonantGlide: Glide? = null,
+    val onGlide: Glide? = null,
+    val offGlide: Glide? = null,
+    val nasalized: Boolean? = null,
+    val lengthened: Boolean? = null,
 ) {
     fun strip() = this.copy(consonantGlide = null, onGlide = null, offGlide = null)
 }
