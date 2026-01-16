@@ -5,6 +5,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.rendering.PlanetRenderer
+import dev.biserman.planet.things.Concept
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.Input
@@ -21,6 +22,12 @@ class Main : Node() {
 	@RegisterFunction
 	override fun _ready() {
 		instance = this
+
+		Concept.entries.forEach {
+			GD.print(it.prettyPrint())
+		}
+
+		return
 
 		val newPlanet = Planet(seed = 3, size = 35)
 		GD.print("tiles: ${newPlanet.topology.tiles.size}")
