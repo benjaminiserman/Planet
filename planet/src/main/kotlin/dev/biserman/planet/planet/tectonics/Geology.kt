@@ -8,10 +8,10 @@ enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Conce
     OceanicDeposition(StoneType.Sedimentary, listOf(Concept.OCEAN)),
     OrogenicFoldingSedimentary(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
     OrogenicFoldingIgneous(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
-    DeepPressureSedimentary(StoneType.Metamorphic, listOf(Concept.ABYSSAL)),
-    DeepPressureIgneous(StoneType.Metamorphic, listOf(Concept.ABYSSAL)),
+    DeepPressureSedimentary(StoneType.Metamorphic, listOf(Concept.DEEP)),
+    DeepPressureIgneous(StoneType.Metamorphic, listOf(Concept.DEEP)),
     Rifting(StoneType.Igneous, listOf(Concept.FIRE)),
-    Hotspot(StoneType.Igneous, listOf(Concept.FIRE)),
+    Hotspot(StoneType.Igneous, listOf(Concept.MAGMA)),
     Primordial(StoneType.Igneous, listOf(Concept.ANCIENT)),
     Meteoric(StoneType.Meteoric, listOf(Concept.COMET));
 }
