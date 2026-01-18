@@ -14,6 +14,8 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
 
     DEEP({ opposite of SHALLOW }),
     SHALLOW({ opposite of DEEP }),
+    LARGE({ opposite of SMALL }),
+    SMALL({ opposite of LARGE }),
 
     STONE({ related with EARTH }),
     MAGMA({
@@ -43,18 +45,18 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
         related with listOf(FRUIT, NUT, VEGETABLE, GRAIN, HERB)
     }),
     BUSH({
-        made of listOf(LEAF, WOOD, ROOT)
-        producer of listOf(NUT, FRUIT)
+        made of WOOD
+        producer of listOf(NUT, FRUIT, LEAF, ROOT)
         type of PLANT
     }),
     TREE({
-        made of listOf(LEAF, WOOD, ROOT)
-        producer of listOf(NUT, FRUIT)
+        made of WOOD
+        producer of listOf(NUT, FRUIT, LEAF, ROOT)
         type of PLANT
     }),
     GRASS({ type of PLANT }),
 
-    FUNGUS,
+    FUNGUS({ type of PLANT }),
     ANIMAL({ made of FLESH }),
 
     LIGHT({ opposite of DARK }),
@@ -88,6 +90,10 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
         downwards of SKY
     }),
     STAR({ related with listOf(COSMOS, LIGHT) }),
+    SUN({
+        feature of SKY
+        related with FIRE
+    }),
     COMET({ related with listOf(STAR, FIRE) }),
 
     ABYSS({ related with listOf(OCEAN, DARK, DEEP) }),
@@ -95,6 +101,7 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     MOUNTAIN({
         related with EARTH
         made of STONE
+        related with LARGE
     }),
 
     ANCIENT({ related with EARTH }),
@@ -136,6 +143,9 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
 
     class FeatureRelationship(name: String, addReverse: Relationship.() -> Unit) :
         RelationshipType(name, "feature", addReverse = addReverse)
+
+    class ToRelationship(name: String, addReverse: Relationship.() -> Unit) :
+        RelationshipType(name, "to", addReverse = addReverse)
 
 
     private val child: OfRelationship =
@@ -204,19 +214,9 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     private infix fun (FeatureRelationship).feature(others: List<Concept>) =
         makeRelationship(this, "feature", *others.toTypedArray())
 
-    @Deprecated(
-        message = "Don't use `to` with relationships",
-        level = DeprecationLevel.ERROR
-    )
-    private infix fun RelationshipType.to(other: Concept): Nothing = throw Error("Invalid syntax: $this to $other")
-
-    @Deprecated(
-        message = "Don't use `to` with relationships",
-        level = DeprecationLevel.ERROR
-    )
-    private infix fun RelationshipType.to(others: List<Concept>): Nothing =
-        throw Error("Invalid syntax: $this to $others")
-
+    private infix fun (ToRelationship).to(other: Concept) = makeRelationship(this, "to", other)
+    private infix fun (ToRelationship).to(others: List<Concept>) =
+        makeRelationship(this, "to", *others.toTypedArray())
 
     private operator fun plusAssign(relationship: Relationship): Unit =
         run { relationships.add(relationship) }
