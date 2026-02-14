@@ -31,6 +31,8 @@ class Planet(val seed: Int, val size: Int) {
 
     var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
 
+    var worldKinds = WorldKinds()
+
     @get:JsonIgnore
     val contiguousRegions by memo({ tectonicAge }) {
         PlanetRegion(
@@ -80,6 +82,19 @@ class Planet(val seed: Int, val size: Int) {
         )
     }
 
+    val hotspotActivity by memo({ tectonicAge }) {
+        planetTiles.values.sumOf {
+            noise.hotspots.sample4d(
+                it.tile.position,
+                tectonicAge.toDouble()
+            )
+        }
+    }
+
+    val waterCoverage by memo({ tectonicAge }) {
+        planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
+    }
+
     val rotationRate = 1.0
 
     fun getTile(tile: Tile) = planetTiles[tile.id]!!
@@ -102,7 +117,6 @@ class Planet(val seed: Int, val size: Int) {
     val radiusMeters = 6378137.0
 
     val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
-
     val youngestCrust by memo({ tectonicAge }) { planetTiles.values.maxOf { it.formationTime } }
 
     init {
