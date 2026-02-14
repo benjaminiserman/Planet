@@ -307,7 +307,7 @@ class PlanetTile(
         "\n" + """
         CONVERGENCE
         speed: ${convergenceZone.speed.formatDigits()}
-        strength: ${convergenceZone.subductionStrengths[tectonicPlate!!.id]!!.formatDigits()}
+        strength: ${convergenceZone.subductionStrengths[tectonicPlate?.id ?: -1]?.formatDigits() ?: "not found"}
         subducting plates: ${convergenceZone.subductingPlates.size}
         subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()

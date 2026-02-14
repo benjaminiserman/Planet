@@ -36,15 +36,20 @@ object MapProjections {
         colorFn: (Planet).(Vector3) -> Color
     ): BufferedImage {
         val image = BufferedImage(imageX, imageY, BufferedImage.TYPE_INT_ARGB)
+        val edgeX = forward(planet.pointNemo.tile.position.toGeoPoint()).x
+
         for (x in 0..<imageX) {
             for (y in 0..<imageY) {
+                val startX = 1 - ((x.toDouble() / imageX) - 0.5)
+                val offset = (1 - edgeX) + 0.5
+                val newX = if (startX + offset > 1) startX + offset - 1 else startX + offset
                 image.setRGB(
                     x,
                     y,
                     planet.colorFn(
                         this.backward(
                             Vector2(
-                                1 - ((x.toDouble() / imageX) - 0.5),
+                                newX,
                                 y.toDouble() / imageY - 0.5,
                             )
                         ).toVector3()

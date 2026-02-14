@@ -91,6 +91,10 @@ class Planet(val seed: Int, val size: Int) {
         }
     }
 
+    val pointNemo by memo({ tectonicAge }) {
+        planetTiles.values.minBy { it.continentiality }
+    }
+
     val waterCoverage by memo({ tectonicAge }) {
         planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
     }
