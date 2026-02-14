@@ -136,7 +136,7 @@ class Gui() : Node() {
                 "map.png",
                 450,
                 225,
-                useKriging = true,
+                useKriging = false,
                 Main.instance.planet.topology.averageRadius * 1.5
             ) { tile: PlanetTile -> Main.instance.planetRenderer.getColor(tile) }
             GD.print("Image created")
