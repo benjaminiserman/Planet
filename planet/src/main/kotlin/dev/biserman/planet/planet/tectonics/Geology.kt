@@ -1,7 +1,12 @@
 package dev.biserman.planet.planet.tectonics
 
+import dev.biserman.planet.planet.NoiseMaps
+import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.things.Concept
 import dev.biserman.planet.things.Stone
+import dev.biserman.planet.utils.WeightedBag
+import dev.biserman.planet.utils.weightedBagOf
+import kotlin.random.Random
 
 enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Concept> = emptyList()) {
     AlluvialDeposition(StoneType.Sedimentary, listOf(Concept.RIVER)),
@@ -16,6 +21,12 @@ enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Conce
     Meteoric(StoneType.Meteoric, listOf(Concept.COMET));
 }
 
+data class StonePlacement(
+    val type: StonePlacementType,
+    val specialOptions: List<Pair<Stone, StonePlacementCondition>>,
+    val defaultOption: Stone
+)
+
 enum class StoneType {
     Sedimentary,
     Metamorphic,
@@ -23,13 +34,72 @@ enum class StoneType {
     Meteoric
 }
 
-data class StonePlacement(var stone: Stone, var height: Double)
-class StratigraphicColumn(val column: MutableList<StonePlacement>) {
+interface StonePlacementCondition {
+    fun canPlace(planetTile: PlanetTile): Boolean
+
+    class MantleConvectionMagnitudeAbove(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) =
+            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() > threshold
+    }
+
+    class MantleConvectionMagnitudeBelow(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) =
+            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() < threshold
+    }
+
+    class EssenceAbove(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) =
+            planetTile.planet.noise.essence.sample3d(planetTile.tile.position) < threshold
+    }
+
+    class LocalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile): Boolean =
+            planetTile.planet.noise.hotspots.sampleAt(planetTile) > threshold
+    }
+
+    class GlobalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile): Boolean = planetTile.planet.hotspotActivity > threshold
+    }
+
+    class GlobalHotspotActivityBelow(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile): Boolean = planetTile.planet.hotspotActivity < threshold
+    }
+
+    class WaterCoverageAbove(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.waterCoverage > threshold
+    }
+
+    class WaterCoverageBelow(val threshold: Double) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.waterCoverage < threshold
+    }
+
+    class ContinentialityAbove(val threshold: Int) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality > threshold
+    }
+
+    class ContinentialityBelow(val threshold: Int) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality < threshold
+    }
+
+    class ContinentialityAround(val center: Int, val distance: Int): StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality in (center - distance)..(center + distance)
+    }
+
+    companion object {
+        val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
+            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 0
+        )
+    }
+}
+
+
+data class StoneLayer(var stone: Stone, var height: Double)
+class StratigraphicColumn(val column: MutableList<StoneLayer>) {
     fun addTop(stone: Stone, height: Double) {
         if (stone == column.first().stone) {
             column[0].height += height
         } else {
-            column.add(0, StonePlacement(stone, height))
+            column.add(0, StoneLayer(stone, height))
         }
     }
 
@@ -37,7 +107,7 @@ class StratigraphicColumn(val column: MutableList<StonePlacement>) {
         if (stone == column.last().stone) {
             column[column.size - 1].height += height
         } else {
-            column.add(StonePlacement(stone, height))
+            column.add(StoneLayer(stone, height))
         }
     }
 
@@ -62,7 +132,7 @@ class StratigraphicColumn(val column: MutableList<StonePlacement>) {
         while (i < column.size) {
             val regionTop = cumulativeHeight
             val regionBottom = cumulativeHeight + column[i].height
-            
+
             // Check if this layer overlaps with the transmutation region
             if (regionBottom <= upperBound || regionTop >= lowerBound) {
                 // Layer is completely outside bounds - skip it
@@ -85,7 +155,7 @@ class StratigraphicColumn(val column: MutableList<StonePlacement>) {
                 val withinHeight = regionBottom - upperBound
 
                 layer.height = aboveHeight
-                column.add(i + 1, StonePlacement(mutationFn(layer.stone), withinHeight))
+                column.add(i + 1, StoneLayer(mutationFn(layer.stone), withinHeight))
 
                 cumulativeHeight += aboveHeight
                 i++
@@ -97,7 +167,7 @@ class StratigraphicColumn(val column: MutableList<StonePlacement>) {
 
                 layer.height = withinHeight
                 layer.stone = mutationFn(layer.stone)
-                column.add(i + 1, StonePlacement(layer.stone, belowHeight))
+                column.add(i + 1, StoneLayer(layer.stone, belowHeight))
 
                 cumulativeHeight += withinHeight
                 i++
@@ -109,8 +179,8 @@ class StratigraphicColumn(val column: MutableList<StonePlacement>) {
                 val belowHeight = regionBottom - lowerBound
 
                 layer.height = aboveHeight
-                column.add(i + 1, StonePlacement(mutationFn(layer.stone), withinHeight))
-                column.add(i + 2, StonePlacement(layer.stone, belowHeight))
+                column.add(i + 1, StoneLayer(mutationFn(layer.stone), withinHeight))
+                column.add(i + 2, StoneLayer(layer.stone, belowHeight))
 
                 cumulativeHeight += aboveHeight
                 i++

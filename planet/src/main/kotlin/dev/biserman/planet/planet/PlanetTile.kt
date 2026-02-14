@@ -25,8 +25,10 @@ import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.memo
+import godot.api.Time
 import godot.core.Color
 import godot.core.Vector3
+import godot.global.GD
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.absoluteValue

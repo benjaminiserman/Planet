@@ -23,12 +23,6 @@ class Main : Node() {
 	override fun _ready() {
 		instance = this
 
-		Concept.entries.forEach {
-			GD.print(it.prettyPrint())
-		}
-
-		return
-
 		val newPlanet = Planet(seed = 3, size = 35)
 		GD.print("tiles: ${newPlanet.topology.tiles.size}")
 		GD.print("average radius: ${newPlanet.topology.averageRadius}, area: ${newPlanet.topology.averageArea}")
