@@ -10,8 +10,10 @@ import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.memo
 import godot.common.util.lerp
 import godot.core.Color
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.absoluteValue
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 
 class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefault: Boolean) :
@@ -37,16 +39,8 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
 
     fun slopeScale(tile: PlanetTile): Double {
         val contiguousSlope = tile.prominence
-        val nonContiguousSlope = tile.nonContiguousSlope
-        return max(
-            if (contiguousSlope.isNaN()) 0.0
-            else contiguousSlope
-                .scaleAndCoerceIn(0.0..1000.0, 0.0..1.0),
-            if (nonContiguousSlope.isNaN()) 0.0
-            else 1 - nonContiguousSlope
-                .scaleAndCoerceIn(0.0..200.0, 0.0..1.0)
-                .pow(2)
-        )
+        return if (contiguousSlope.isNaN()) 0.0
+        else contiguousSlope.scaleAndCoerceIn(0.0..2500.0, 0.0..1.0).pow(0.75)
     }
 
     fun hue(tile: PlanetTile) = when (getMode(tile)) {
@@ -92,16 +86,33 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
         val tile = planetTile.tile
         val hue = hue(planetTile)
 
-        yield(Color.fromHsv(hue, saturation(planetTile), value(planetTile), 1.0))
-
-        yieldAll((0..<tile.corners.size).map {
-            val corner = tile.corners[it]
-            val color = Color.fromHsv(
-                averageAroundPoint(corner, planetTile) { tile -> hue(tile) },
-                averageAroundPoint(corner, planetTile) { tile -> saturation(tile) },
-                averageAroundPoint(corner, planetTile) { tile -> value(tile) },
+//        val color = Color.fromHsv(hue, saturation(planetTile), value(planetTile), 1.0)
+        val biomeColor = planetTile.koppen.getOrNull()?.terrainColor
+            ?.run { Color.fromHsv(h, min(1.0, s * 1.2), v, a) } ?: Color.fromHsv(0.25, 0.9, 0.15, 1.0)
+        val color = when (getMode(planetTile)) {
+            RenderMode.BIOME -> biomeColor.lerp(
+                Color.fromHsv(0.06, min(biomeColor.s, 0.33), 0.5, 1.0),
+                min(0.75, slopeScale(planetTile))
+            )
+            RenderMode.SNOW -> Color.fromHsv(0.0, 0.0, 1.0, 1.0)
+            RenderMode.WATER -> Color.fromHsv(
+                0.65,
+                0.9,
+                planetTile.elevation.adjustRange(-6000.0..planetRenderer.planet.seaLevel, 0.05..0.2),
                 1.0
             )
+        }
+
+        yield(color)
+
+        yieldAll((0..<tile.corners.size).map {
+//            val corner = tile.corners[it]
+//            val color = Color.fromHsv(
+//                averageAroundPoint(corner, planetTile) { tile -> hue(tile) },
+//                averageAroundPoint(corner, planetTile) { tile -> saturation(tile) },
+//                averageAroundPoint(corner, planetTile) { tile -> value(tile) },
+//                1.0
+//            )
 
             color
         })

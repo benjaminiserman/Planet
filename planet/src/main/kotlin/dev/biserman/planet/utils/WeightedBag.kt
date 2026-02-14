@@ -1,13 +1,12 @@
 package dev.biserman.planet.utils
 
+import dev.biserman.planet.utils.WeightedBag.Companion.toWeightedBag
 import dev.biserman.planet.utils.WeightedBag.WeightedBagEntry
 import kotlin.random.Random
 
+fun <U> weightedBagOf(vararg items: Pair<U, Number>): WeightedBag<U> = items.toList().toWeightedBag()
 
-fun <U> Iterable<U>.toWeightedBag(random: Random, weightFn: (U) -> Number): WeightedBag<U> =
-    WeightedBag(random, this.map { WeightedBagEntry(it, weightFn(it).toDouble()) }.toMutableList())
-
-class WeightedBag<T>(val random: Random, private val entries: MutableList<WeightedBagEntry<T>> = mutableListOf()) {
+class WeightedBag<T> private constructor(private val entries: MutableList<WeightedBagEntry<T>> = mutableListOf()) {
     var weightSum = entries.sumOf { it.weight }
 
     data class WeightedBagEntry<T>(val item: T, val weight: Double)
@@ -17,7 +16,7 @@ class WeightedBag<T>(val random: Random, private val entries: MutableList<Weight
         entries.add(WeightedBagEntry(item, weight.toDouble()))
     }
 
-    fun grab(): T? {
+    fun grab(random: Random): T? {
         val r = random.nextDouble(weightSum)
         var runningSum = 0.0
         for (entry in entries) {
@@ -32,4 +31,15 @@ class WeightedBag<T>(val random: Random, private val entries: MutableList<Weight
     }
 
     val size get() = entries.size
+
+    companion object {
+        fun <U, V> Iterable<U>.toWeightedBag(keyFn: (U) -> V, weightFn: (U) -> Number): WeightedBag<V> =
+            WeightedBag(this.map { WeightedBagEntry(keyFn(it), weightFn(it).toDouble()) }.toMutableList())
+
+        fun <U> Iterable<U>.toWeightedBag(weightFn: (U) -> Number): WeightedBag<U> =
+            WeightedBag(this.map { WeightedBagEntry(it, weightFn(it).toDouble()) }.toMutableList())
+
+        fun <U> Iterable<Pair<U, Number>>.toWeightedBag(): WeightedBag<U> =
+            WeightedBag(this.map { WeightedBagEntry(it.first, it.second.toDouble()) }.toMutableList())
+    }
 }

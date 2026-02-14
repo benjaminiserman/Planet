@@ -18,7 +18,7 @@ class PlanetStats {
         Stat(
             "% tiles above water",
             range = 0.0..100.0
-        ) { planet -> planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toDouble() * 100 },
+        ) { planet -> planet.waterCoverage * 100 },
         Stat("average tile crust age", yLabel = "Million years") { planet ->
             planet.planetTiles.values.map { planet.tectonicAge - it.formationTime }
                 .average()
@@ -40,14 +40,7 @@ class PlanetStats {
         Stat("average slope") { planet -> planet.planetTiles.values.map { it.slope }.average() },
         Stat("max elevation") { planet -> planet.planetTiles.values.maxOf { it.elevation } },
         Stat("min elevation") { planet -> planet.planetTiles.values.minOf { it.elevation } },
-        Stat("hotspot activity") { planet ->
-            planet.planetTiles.values.sumOf {
-                planet.noise.hotspots.sample4d(
-                    it.tile.position,
-                    planet.tectonicAge.toDouble()
-                )
-            }
-        },
+        Stat("hotspot activity") { planet -> planet.hotspotActivity },
     )
 
     val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }
