@@ -4,6 +4,7 @@ import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import godot.core.Color
 import godot.global.GD
+import kotlin.jvm.optionals.getOrNull
 
 enum class MonthIndex {
     JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC;
@@ -58,6 +59,19 @@ interface ClimateClassifier {
             hersfeldt.entries.sortedByDescending { it.value.size }.forEach { (key, values) ->
                 GD.print(" - ${values.size} (${(values.size * 100.0 / planet.planetTiles.size).formatDigits(1)}%) - ${key.id} (${key.name})")
             }
+
+            GD.print("==============================")
+            val arableBiomes = setOf("HAM", "HT", "HM", "TU", "TQ", "CM", "CAM", "CT", "CA", "CD", "EM", "ET")
+            val totalLand = planet.planetTiles.values
+                .filter { it.isAboveWater }
+            val arableLand = totalLand
+                .mapNotNull { it.hersfeldt.getOrNull() }
+                .count { biome ->
+                    arableBiomes.any { biome.id.startsWith(it) }
+                }
+            val percentArable = arableLand * 100.0 / totalLand.size
+
+            GD.print("Estimated % of arable land: ${percentArable.formatDigits()}%")
         }
     }
 }

@@ -47,6 +47,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistu
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectLatitude
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectScalar
@@ -228,7 +229,8 @@ object ClimateSimulation {
             else (elevation - airPressureElevationFallStart) * airPressureElevationFallStrength
 
         val itczAdjustment = itczAirPressureStrength *
-                ((itczAirPressureMaxDistance - (planet.itczDistanceMap[tileId] ?: return 0.0)) / itczAirPressureMaxDistance)
+                ((itczAirPressureMaxDistance - (planet.itczDistanceMap[tileId]
+                    ?: return 0.0)) / itczAirPressureMaxDistance)
                     .coerceIn(0.0..1.0)
 
         return basePressure + lerp(
@@ -247,10 +249,8 @@ object ClimateSimulation {
                     max(0.0, 1 - (tile.continentiality / equatorMoistureEffectMaxContinentiality))
             val ferrelEffect = ferrelMoistureEffectScalar *
                     tile.insolation.pow(ferrelMoistureEffectInsolationExp) *
-                    max(
-                        0.0,
-                        1 - ((geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue) / ferrelMoistureEffectMaxDistance
-                    ) *
+                    (1 - (geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue / ferrelMoistureEffectMaxDistance)
+                        .coerceIn(0.0, ferrelMoistureEffectMax) *
                     max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
