@@ -56,7 +56,7 @@ object ClimateSimulationGlobals {
     var airPressureElevationFallStrength = 0.001 // rate of air pressure fall, mb/m
 
     var itczAirPressureStrength = -12.5 // maximum impact of the ITCZ on air pressure in mb
-    var itczAirPressureMaxDistance = 15.0 // max distance (in tiles) at which the ITCZ effects air pressure
+    var itczAirPressureMaxDistance = 12.5 // max distance (in tiles) at which the ITCZ effects air pressure
 
     // WIND
 
@@ -66,14 +66,14 @@ object ClimateSimulationGlobals {
 
     // TEMPERATURE
 
-    var baseTemperature = 240.15 // °K, base temperature of land
-    var baseTemperatureInsolationScalar = 83.0 // °K, increasing by 1°K ≈ 0.9°K increase in tropical summer temperatures
+    var baseTemperature = 244.0 // °K, base temperature of land
+    var baseTemperatureInsolationScalar = 78.0 // °K, increasing by 1°K ≈ 0.9°K increase in tropical summer temperatures
 
-    var oceanMinBaseTemp = 271.34 // °K, freezing temperature of salt water
-    var oceanBaseTemp = 248.55 // °K, increasing by 1°K ≈ 1°K increase in global ocean temperatures
-    var oceanNowVsAnnualInsolationLerp = 0.66 // ∈[0,1], higher varues -> less seasonality
+    var oceanMinBaseTemp = 256.0 // °K, lowest possible ocean temperature
+    var oceanBaseTemp = 250.25 // °K, increasing by 1°K ≈ 1°K increase in global ocean temperatures
+    var oceanNowVsAnnualInsolationLerp = 0.5 // ∈[0,1], higher varues -> less seasonality
     var oceanNowVsAnnualInsolationLerpPow = 0.75 // higher exp -> less insolation & more seasonality
-    var oceanInsolationScale = 57.5 // °K, increasing by 1°K ≈ 1°K increase in tropical ocean temperatures
+    var oceanInsolationScale = 58.0 // °K, increasing by 1°K ≈ 1°K increase in tropical ocean temperatures
 
     var oceanWaterVsLandTemperatureLerp = 0.05 // lower varues = more oceanic, higher varues = more landlike temperature
     var shoreWaterVsLandTemperatureLerpExp = 0.5 // higher exp -> peninsularity matters more for temperature moderation
@@ -82,27 +82,27 @@ object ClimateSimulationGlobals {
     var inlandWaterVsLandTemperatureContinentialityScalar = 0.5 // lerp scalar for inland tiles based on continentiality
 
     var dryLapseRate = -0.0098 // °C/meter
-    var dryLapseRateScalar = 0.5 // linear scalar on dry lapse rate
+    var dryLapseRateScalar = 0.66 // linear scalar on dry lapse rate
 
     // the furthest away in tiles from the shore that ocean currents can affect temperature
     var maxOceanCurrentTemperatureContinentiality = 5.0
-    var warmCurrentTemperatureStrength = 6.5 // °K, the max temperature increase from a warm current
+    var warmCurrentTemperatureStrength = 1.5 // °K, the max temperature increase from a warm current
     var warmCurrentTemperatureDistance = 3.0 // the furthest away that a warm current can affect temperature (in tiles)
     var coolCurrentTemperatureStrength = -1.0 // °K, the max temperature decrease from a cool current
     var coolCurrentTemperatureDistance = 3.0 // the furthest away that a cool current can affect temperature (in tiles)
 
     var moistureCoolingTargetTemperature = 273.15 // °K, the temperature that added moisture warms/cools towards
-    var moistureCoolingExp = 1.0 // higher exp -> less moisture cooling & faster moisture cooling drop-off
+    var moistureCoolingExp = 0.5 // higher exp -> less moisture cooling & faster moisture cooling drop-off
     var maxMoistureCoolingLerp = 0.38 // max % that moisture can cool temperature towards target
     var maxMoistureForCooling = 3.0 // added moisture above this varue has no impact on cooling
 
     // MOISTURE
 
     var maxMoistureSteps = 50 // the maximum amount of steps the moisture simulator can run
-    var startingMoistureMultiplier = 0.9 // multiply all starting moisture by this varue
+    var startingMoistureMultiplier = 1.0 // multiply all starting moisture by this varue
     var minStartingMoisture = 0.15 // minimum starting moisture
     var maxStartingMoisture = 3.0 // maximum starting moisture
-    var oceanMoistureInsolationExp = 1.2 // higher exp -> less ocean moisture & most seasonality
+    var oceanMoistureInsolationExp = 20.0 // higher exp -> less ocean moisture & most seasonality
 
     // awful hack to help moisture propagate into continental interiors
     var moisturePropagationMultiplier = 1.05 // VERY sensitive. can cause exponential turbo-rain
@@ -113,14 +113,15 @@ object ClimateSimulationGlobals {
     var itczMoistureScalar = 3.0 // how much is moisture multiplied by directly under the ITCZ
 
     var equatorMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for equator moisture effect
-    var equatorMoistureEffectScalar = 2.8 // maximum amount that equator can effect moisture
+    var equatorMoistureEffectScalar = 7.0 // maximum amount that equator can effect moisture
     var equatorMoistureEffectInsolationExp = 4.0 // higher exp -> lower moisture effect at equator & faster drop-off
     var equatorMoistureEffectMaxDistance = 5.0 // max distance that equatorial updraft effects moisture, in °latitude
 
     var ferrelMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for ferrel moisture effect
-    var ferrelMoistureEffectScalar = 0.25 // maximum amount that ferrel cell updraft can effect moisture
-    var ferrelMoistureEffectInsolationExp = 0.4 // higher exp -> lower ferrel moisture effect & faster drop-off
-    var ferrelMoistureEffectMaxDistance = 17.5 // max distance that ferrel cell updraft effects moisture
+    var ferrelMoistureEffectScalar = 2.3 // exponential falloff rate for ferrel moisture effect
+    var ferrelMoistureEffectMax = 0.25 // maximum amount that ferrel cell updraft can effect moisture
+    var ferrelMoistureEffectInsolationExp = 0.75 // higher exp -> lower ferrel moisture effect & faster drop-off
+    var ferrelMoistureEffectMaxDistance = 15.0 // max distance that ferrel cell updraft effects moisture
     var ferrelMoistureEffectLatitude = 60.0 // °latitude at which ferrel moisture effect is centered
 
     var landPrecipitationScalar = 1.0 // scalar for all land precipitation
