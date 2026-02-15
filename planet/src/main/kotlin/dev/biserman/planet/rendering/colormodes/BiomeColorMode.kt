@@ -40,7 +40,7 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefau
     fun slopeScale(tile: PlanetTile): Double {
         val contiguousSlope = tile.prominence
         return if (contiguousSlope.isNaN()) 0.0
-        else contiguousSlope.scaleAndCoerceIn(0.0..2500.0, 0.0..1.0).pow(0.75)
+        else contiguousSlope.scaleAndCoerceIn(0.0..2500.0, 0.0..1.0).pow(1.0)
     }
 
     fun hue(tile: PlanetTile) = when (getMode(tile)) {

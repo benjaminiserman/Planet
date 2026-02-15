@@ -13,12 +13,14 @@ class SimpleDoubleColorMode(
     val getFn: (PlanetTile) -> Double?,
 ) : PlanetColorMode(planetRenderer) {
     override fun colorsFor(planetTile: PlanetTile): Sequence<Color> = sequence {
-        yield(colorFn(getFn(planetTile)))
+        val color = colorFn(getFn(planetTile))
+        yield(color)
 
         yieldAll((0..<planetTile.tile.corners.size).map {
-            val validTilesValues =
-                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.getTile(tile)) }
-            colorFn(validTilesValues.average())
+//            val validTilesValues =
+//                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.getTile(tile)) }
+//            colorFn(validTilesValues.average())
+            color
         })
     }
 

@@ -205,10 +205,10 @@ object ClimateSimulation {
                             (coolCurrentAirPressureContinentialityCenter - continentiality).absoluteValue
                 ) * (1.0 / coolCurrentAirPressureMaxContinentiality)
             val warmCurrentStrength =
-                (warmCurrentAirPressureMaxDistance - planet.warmCurrentDistanceMap[tileId]!!)
+                (warmCurrentAirPressureMaxDistance - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0))
                     .scaleAndCoerce01(0.0..warmCurrentAirPressureMaxDistance) * warmContinentialityFactor * insolation
             val coolCurrentStrength =
-                (coolCurrentAirPressureMaxDistance - planet.coolCurrentDistanceMap[tileId]!!)
+                (coolCurrentAirPressureMaxDistance - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0))
                     .scaleAndCoerce01(0.0..coolCurrentAirPressureMaxDistance) * coolContinentialityFactor * (1 - insolation)
             warmCurrentStrength * warmCurrentAirPressureStrength + coolCurrentStrength * coolCurrentAirPressureStrength
         }
@@ -228,7 +228,7 @@ object ClimateSimulation {
             else (elevation - airPressureElevationFallStart) * airPressureElevationFallStrength
 
         val itczAdjustment = itczAirPressureStrength *
-                ((itczAirPressureMaxDistance - planet.itczDistanceMap[tileId]!!) / itczAirPressureMaxDistance)
+                ((itczAirPressureMaxDistance - (planet.itczDistanceMap[tileId] ?: return 0.0)) / itczAirPressureMaxDistance)
                     .coerceIn(0.0..1.0)
 
         return basePressure + lerp(

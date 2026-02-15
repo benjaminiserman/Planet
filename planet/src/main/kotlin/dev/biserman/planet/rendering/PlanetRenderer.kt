@@ -29,6 +29,7 @@ import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.measureTime
@@ -209,7 +210,14 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this,
             "moisture",
             visibleByDefault = false,
-            colorFn = redWhenNull { if (it == 0.0) Color.yellow else Color(0.0, 0.0, it, 1.0) }) { it.moisture },
+            colorFn = redWhenNull {
+                if (it == 0.0) Color.yellow else Color(
+                    0.0,
+                    0.0,
+                    min(1.0, it),
+                    1.0
+                )
+            }) { it.moisture },
         SimpleDoubleColorMode(
             this,
             "hotspots",
@@ -314,7 +322,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             if (current.temperature > 0) Color.red * current.temperature
             else Color.blue * current.temperature
         },
-        SimpleColorMode(this, "grey_land", visibleByDefault = false) { if (it.isAboveWater) Color.dimGray else Color.black },
+        SimpleColorMode(
+            this,
+            "grey_land",
+            visibleByDefault = false
+        ) { if (it.isAboveWater) Color.dimGray else Color.black },
         SimpleColorMode(this, "debug_color", visibleByDefault = false) { it.debugColor },
     )
 
