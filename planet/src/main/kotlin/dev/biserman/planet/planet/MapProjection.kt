@@ -53,7 +53,7 @@ object MapProjections {
                                 y.toDouble() / imageY - 0.5,
                             )
                         ).toVector3()
-                    ).toARGB32()
+                    ).clamp(Color.black, Color.white).toARGB32()
                 )
             }
         }
