@@ -14,6 +14,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.min
+import kotlin.math.max
 import kotlin.math.pow
 
 class OceanCurrent(val planetTile: PlanetTile, val direction: Vector3, val temperature: Double)
@@ -48,8 +49,8 @@ object OceanCurrents {
         val equatorialCellIndex = cells / 2
         val bands = (0..<cells).map { i ->
             OceanBand(
-                bottomLatitudeDegrees = -75 + i * degreesPerCell,
-                topLatitudeDegrees = -75 + (i + 1) * degreesPerCell,
+                bottomLatitudeDegrees = max(-75 + i * degreesPerCell, -60.0),
+                topLatitudeDegrees = min(-74 + (i + 1) * degreesPerCell, 60.0),
                 polarity = when {
                     i == equatorialCellIndex -> 0.0
                     abs(equatorialCellIndex - i) % 2 == 1 -> -1.0

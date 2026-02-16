@@ -39,6 +39,8 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentMo
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentMoistureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.currentMoistureAverageInsolationExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.currentTemperatureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRate
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRateScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectInsolationExp
@@ -72,6 +74,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.moisturePropa
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanBaseTemp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanInsolationScale
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMinBaseTemp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInslationNowVsAnnualLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerpPow
@@ -197,7 +200,7 @@ object ClimateSimulation {
                 max(
                     0.0,
                     warmCurrentAirPressureMaxContinentiality -
-                            (warmCurrentAirPressureContinentialityCenter - continentiality)
+                            (warmCurrentAirPressureContinentialityCenter - continentiality).absoluteValue
                 ) * (1.0 / warmCurrentAirPressureMaxContinentiality)
             val coolContinentialityFactor =
                 max(
@@ -258,19 +261,20 @@ object ClimateSimulation {
                 val oceanCurrentContinentialityFactor = if (tile.continentiality >= 0) 1.0 else {
                     max(0.0, 1.0 + (tile.continentiality + 1) * oceanCurrentContinentialityScalar)
                 }
+                val oceanMoistureInsolation = lerp(tile.insolation, tile.averageInsolation, oceanMoistureInslationNowVsAnnualLerp).pow(oceanMoistureInsolationExp)
                 val warmCurrentEffect =
-                    warmCurrentMoistureStrength * tile.insolation * oceanCurrentContinentialityFactor *
+                    warmCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(currentMoistureAverageInsolationExp) * oceanCurrentContinentialityFactor *
                             max(
                                 warmCurrentMoistureDistance - (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
                                     ?: warmCurrentMoistureDistance), 0.0
                             )
                 val coolCurrentEffect =
-                    coolCurrentMoistureStrength * tile.insolation * oceanCurrentContinentialityFactor *
+                    coolCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(currentMoistureAverageInsolationExp) * oceanCurrentContinentialityFactor *
                             max(
                                 coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
                                     ?: coolCurrentMoistureDistance), 0.0
                             )
-                ((tile.insolation.pow(oceanMoistureInsolationExp) + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier)
+                ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier)
                     .coerceIn(minStartingMoisture..maxStartingMoisture)
             }
             equatorEffect + ferrelEffect + oceanEffect
@@ -349,12 +353,12 @@ object ClimateSimulation {
                 warmCurrentTemperatureStrength * max(
                     warmCurrentTemperatureDistance - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
-                ) * insolation * (1.0 - averageInsolation) * oceanCurrentContinentialityFactor
+                ) * insolation * averageInsolation.pow(currentTemperatureAverageInsolationExp) * oceanCurrentContinentialityFactor
             val coolCurrentAdjustment =
                 coolCurrentTemperatureStrength * max(
                     coolCurrentTemperatureDistance - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
-                ) * insolation * averageInsolation * oceanCurrentContinentialityFactor
+                ) * insolation * averageInsolation.pow(currentTemperatureAverageInsolationExp) * oceanCurrentContinentialityFactor
 
             val elevationAdjustment = dryLapseRate * dryLapseRateScalar * max(0.0, elevation)
 
