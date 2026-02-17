@@ -8,6 +8,7 @@ import dev.biserman.planet.geometry.scaleAndCoerceUnit
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.climate.ClimateClassification
+import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
@@ -277,7 +278,7 @@ class PlanetTile(
     fun getInfoText(): String = """
         elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
         temperature: ${temperature.formatDigits()}
-        moisture: ${moisture.formatDigits(4)} (${(moisture * 2500).toInt()}mm)
+        moisture: ${moisture.formatDigits(4)} (${(ClimateSimulation.toPrecipitation(moisture) / 12.0).toInt()}mm)
         movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()})
         spring displacement: ${springDisplacement.formatDigits()}

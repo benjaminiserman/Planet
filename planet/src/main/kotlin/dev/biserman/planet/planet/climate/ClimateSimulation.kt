@@ -29,6 +29,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureSe
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureSeasonalScalarMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureSeasonalScalarMin
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureSolarDeclinationScalar
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.averageInsolationMoistureCutoff
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.baseTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.baseTemperatureInsolationScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentAirPressureContinentialityCenter
@@ -255,6 +256,7 @@ object ClimateSimulation {
                     (1 - (geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue / ferrelMoistureEffectMaxDistance)
                         .coerceIn(0.0, ferrelMoistureEffectMax) *
                     max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
+            val polarEffect = (tile.averageInsolation / averageInsolationMoistureCutoff).coerceIn(0.0..1.0)
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
                 val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentMoistureContinentiality
@@ -274,10 +276,10 @@ object ClimateSimulation {
                                 coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
                                     ?: coolCurrentMoistureDistance), 0.0
                             )
-                ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * startingMoistureMultiplier)
-                    .coerceIn(minStartingMoisture..maxStartingMoisture)
+
+                ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * polarEffect)
             }
-            equatorEffect + ferrelEffect + oceanEffect
+            ((equatorEffect + ferrelEffect + oceanEffect) * startingMoistureMultiplier).coerceIn(minStartingMoisture..maxStartingMoisture)
         }
         val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
 
@@ -337,8 +339,8 @@ object ClimateSimulation {
                 .map { neighbor -> finalMoisture[neighbor] ?: 0.0 }
                 .average()
         }
+        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()}")
     }
-
     val (PlanetTile).averageTemperature: Double
         get() {
             val geoPoint = tile.position.toGeoPoint()
@@ -549,4 +551,6 @@ object ClimateSimulation {
         }
         return path
     }
+
+    fun toPrecipitation(moisture: Double) = moisture * 2500
 }

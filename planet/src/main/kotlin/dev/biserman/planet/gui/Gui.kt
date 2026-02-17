@@ -177,8 +177,8 @@ class Gui() : Node() {
                 onClick(it)
             }).also {
                 it.text = toggle
-                it.setPosition(Vector2(0, 13 * buttons.size + 25))
-                it.scale = Vector2(0.75, 0.75)
+                it.setPosition(Vector2(0, 10 * buttons.size + 25))
+                it.scale = Vector2(0.6, 0.6)
                 it.setVisible(settingsVisible)
                 instance.addChild(it)
             }
