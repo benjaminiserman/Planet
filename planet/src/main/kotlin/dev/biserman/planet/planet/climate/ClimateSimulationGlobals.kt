@@ -105,6 +105,7 @@ object ClimateSimulationGlobals {
     var maxStartingMoisture = 3.0 // maximum starting moisture
     var oceanMoistureInsolationExp = 3.0 // higher exp -> less ocean moisture & most seasonality
     var oceanMoistureInsolationNowVsAnnualLerp = 0.66
+    var averageInsolationMoistureCutoff = 0.5
 
     // awful hack to help moisture propagate into continental interiors
     var moisturePropagationMultiplier = 1.05 // VERY sensitive. can cause exponential turbo-rain
