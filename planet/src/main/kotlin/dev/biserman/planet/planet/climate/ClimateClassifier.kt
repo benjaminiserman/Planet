@@ -24,13 +24,24 @@ data class ClimateDatumMonth(
     val averageTemperature: Double, // avgT, °C
     val insolation: Double, // W/m²
     val precipitation: Double, // mm
-    val minTemperature: Double? = null, // minT, °C
-    val maxTemperature: Double? = null, // maxT, °C
-)
+//    val minTemperature: Double? = null, // minT, °C
+//    val maxTemperature: Double? = null, // maxT, °C
+) {
+
+    companion object {
+        fun Iterable<ClimateDatumMonth>.average(): ClimateDatumMonth {
+            return ClimateDatumMonth(
+                this.map { it.averageTemperature }.average(),
+                this.map { it.insolation }.average(),
+                this.map { it.precipitation }.average(),
+            )
+        }
+    }
+}
 
 class ClimateDatum(val tileId: Int, val months: List<ClimateDatumMonth>) {
     val averageTemperature = months.map { it.averageTemperature }.average()
-    val annualPrecipitation = months.map { it.precipitation }.sum()
+    val annualPrecipitation = months.sumOf { it.precipitation }
     val temperatureRange = months.maxOf { it.averageTemperature } - months.minOf { it.averageTemperature }
     val precipitationRange = months.maxOf { it.precipitation } - months.minOf { it.precipitation }
 }
