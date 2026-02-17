@@ -57,6 +57,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistur
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalarMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczAirPressureMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczAirPressureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczMoistureExp
@@ -413,7 +414,7 @@ object ClimateSimulation {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
-                    min(continentiality * inlandWaterVsLandTemperatureContinentialityScalar, 1.0)
+                    min(continentiality * inlandWaterVsLandTemperatureContinentialityScalar, inlandWaterVsLandTemperatureContinentialityScalarMax)
                 )
             }
 
