@@ -83,6 +83,7 @@ object ClimateSimulationGlobals {
     var shoreWaterVsLandTemperatureLerpMin = 0.05 // min lerp like above but for shorelines, modulated by peninsularity
     var shoreWaterVsLandTemperatureLerpMax = 0.1 // max lerp like above but for shorelines, modulated by peninsularity
     var inlandWaterVsLandTemperatureContinentialityScalar = 0.2 // lerp scalar for inland tiles based on continentiality
+    var inlandWaterVsLandTemperatureContinentialityScalarMax = 1.0
 
     var dryLapseRate = -0.0098 // °C/meter
     var dryLapseRateScalar = 0.66 // linear scalar on dry lapse rate
