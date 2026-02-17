@@ -71,6 +71,25 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         else -> Color.html("321954")
     }
 
+    // colors from: https://www.reddit.com/r/MapPorn/comments/140nta/world_average_yearly_rainfall_1007x432/
+    fun colorAnnualRainfall(precipitation: Double): Color = when (precipitation) {
+        in 0.0..24.5 -> Color.html("E6E6E6")
+        in 24.5..74.5 -> Color.html("BEBEBE")
+        in 74.5..124.5 -> Color.html("969696")
+        in 124.5..224.5 -> Color.html("C4706E")
+        in 224.5..274.5 -> Color.html("C8B396")
+        in 274.5..374.5 -> Color.html("FFC775")
+        in 374.5..474.5 -> Color.html("FFFF54")
+        in 474.5..724.5 -> Color.html("91FF99")
+        in 724.5..974.5 -> Color.html("00FF00")
+        in 974.5..1474.5 -> Color.html("40C738")
+        in 1474.5..2474.5 -> Color.html("0D9605")
+        in 2474.5..4974.5 -> Color.html("05705E")
+        in 4974.5..7474.5 -> Color.html("FF00FF")
+        in 7474.5..10004.5 -> Color.html("800080")
+        else -> Color.html("008AFF")
+    }
+
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
         SimpleDebugRenderer(parent, "tectonic_boundary_movement") { planet ->
@@ -218,6 +237,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     1.0
                 )
             }) { it.moisture },
+        SimpleColorMode(this, "annual_precipitation", visibleByDefault = false)
+        {
+            colorAnnualRainfall(
+                it.planet.climateMap[it.tileId]?.annualPrecipitation ?: return@SimpleColorMode Color.red
+            )
+        },
         SimpleDoubleColorMode(
             this,
             "hotspots",
