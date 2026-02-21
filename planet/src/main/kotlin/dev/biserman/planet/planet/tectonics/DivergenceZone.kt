@@ -85,6 +85,7 @@ class DivergenceZone(
                 divergenceStrength * divergedCrustLerp
             )
             newPlanetTile.springDisplacement = planet.getTile(tile).springDisplacement
+            newPlanetTile.stoneColumn.divergeColumn(newPlanetTile)
 
             return Pair(
                 newPlanetTile,

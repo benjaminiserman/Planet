@@ -20,6 +20,7 @@ import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
+import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.topology.Border
@@ -84,6 +85,9 @@ class PlanetTile(
     var waterFlow: Double = 0.0
 
     var debugColor: Color = Color.black
+
+    var accruedDeposit: Double = 0.0
+    var stoneColumn: StoneColumn = StoneColumn.default(planet)
 
     var tectonicPlate: TectonicPlate? = null
         set(value) {
@@ -173,6 +177,7 @@ class PlanetTile(
         this.erosionDelta = other.erosionDelta
         this.depositFlow = other.depositFlow
         this.waterFlow = other.waterFlow
+        this.accruedDeposit = other.accruedDeposit
     }
 
     fun planetInit() {
@@ -284,8 +289,9 @@ class PlanetTile(
         spring displacement: ${springDisplacement.formatDigits()}
         edge resistance: ${edgeResistance.formatDigits()}
         divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${planet.convergenceZones[tile.id]?.speed?.formatDigits() ?: 0.0}
+        subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tile.id] ?: 0.0).formatDigits()}
         erosion delta: ${erosionDelta.formatDigits()}m
+        accrued deposit: ${accruedDeposit.formatDigits()}m
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My
@@ -321,7 +327,7 @@ class PlanetTile(
         annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
         """.trimIndent() + "\n${
             climateDatum.months.mapIndexed { index, month ->
-                MonthIndex.values()[index].name to "${
+                MonthIndex.entries[index].name to "${
                     month.averageTemperature.formatDigits(1)
                 }°C, ${month.precipitation.toInt()}mm"
             }.joinToString("\n") { "  ${it.first}: ${it.second}" }

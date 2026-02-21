@@ -1,36 +1,12 @@
 package dev.biserman.planet.planet.tectonics
 
+import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.things.Concept
 import dev.biserman.planet.things.Stone
 import dev.biserman.planet.utils.weightedBagOf
+import kotlin.math.absoluteValue
 import kotlin.random.Random
-
-enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Concept> = emptyList()) {
-    AlluvialDeposition(StoneType.Sedimentary, listOf(Concept.RIVER)),
-    OceanicDeposition(StoneType.Sedimentary, listOf(Concept.OCEAN)),
-    MetamorphicAlluvial(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
-    MetamorphicOceanic(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
-    MetamorphicMantle(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
-    MetamorphicSubduction(StoneType.Metamorphic, listOf(Concept.MOUNTAIN)),
-    MetamorphicPrimordial(StoneType.Metamorphic, listOf(Concept.ANCIENT, Concept.DEEP, Concept.MOUNTAIN)),
-    MantleVolcanic(StoneType.Igneous, listOf(Concept.MAGMA)),
-    SubductionVolcanic(StoneType.Igneous, listOf(Concept.MAGMA)),
-    Primordial(StoneType.Igneous, listOf(Concept.ANCIENT, Concept.DEEP)),
-    Meteoric(StoneType.Meteoric, listOf(Concept.COMET));
-
-    val metamorphicForm get() = metamorphicMap[this]
-
-    companion object {
-        val metamorphicMap = mapOf(
-            AlluvialDeposition to MetamorphicAlluvial,
-            OceanicDeposition to MetamorphicOceanic,
-            MantleVolcanic to MetamorphicMantle,
-            SubductionVolcanic to MetamorphicSubduction,
-            Primordial to MetamorphicPrimordial
-        )
-    }
-}
 
 data class StonePlacement(
     val type: StonePlacementType,
@@ -40,71 +16,6 @@ data class StonePlacement(
     data class SpecialOption(val condition: StonePlacementCondition, val stone: Stone)
 }
 
-enum class StoneType {
-    Sedimentary,
-    Metamorphic,
-    Igneous,
-    Meteoric
-}
-
-interface StonePlacementCondition {
-    fun canPlace(planetTile: PlanetTile): Boolean
-
-    class MantleConvectionMagnitudeAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() > threshold
-    }
-
-    class MantleConvectionMagnitudeBelow(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() < threshold
-    }
-
-    class EssenceAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.essence.sample3d(planetTile.tile.position) < threshold
-    }
-
-    class LocalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile): Boolean =
-            planetTile.planet.noise.hotspots.sampleAt(planetTile) > threshold
-    }
-
-    class GlobalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile): Boolean = planetTile.planet.hotspotActivity > threshold
-    }
-
-    class GlobalHotspotActivityBelow(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile): Boolean = planetTile.planet.hotspotActivity < threshold
-    }
-
-    class WaterCoverageAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.waterCoverage > threshold
-    }
-
-    class WaterCoverageBelow(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.waterCoverage < threshold
-    }
-
-    class ContinentialityAbove(val threshold: Int) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality > threshold
-    }
-
-    class ContinentialityBelow(val threshold: Int) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality < threshold
-    }
-
-    class ContinentialityAround(val center: Int, val distance: Int) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.continentiality in (center - distance)..(center + distance)
-    }
-
-    companion object {
-        val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
-            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 0
-        )
-    }
-}
 
 data class StoneColumn(var surface: Stone, var middle: Stone, var deep: Stone) {
     fun getLayer(planetTile: PlanetTile, stonePlacementType: StonePlacementType): Stone {
@@ -124,11 +35,66 @@ data class StoneColumn(var surface: Stone, var middle: Stone, var deep: Stone) {
     fun erodeLayer(planetTile: PlanetTile) {
         surface = middle
         middle = deep
-        deep = planetTile.planet.worldKinds.defaultDeepStone
+    }
+
+    fun divergeColumn(planetTile: PlanetTile) {
+        val divergenceLayer = getLayer(planetTile, StonePlacementType.MantleVolcanic)
+        surface = divergenceLayer
+        middle = divergenceLayer
+        deep = divergenceLayer
     }
 
     fun tryTransmuteDeep(planetTile: PlanetTile) {
         val metamorphicForm = deep.placementType.metamorphicForm ?: return
         deep = getLayer(planetTile, metamorphicForm)
+    }
+
+    fun igneousIntrude(planetTile: PlanetTile) {
+        val contactMetamorphicForm = middle.placementType.metamorphicForm
+        if (contactMetamorphicForm != null) {
+            middle = getLayer(planetTile, contactMetamorphicForm)
+        }
+        deep = getLayer(planetTile, StonePlacementType.MantleVolcanic)
+    }
+
+    companion object {
+        fun default(planet: Planet) = StoneColumn(
+            planet.worldKinds.defaultSurfaceStone,
+            planet.worldKinds.defaultSurfaceStone,
+            planet.worldKinds.defaultDeepStone
+        )
+    }
+}
+
+object Geology {
+    fun simulateGeology(planet: Planet) {
+        // hotspot accretion is done in tryHotspotEruption
+        // divergence volcanism is done on tile creation
+        for (tile in planet.planetTiles.values) {
+            // alluvial & oceanic deposition
+            if (tile.accruedDeposit > 1000.0) {
+                val layer =
+                    if (tile.isAboveWater) StonePlacementType.AlluvialDeposition
+                    else StonePlacementType.OceanicDeposition
+                tile.stoneColumn.accreteLayer(tile, layer)
+            } else if (tile.accruedDeposit < -1000.0) {
+                tile.stoneColumn.erodeLayer(tile)
+            }
+
+            // orogenic metamorphosis
+            if ((tile.planet.convergenceZones[tile.tileId]
+                    ?.subductionStrengths[tile.tileId]
+                    ?.absoluteValue ?: 0.0) > 0.5
+            ) {
+                tile.stoneColumn.tryTransmuteDeep(tile)
+            }
+
+            // tectonic volcanism
+            if ((tile.planet.convergenceZones[tile.tileId]
+                    ?.subductionStrengths[tile.tileId] ?: 0.0) > 0.5
+            ) {
+                tile.stoneColumn.accreteLayer(tile, StonePlacementType.SubductionVolcanic)
+            }
+        }
     }
 }

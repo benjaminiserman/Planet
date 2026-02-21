@@ -15,7 +15,7 @@
   "backwardsWind": 0.007,
   "baseTemperature": 239.0,
   "baseTemperatureInsolationScalar": 86.5,
-  "climateSimulationSamplesPerMonth": 4,
+  "climateSimulationSamplesPerMonth": 1,
   "coolCurrentAirPressureContinentialityCenter": -3.0,
   "coolCurrentAirPressureMaxContinentiality": 5.0,
   "coolCurrentAirPressureMaxDistance": 6.0,

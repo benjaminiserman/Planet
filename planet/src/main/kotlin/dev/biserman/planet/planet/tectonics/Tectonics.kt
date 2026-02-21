@@ -445,6 +445,7 @@ object Tectonics {
             }
 
             planetTile.erosionDelta = planetTile.elevation - originalElevation
+            planetTile.accruedDeposit += planetTile.erosionDelta
             planetTile.depositFlow = deposits[planetTile]!!
             planetTile.waterFlow = waterFlow[planetTile]!!
         }

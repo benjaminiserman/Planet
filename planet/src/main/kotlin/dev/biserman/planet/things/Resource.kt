@@ -1,18 +1,15 @@
 package dev.biserman.planet.things
 
-import dev.biserman.planet.planet.tectonics.StonePlacementType
+import godot.core.Color
 
-class Resource(val components: ComponentSet<ResourceComponent>, val concepts: List<Concept>) : Kind() {
+class Resource(val components: ComponentSet<ResourceComponent>, val colors: List<Color>, override var concepts: List<Concept>) :
+    Kind(concepts) {
 
 }
 
-sealed interface ResourceComponent
-class Stone(
-    val acidityModifier: Double,
-    val fertilityModifier: Double,
-    val moistureCapacityMultiplier: Double,
-    val placementType: StonePlacementType
-) : ResourceComponent {
-    val type get() = placementType.stoneType
+interface ResourceComponent {
+    var resource: Resource
 }
+
+
 
