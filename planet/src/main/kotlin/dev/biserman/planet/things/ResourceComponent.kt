@@ -3,9 +3,8 @@ package dev.biserman.planet.things
 import kotlin.reflect.KClass
 
 
-
 open class ComponentSet<T : Any>(components: Collection<T>) : Collection<T> {
-    protected val internalComponents = components.associateBy { it::class }.toMutableMap()
+    protected var internalComponents = components.associateBy { it::class }.toMutableMap()
     val readonlyInternalComponents get() = internalComponents as Map<KClass<out T>, T>
 
     @Suppress("UNCHECKED_CAST")
@@ -16,6 +15,10 @@ open class ComponentSet<T : Any>(components: Collection<T>) : Collection<T> {
     override fun contains(element: T) = element::class in internalComponents
     override fun iterator(): Iterator<T> = internalComponents.values.iterator()
     override fun containsAll(elements: Collection<T>) = internalComponents.values.containsAll(elements)
+
+    companion object {
+        fun <T : Any> componentSetOf(vararg components: T) = ComponentSet(components.toList())
+    }
 }
 
 class MutableComponentSet<T : Any>(components: Collection<T>) : ComponentSet<T>(components) {
