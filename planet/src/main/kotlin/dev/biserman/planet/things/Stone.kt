@@ -3,6 +3,7 @@ package dev.biserman.planet.things
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.weightedBagOf
+import godot.core.Color
 import kotlin.random.Random
 
 enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Concept> = emptyList()) {
@@ -92,17 +93,39 @@ interface StonePlacementCondition {
 
     companion object {
         val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
-            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 0
+            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 1,
+            { random: Random -> MantleConvectionMagnitudeBelow(random.nextDouble()) } to 1,
+            { random: Random -> EssenceAbove(random.nextDouble()) } to 1,
+            { random: Random -> LocalHotspotActivityAbove(random.nextDouble()) } to 1,
+            { random: Random -> GlobalHotspotActivityAbove(random.nextDouble()) } to 1,
+            { random: Random -> GlobalHotspotActivityBelow(random.nextDouble()) } to 1,
+            { random: Random -> WaterCoverageAbove(random.nextDouble()) } to 1,
+            { random: Random -> WaterCoverageBelow(random.nextDouble()) } to 1,
+            { random: Random -> ContinentialityAbove(random.nextInt(-10, 10)) } to 1,
+            { random: Random -> ContinentialityBelow(random.nextInt(-10, 10)) } to 1,
+            { random: Random -> ContinentialityAround(random.nextInt(-10, 10), random.nextInt(1, 5)) } to 1
         )
     }
 }
 
-class Stone(
-    override var resource: Resource,
+data class StoneComponent(
+    var debugName: String,
     var acidityModifier: Double,
     var fertilityModifier: Double,
     var moistureCapacityMultiplier: Double,
     var placementType: StonePlacementType,
 ) : ResourceComponent {
     val type get() = placementType.stoneType
+}
+
+class Stone(
+    var stoneComponent: StoneComponent,
+    components: MutableComponentSet<ResourceComponent>,
+    colors: List<Color>,
+    concepts: List<Concept>
+) : Resource(
+    components.also { it.add(stoneComponent) }, colors, concepts
+) {
+    override fun toString() =
+        "Stone(stoneComponent=$stoneComponent,colors=${colors.map { it.toHtml(false) }},concepts=$concepts)"
 }

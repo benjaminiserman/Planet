@@ -29,4 +29,8 @@ class MutableComponentSet<T : Any>(components: Collection<T>) : ComponentSet<T>(
     fun remove(component: T) {
         internalComponents.remove(component::class)
     }
+
+    companion object {
+        fun <T : Any> mutableComponentSetOf(vararg components: T) = MutableComponentSet(components.toList())
+    }
 }
