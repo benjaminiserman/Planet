@@ -261,7 +261,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 convergenceZone.subductionStrengths[it.tectonicPlate?.id ?: return@SimpleColorMode null]
                     ?: return@SimpleColorMode null
             val strengthFactor = (convergenceZone.speed * subductionStrength.absoluteValue).pow(0.5)
-            (if (subductionStrength > 0) Color.blue else Color.green) * strengthFactor
+            (if (subductionStrength > 0) Color.blue * 3.0 else Color.green * 2.0) * strengthFactor
         },
         SimpleColorMode(
             this, "divergence_zones", visibleByDefault = false,

@@ -1,7 +1,7 @@
 package dev.biserman.planet.things
 
-abstract class Kind(val id: Int) {
-    constructor() : this(KindRegistry.kinds.size) {
+abstract class Kind(var id: Int, open var concepts: List<Concept>) {
+    constructor(concepts: List<Concept>) : this(KindRegistry.kinds.size, concepts) {
         KindRegistry.kinds += id to this
     }
 }

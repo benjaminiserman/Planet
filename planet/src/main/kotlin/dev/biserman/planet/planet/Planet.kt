@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
+import dev.biserman.planet.planet.WorldKinds
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
 import dev.biserman.planet.planet.tectonics.TectonicPlate
