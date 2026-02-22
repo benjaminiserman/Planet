@@ -52,6 +52,12 @@ object TectonicGlobals {
     var waterErosion = 12.5
     var depositionStartHeight = 1000
 
+    var accruedDepositThreshold = 500.0
+    var accruedErosionThreshold = -2000.0
+    var orogenicMetamorphosisThreshold = 0.1
+    var tectonicVolcanismThreshold = 0.85
+    var hotspotEruptionAccretionThreshold = 1000.0
+
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore
     val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 1000.0)
@@ -69,7 +75,7 @@ object TectonicGlobals {
             planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
         if (hotspot > 0) {
             if (planet.random.nextFloat() <= hotspotEruptionChance) {
-                if (hotspot > 1000) {
+                if (hotspot > hotspotEruptionAccretionThreshold) {
                     tile.stoneColumn.accreteLayer(tile, StonePlacementType.MantleVolcanic)
                 }
                 return lerp(tile.elevation, sqrt(hotspot), hotspotLerp)

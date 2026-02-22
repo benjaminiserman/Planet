@@ -35,5 +35,10 @@
   "continentSpringStiffness" : 1.0,
   "springPlateContributionStrength" : 0.007,
   "continentSpringSearchRadius" : 2.0,
-  "mantleConvectionStrength" : 8.0E-4
+  "mantleConvectionStrength" : 8.0E-4,
+  "accruedDepositThreshold": 500.0,
+  "accruedErosionThreshold": -2000.0,
+  "orogenicMetamorphosisThreshold": 0.1,
+  "tectonicVolcanismThreshold": 0.85,
+  "hotspotEruptionAccretionThreshold": 1000.0
 }

@@ -160,7 +160,7 @@ class PlanetTile(
     val edgeDepth get() = planet.edgeDepthMap[this]!!
 
     @get:JsonIgnore
-    val continentiality get() = planet.continentialityMap[this]!!
+    val continentiality get() = planet.continentialityMap[this.tileId]!!
 
     constructor(other: PlanetTile) : this(
         other.planet, other.tile.id
@@ -178,6 +178,7 @@ class PlanetTile(
         this.depositFlow = other.depositFlow
         this.waterFlow = other.waterFlow
         this.accruedDeposit = other.accruedDeposit
+        this.stoneColumn = other.stoneColumn.copy()
     }
 
     fun planetInit() {
@@ -289,7 +290,7 @@ class PlanetTile(
         spring displacement: ${springDisplacement.formatDigits()}
         edge resistance: ${edgeResistance.formatDigits()}
         divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tile.id] ?: 0.0).formatDigits()}
+        subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tectonicPlate?.id] ?: 0.0).formatDigits()}
         erosion delta: ${erosionDelta.formatDigits()}m
         accrued deposit: ${accruedDeposit.formatDigits()}m
         surface stone: ${stoneColumn.surface.stoneComponent.debugName}
