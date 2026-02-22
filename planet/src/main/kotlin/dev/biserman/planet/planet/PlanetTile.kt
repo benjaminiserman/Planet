@@ -42,7 +42,7 @@ import kotlin.math.sqrt
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
     scope = PlanetTile::class,
-    property = "id"
+    property = "id",
 )
 class PlanetTile(
     val planet: Planet,
@@ -292,6 +292,9 @@ class PlanetTile(
         subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tile.id] ?: 0.0).formatDigits()}
         erosion delta: ${erosionDelta.formatDigits()}m
         accrued deposit: ${accruedDeposit.formatDigits()}m
+        surface stone: ${stoneColumn.surface.stoneComponent.debugName}
+        middle stone: ${stoneColumn.middle.stoneComponent.debugName}
+        deep stone: ${stoneColumn.deep.stoneComponent.debugName}
         slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My

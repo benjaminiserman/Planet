@@ -1,7 +1,6 @@
 package dev.biserman.planet.utils
 
 import dev.biserman.planet.utils.WeightedBag.Companion.toWeightedBag
-import dev.biserman.planet.utils.WeightedBag.WeightedBagEntry
 import kotlin.random.Random
 
 fun <U> weightedBagOf(vararg items: Pair<U, Number>): WeightedBag<U> = items.toList().toWeightedBag()
@@ -16,7 +15,7 @@ class WeightedBag<T> private constructor(private val entries: MutableList<Weight
         entries.add(WeightedBagEntry(item, weight.toDouble()))
     }
 
-    fun grab(random: Random): T? {
+    fun tryGrab(random: Random): T? {
         val r = random.nextDouble(weightSum)
         var runningSum = 0.0
         for (entry in entries) {
@@ -29,6 +28,8 @@ class WeightedBag<T> private constructor(private val entries: MutableList<Weight
 
         return null
     }
+
+    fun grab(random: Random): T = tryGrab(random) ?: throw NoSuchElementException()
 
     val size get() = entries.size
 

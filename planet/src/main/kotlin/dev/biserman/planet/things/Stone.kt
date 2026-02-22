@@ -1,8 +1,15 @@
 package dev.biserman.planet.things
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIdentityReference
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.weightedBagOf
+import godot.core.Color
 import kotlin.random.Random
 
 enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Concept> = emptyList()) {
@@ -38,6 +45,7 @@ enum class StoneType {
     Meteoric
 }
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 interface StonePlacementCondition {
     fun canPlace(planetTile: PlanetTile): Boolean
 
@@ -92,17 +100,42 @@ interface StonePlacementCondition {
 
     companion object {
         val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
-            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 0
+            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 1,
+            { random: Random -> MantleConvectionMagnitudeBelow(random.nextDouble()) } to 1,
+            { random: Random -> EssenceAbove(random.nextDouble()) } to 1,
+            { random: Random -> LocalHotspotActivityAbove(random.nextDouble()) } to 1,
+            { random: Random -> GlobalHotspotActivityAbove(random.nextDouble()) } to 1,
+            { random: Random -> GlobalHotspotActivityBelow(random.nextDouble()) } to 1,
+            { random: Random -> WaterCoverageAbove(random.nextDouble()) } to 1,
+            { random: Random -> WaterCoverageBelow(random.nextDouble()) } to 1,
+            { random: Random -> ContinentialityAbove(random.nextInt(-10, 10)) } to 1,
+            { random: Random -> ContinentialityBelow(random.nextInt(-10, 10)) } to 1,
+            { random: Random -> ContinentialityAround(random.nextInt(-10, 10), random.nextInt(1, 5)) } to 1
         )
     }
 }
 
-class Stone(
-    override var resource: Resource,
-    var acidityModifier: Double,
-    var fertilityModifier: Double,
-    var moistureCapacityMultiplier: Double,
-    var placementType: StonePlacementType,
+data class StoneComponent(
+    val debugName: String,
+    val acidityModifier: Double,
+    val fertilityModifier: Double,
+    val moistureCapacityMultiplier: Double,
+    val placementType: StonePlacementType,
 ) : ResourceComponent {
+    @get:JsonIgnore
     val type get() = placementType.stoneType
+}
+
+class Stone(
+    components: MutableComponentSet<ResourceComponent>,
+    colors: List<Color>,
+    concepts: List<Concept>,
+) : Resource(
+    components, colors, concepts
+) {
+    @delegate:JsonIgnore
+    val stoneComponent by lazy { components.get<StoneComponent>() ?: throw IllegalStateException("Stone has no stone component") }
+
+    override fun toString() =
+        "Stone(stoneComponent=$stoneComponent,colors=${colors.map { it.toHtml(false) }},concepts=$concepts)"
 }

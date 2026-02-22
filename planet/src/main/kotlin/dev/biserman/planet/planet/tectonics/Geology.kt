@@ -1,9 +1,13 @@
 package dev.biserman.planet.planet.tectonics
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo
+import com.fasterxml.jackson.annotation.JsonIdentityReference
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.things.Concept
 import dev.biserman.planet.things.Stone
+import dev.biserman.planet.things.StonePlacementCondition
+import dev.biserman.planet.things.StonePlacementType
 import dev.biserman.planet.utils.weightedBagOf
 import kotlin.math.absoluteValue
 import kotlin.random.Random
@@ -17,7 +21,11 @@ data class StonePlacement(
 }
 
 
-data class StoneColumn(var surface: Stone, var middle: Stone, var deep: Stone) {
+data class StoneColumn(
+    @field:JsonIdentityReference(alwaysAsId = true) var surface: Stone,
+    @field:JsonIdentityReference(alwaysAsId = true) var middle: Stone,
+    @field:JsonIdentityReference(alwaysAsId = true) var deep: Stone
+) {
     fun getLayer(planetTile: PlanetTile, stonePlacementType: StonePlacementType): Stone {
         val stonePlacement = planetTile.planet.worldKinds.stonePlacements[stonePlacementType]
             ?: return planetTile.planet.worldKinds.defaultSurfaceStone
@@ -45,12 +53,12 @@ data class StoneColumn(var surface: Stone, var middle: Stone, var deep: Stone) {
     }
 
     fun tryTransmuteDeep(planetTile: PlanetTile) {
-        val metamorphicForm = deep.placementType.metamorphicForm ?: return
+        val metamorphicForm = deep.stoneComponent.placementType.metamorphicForm ?: return
         deep = getLayer(planetTile, metamorphicForm)
     }
 
     fun igneousIntrude(planetTile: PlanetTile) {
-        val contactMetamorphicForm = middle.placementType.metamorphicForm
+        val contactMetamorphicForm = middle.stoneComponent.placementType.metamorphicForm
         if (contactMetamorphicForm != null) {
             middle = getLayer(planetTile, contactMetamorphicForm)
         }
@@ -72,26 +80,26 @@ object Geology {
         // divergence volcanism is done on tile creation
         for (tile in planet.planetTiles.values) {
             // alluvial & oceanic deposition
-            if (tile.accruedDeposit > 1000.0) {
+            if (tile.accruedDeposit > 200.0) {
                 val layer =
                     if (tile.isAboveWater) StonePlacementType.AlluvialDeposition
                     else StonePlacementType.OceanicDeposition
                 tile.stoneColumn.accreteLayer(tile, layer)
-            } else if (tile.accruedDeposit < -1000.0) {
+            } else if (tile.accruedDeposit < -2000.0) {
                 tile.stoneColumn.erodeLayer(tile)
             }
 
             // orogenic metamorphosis
             if ((tile.planet.convergenceZones[tile.tileId]
                     ?.subductionStrengths[tile.tileId]
-                    ?.absoluteValue ?: 0.0) > 0.5
+                    ?.absoluteValue ?: 0.0) > 0.1
             ) {
                 tile.stoneColumn.tryTransmuteDeep(tile)
             }
 
             // tectonic volcanism
             if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrengths[tile.tileId] ?: 0.0) > 0.5
+                    ?.subductionStrengths[tile.tileId] ?: 0.0) > 0.1
             ) {
                 tile.stoneColumn.accreteLayer(tile, StonePlacementType.SubductionVolcanic)
             }

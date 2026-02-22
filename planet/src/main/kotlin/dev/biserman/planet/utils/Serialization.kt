@@ -19,15 +19,22 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember
 import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
+import com.fasterxml.jackson.module.kotlin.addDeserializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.biserman.planet.planet.Planet
+import dev.biserman.planet.things.ComponentSet
+import dev.biserman.planet.things.ComponentSetDeserializer
+import dev.biserman.planet.things.ComponentSetSerializer
+import dev.biserman.planet.things.MutableComponentSet
 import godot.core.Vector2
 import godot.core.Vector3
 import godot.global.GD
 import java.io.File
+import kotlin.reflect.KClass
 
 
 @Suppress("FunctionName", "unused")
@@ -61,6 +68,12 @@ abstract class Vector2Mixin {
 object Serialization {
     val objectMapper: ObjectMapper = jacksonObjectMapper()
         .registerKotlinModule()
+        .registerModule(
+            SimpleModule()
+                .addSerializer(ComponentSet::class.java, ComponentSetSerializer())
+                .addDeserializer(ComponentSet::class.java, ComponentSetDeserializer())
+                .addDeserializer(MutableComponentSet::class.java, ComponentSetDeserializer())
+        )
         .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
         .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY)

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.things.StonePlacementType
 import godot.common.util.lerp
 import godot.global.GD
 import kotlin.math.pow
@@ -68,13 +69,11 @@ object TectonicGlobals {
             planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
         if (hotspot > 0) {
             if (planet.random.nextFloat() <= hotspotEruptionChance) {
-                if (hotspot > 0.5) {
-                    GD.print("hotspot eruption deposit! $hotspot")
+                if (hotspot > 1000) {
                     tile.stoneColumn.accreteLayer(tile, StonePlacementType.MantleVolcanic)
                 }
                 return lerp(tile.elevation, sqrt(hotspot), hotspotLerp)
             } else {
-                GD.print("hotspot eruption failed! $hotspot")
                 tile.stoneColumn.igneousIntrude(tile)
             }
         }

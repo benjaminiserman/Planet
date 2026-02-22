@@ -30,9 +30,11 @@ class Planet(val seed: Int, val size: Int) {
     @JsonIgnore
     val topology = makeTopology(size)
 
-    var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
+    var worldKinds = WorldKinds().also {
+        it.generateStoneTypes(this)
+    }
 
-    var worldKinds = WorldKinds()
+    var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
 
     @get:JsonIgnore
     val contiguousRegions by memo({ tectonicAge }) {
