@@ -347,6 +347,9 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             if (current.temperature > 0) Color.red * current.temperature
             else Color.blue * current.temperature
         },
+        SimpleColorMode(this, "surface_stone", visibleByDefault = false) { it.stoneColumn.surface.colors[0] },
+        SimpleColorMode(this, "middle_stone", visibleByDefault = false) { it.stoneColumn.surface.colors[0] },
+        SimpleColorMode(this, "deep_stone", visibleByDefault = false) { it.stoneColumn.surface.colors[0] },
         SimpleColorMode(
             this,
             "grey_land",
