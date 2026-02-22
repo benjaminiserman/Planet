@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIdentityReference
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedDepositThreshold
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedErosionThreshold
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.orogenicMetamorphosisThreshold
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicVolcanismThreshold
 import dev.biserman.planet.things.Concept
 import dev.biserman.planet.things.Stone
 import dev.biserman.planet.things.StonePlacementCondition
@@ -80,26 +84,28 @@ object Geology {
         // divergence volcanism is done on tile creation
         for (tile in planet.planetTiles.values) {
             // alluvial & oceanic deposition
-            if (tile.accruedDeposit > 200.0) {
+            if (tile.accruedDeposit > accruedDepositThreshold) {
                 val layer =
                     if (tile.isAboveWater) StonePlacementType.AlluvialDeposition
                     else StonePlacementType.OceanicDeposition
                 tile.stoneColumn.accreteLayer(tile, layer)
-            } else if (tile.accruedDeposit < -2000.0) {
+                tile.accruedDeposit = 0.0
+            } else if (tile.accruedDeposit < accruedErosionThreshold) {
                 tile.stoneColumn.erodeLayer(tile)
+                tile.accruedDeposit = 0.0
             }
 
             // orogenic metamorphosis
             if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrengths[tile.tileId]
-                    ?.absoluteValue ?: 0.0) > 0.1
+                    ?.subductionStrengths[tile.tectonicPlate?.id]
+                    ?.absoluteValue ?: 0.0) > orogenicMetamorphosisThreshold
             ) {
                 tile.stoneColumn.tryTransmuteDeep(tile)
             }
 
             // tectonic volcanism
             if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrengths[tile.tileId] ?: 0.0) > 0.1
+                    ?.subductionStrengths[tile.tectonicPlate?.id] ?: 0.0) > tectonicVolcanismThreshold
             ) {
                 tile.stoneColumn.accreteLayer(tile, StonePlacementType.SubductionVolcanic)
             }

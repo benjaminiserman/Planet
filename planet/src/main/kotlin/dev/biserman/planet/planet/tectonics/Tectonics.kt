@@ -453,6 +453,7 @@ object Tectonics {
 
     fun stepTectonicsSimulation(planet: Planet) {
         val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
+        val geologyTime = measureTime { Geology.simulateGeology(planet) }
         val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
         val performErosionTime = measureTime { performErosion(planet) }
         val runGuardrailsTime = measureTime {
@@ -463,6 +464,7 @@ object Tectonics {
         }
 
         val timeTaken = movePlanetTilesTime +
+                geologyTime +
                 tectonicPlateForcesTime +
                 performErosionTime +
                 runGuardrailsTime
@@ -477,6 +479,7 @@ object Tectonics {
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
         GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
         GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
+        GD.print(" - simulateGeology: ${geologyTime.inWholeMilliseconds}ms")
         GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
         GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
         GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")

@@ -92,6 +92,10 @@ class DivergenceZone(
                 if (divergenceStrength >= divergenceCutoff) {
                     DivergenceZone(planet, tile.id, divergenceStrength, nearestOldTiles.mapNotNull { it.tectonicPlate })
                 } else {
+                    newPlanetTile.stoneColumn =
+                        tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
+                            ?.stoneColumn
+                            ?: newPlanetTile.stoneColumn
                     newPlanetTile.formationTime =
                         tile.tiles.map { newTileMap[it]?.formationTime }
                             .groupBy { it }
