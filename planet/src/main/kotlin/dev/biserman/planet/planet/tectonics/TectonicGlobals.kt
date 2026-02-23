@@ -53,10 +53,10 @@ object TectonicGlobals {
     var depositionStartHeight = 1000
 
     var accruedDepositThreshold = 500.0
-    var accruedErosionThreshold = -2000.0
+    var accruedErosionThreshold = -2500.0
     var orogenicMetamorphosisThreshold = 0.1
-    var tectonicVolcanismThreshold = 0.85
-    var hotspotEruptionAccretionThreshold = 1000.0
+    var tectonicVolcanismThreshold = 0.84
+    var hotspotEruptionAccretionThreshold = 200.0
 
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore
@@ -74,13 +74,16 @@ object TectonicGlobals {
         val hotspot =
             planet.noise.hotspots.sample4d(tile.tile.position, planet.tectonicAge.toDouble()) * hotspotStrength
         if (hotspot > 0) {
+            val elevationIncrease = sqrt(hotspot)
             if (planet.random.nextFloat() <= hotspotEruptionChance) {
-                if (hotspot > hotspotEruptionAccretionThreshold) {
+                if (elevationIncrease > hotspotEruptionAccretionThreshold) {
                     tile.stoneColumn.accreteLayer(tile, StonePlacementType.MantleVolcanic)
                 }
-                return lerp(tile.elevation, sqrt(hotspot), hotspotLerp)
+                return lerp(tile.elevation, elevationIncrease, hotspotLerp)
             } else {
-                tile.stoneColumn.igneousIntrude(tile)
+                if (elevationIncrease > hotspotEruptionAccretionThreshold) {
+                    tile.stoneColumn.igneousIntrude(tile)
+                }
             }
         }
 
