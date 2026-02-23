@@ -1,5 +1,5 @@
 {
-  "accruedDepositThreshold": 500.0,
+  "accruedDepositThreshold": 400.0,
   "accruedErosionThreshold": -2500.0,
   "continentElevationCutoff": -250.0,
   "continentSpringDamping": 0.1,
@@ -11,6 +11,7 @@
   "depositionStartHeight": 1000,
   "depositLoss": 0.01,
   "depositStrength": 0.6,
+  "depositionContinentialityThreshold": -1,
   "divergedCrustHeight": -2000.0,
   "divergedCrustLerp": 1.0,
   "divergenceCutoff": 0.25,

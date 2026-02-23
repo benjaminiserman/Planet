@@ -57,6 +57,7 @@ object TectonicGlobals {
     var orogenicMetamorphosisThreshold = 0.1
     var tectonicVolcanismThreshold = 0.84
     var hotspotEruptionAccretionThreshold = 200.0
+    var depositionContinentialityThreshold = -1
 
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore
