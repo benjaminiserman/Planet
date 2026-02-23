@@ -139,7 +139,6 @@ grow_vertical = 0
 script = ExtResource("5_m7jmp")
 background_color = Color(0, 0, 0, 0.121569)
 grid_horizontal_visible = true
-metadata/_custom_type_script = "uid://bp2qgsh74bun4"
 
 [node name="SaveButton" type="Button" parent="GUI"]
 layout_mode = 1

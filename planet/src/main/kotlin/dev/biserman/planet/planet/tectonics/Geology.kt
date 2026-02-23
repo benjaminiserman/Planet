@@ -6,6 +6,7 @@ import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedDepositThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedErosionThreshold
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionContinentialityThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.orogenicMetamorphosisThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicVolcanismThreshold
 import dev.biserman.planet.things.Concept
@@ -86,7 +87,7 @@ object Geology {
             // alluvial & oceanic deposition
             if (tile.accruedDeposit > accruedDepositThreshold) {
                 val layer =
-                    if (tile.isAboveWater) StonePlacementType.AlluvialDeposition
+                    if (tile.continentiality >= depositionContinentialityThreshold) StonePlacementType.AlluvialDeposition
                     else StonePlacementType.OceanicDeposition
                 tile.stoneColumn.accreteLayer(tile, layer)
                 tile.accruedDeposit = 0.0
