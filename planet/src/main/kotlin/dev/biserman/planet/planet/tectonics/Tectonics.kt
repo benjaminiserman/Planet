@@ -28,6 +28,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.springPlateContributionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVariogram
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicSimulationStop
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.waterErosion
 import dev.biserman.planet.topology.Tile
@@ -487,7 +488,7 @@ object Tectonics {
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
-        if (planet.tectonicAge % 10000 == 0) {
+        if (planet.tectonicAge % tectonicSimulationStop == 0) {
             Main.instance.timerActive = "none"
         }
     }

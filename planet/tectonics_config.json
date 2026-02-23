@@ -39,6 +39,7 @@
   "slabPullStrength": 0.015,
   "springPlateContributionStrength": 0.007,
   "subductingElevationStrengthScale": -1000.0,
+  "tectonicSimulationStop": 10000,
   "tectonicVolcanismThreshold": 0.84,
   "tileInertia": 0.25,
   "waterErosion": 15

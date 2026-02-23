@@ -19,6 +19,7 @@ object TectonicGlobals {
     var springPlateContributionStrength = 0.007
     var edgeInteractionStrength = 0.08
     var tileInertia = 0.25
+    var tectonicSimulationStop = 10000
 
     var plateTorqueScalar = 0.1
     var riftCutoff = 0.5
