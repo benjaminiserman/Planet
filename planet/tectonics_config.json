@@ -11,7 +11,7 @@
   "depositionStartHeight": 1000,
   "depositLoss": 0.01,
   "depositStrength": 0.6,
-  "depositionContinentialityThreshold": -1,
+  "depositionContinentialityThreshold": -0.4,
   "divergedCrustHeight": -2000.0,
   "divergedCrustLerp": 1.0,
   "divergenceCutoff": 0.25,
@@ -24,6 +24,7 @@
   "hotspotEruptionChance": 0.45,
   "hotspotLerp": 0.66,
   "hotspotStrength": 5.625E7,
+  "intrusionStrengthAccretionThreshold": 200,
   "mantleConvectionStrength": 8.0E-4,
   "maxElevation": 12000.0,
   "minElevation": -12000.0,
@@ -39,8 +40,8 @@
   "slabPullStrength": 0.015,
   "springPlateContributionStrength": 0.007,
   "subductingElevationStrengthScale": -1000.0,
-  "tectonicSimulationStop": 10000,
-  "tectonicVolcanismThreshold": 0.84,
+  "tectonicSimulationStop": 100000,
+  "tectonicVolcanismThreshold": 0.8,
   "tileInertia": 0.25,
   "waterErosion": 15
 }

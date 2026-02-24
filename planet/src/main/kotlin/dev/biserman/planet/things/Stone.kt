@@ -100,9 +100,9 @@ interface StonePlacementCondition {
 
     companion object {
         val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
-            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble()) } to 1,
-            { random: Random -> MantleConvectionMagnitudeBelow(random.nextDouble()) } to 1,
-            { random: Random -> EssenceAbove(random.nextDouble()) } to 1,
+            { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble(0.25, 0.75)) } to 1,
+            { random: Random -> MantleConvectionMagnitudeBelow(random.nextDouble(0.25, 0.75)) } to 1,
+            { random: Random -> EssenceAbove(random.nextDouble(0.25, 0.75)) } to 1,
             { random: Random -> LocalHotspotActivityAbove(random.nextDouble()) } to 1,
             { random: Random -> GlobalHotspotActivityAbove(random.nextDouble()) } to 1,
             { random: Random -> GlobalHotspotActivityBelow(random.nextDouble()) } to 1,

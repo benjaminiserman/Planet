@@ -57,8 +57,8 @@ class PlanetStats {
         Stat("%sedimentary surface rock") { planet ->
             planet.planetTiles.values.count { it.stoneColumn.surface.stoneComponent.placementType.stoneType == StoneType.Sedimentary }
                 .toDouble() / planet.planetTiles.size
-        }
+        },
     )
 
-    val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }
+    val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }.toMutableMap()
 }

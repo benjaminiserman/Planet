@@ -99,7 +99,7 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val waterCoverage by memo({ tectonicAge }) {
-        planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
+        1.0 - planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
     }
 
     val rotationRate = 1.0
