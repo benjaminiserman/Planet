@@ -77,7 +77,7 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         val timeTaken = measureTime {
             stats.tectonicStats.forEach {
-                statValues[it.name]!!.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet)))
+                statValues[it.name]?.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet)))
             }
         }
 

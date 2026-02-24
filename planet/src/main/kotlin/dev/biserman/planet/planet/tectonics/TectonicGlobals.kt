@@ -58,7 +58,8 @@ object TectonicGlobals {
     var orogenicMetamorphosisThreshold = 0.1
     var tectonicVolcanismThreshold = 0.84
     var hotspotEruptionAccretionThreshold = 200.0
-    var depositionContinentialityThreshold = -1
+    var intrusionStrengthAccretionThreshold = 200.0
+    var depositionContinentialityThreshold = -0.4
 
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore
@@ -83,7 +84,7 @@ object TectonicGlobals {
                 }
                 return lerp(tile.elevation, elevationIncrease, hotspotLerp)
             } else {
-                if (elevationIncrease > hotspotEruptionAccretionThreshold) {
+                if (elevationIncrease > intrusionStrengthAccretionThreshold) {
                     tile.stoneColumn.igneousIntrude(tile)
                 }
             }

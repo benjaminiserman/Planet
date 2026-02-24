@@ -87,7 +87,10 @@ object Geology {
             // alluvial & oceanic deposition
             if (tile.accruedDeposit > accruedDepositThreshold) {
                 val layer =
-                    if (tile.continentiality >= depositionContinentialityThreshold) StonePlacementType.AlluvialDeposition
+                    if (tile.neighbors.map { it.continentiality }
+                            .plus(tile.continentiality)
+                            .average() >= depositionContinentialityThreshold
+                    ) StonePlacementType.AlluvialDeposition
                     else StonePlacementType.OceanicDeposition
                 tile.stoneColumn.accreteLayer(tile, layer)
                 tile.accruedDeposit = 0.0
