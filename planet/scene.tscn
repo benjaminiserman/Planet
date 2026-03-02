@@ -3,8 +3,8 @@
 [ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
 [ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
 [ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="4_m7jmp"]
-[ext_resource type="Script" uid="uid://bp2qgsh74bun4" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
-[ext_resource type="Script" uid="uid://b2x4bkf12pd11" path="res://gdj/dev/biserman/planet/gui/ShowSettingsButton.gdj" id="5_y2354"]
+[ext_resource type="Script" uid="uid://d2kmwp8b8fhwj" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
+[ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_y2354"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
 
@@ -120,6 +120,7 @@ auto_translate_mode = 1
 title = "Save World"
 initial_position = 2
 access = 2
+root_subfolder = "./save"
 filters = PackedStringArray("*.json")
 
 [node name="ImportDialog" type="FileDialog" parent="GUI"]

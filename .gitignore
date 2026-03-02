@@ -7,3 +7,11 @@ build
 jvm
 planet/addons/
 planet/examples/
+
+# save folder and ignored contents
+planet/save/*
+!planet/save/complex.json
+!planet/save/nice_continents.json
+!planet/save/noodle_pangea.json
+!planet/save/planet_supercontinent.json
+!planet/save/pretty_world.json
