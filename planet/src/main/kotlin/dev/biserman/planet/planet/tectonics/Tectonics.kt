@@ -18,8 +18,12 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStren
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.mantleConvectionStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxElevation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxPercentContinentalGuardrail
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.minAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minElevation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPercentContinentalGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPlateSize
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
@@ -502,12 +506,12 @@ object Tectonics {
         val percentContinental =
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
 
-        if (averageContinentalHeight <= 750 && percentContinental <= 0.15) {
+        if (averageContinentalHeight <= minAverageContinentalHeightGuardrail && percentContinental <= minPercentContinentalGuardrail) {
             GD.print("raising elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation += 100 }
         }
 
-        if (averageContinentalHeight >= 1250 && percentContinental >= 0.55) {
+        if (averageContinentalHeight >= maxAverageContinentalHeightGuardrail && percentContinental >= maxPercentContinentalGuardrail) {
             GD.print("lowering elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation -= 100 }
         }
