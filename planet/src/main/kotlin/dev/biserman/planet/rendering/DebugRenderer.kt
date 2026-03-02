@@ -15,7 +15,7 @@ abstract class DebugRenderer<T>(val parent: Node) {
         get() = name.split("_").joinToString(" ") { it.capitalize() }
 
 
-    open val visibleByDefault: Boolean = false
+    open val categories: List<String> = listOf("feature")
     var visible: Boolean = false
         set(value) {
             field = value
@@ -29,8 +29,8 @@ abstract class DebugRenderer<T>(val parent: Node) {
     var lastInput: T? = null
 
     fun init() {
-        visible = visibleByDefault
-        Gui.addToggle("Show $displayName", defaultValue = visibleByDefault) { visible = it }
+        visible = "default" in categories
+        Gui.instance.showSettingsButton.addToggle("Show $displayName", categories) { visible = it }
     }
 
     fun update(input: T) {
@@ -69,7 +69,10 @@ abstract class DebugRenderer<T>(val parent: Node) {
 }
 
 class SimpleDebugRenderer<T>(
-    parent: Node, override val name: String, val generateMesh: (T) -> List<MeshData>
+    parent: Node,
+    override val name: String,
+    override val categories: List<String> = listOf(),
+    val generateMesh: (T) -> List<MeshData>,
 ) : DebugRenderer<T>(parent) {
     override fun generateMeshes(input: T): List<MeshData> = generateMesh(input)
 }

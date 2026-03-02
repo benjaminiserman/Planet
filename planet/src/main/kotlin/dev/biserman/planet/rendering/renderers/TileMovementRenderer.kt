@@ -7,7 +7,7 @@ import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.vectorMesh
 import godot.api.Node
 
-class TileMovementRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
+class TileMovementRenderer(parent: Node, val lift: Double, override val categories: List<String> = listOf()) :
     DebugRenderer<Planet>(parent) {
     override val name = "tile_movement"
 

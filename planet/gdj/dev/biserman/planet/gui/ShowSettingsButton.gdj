@@ -4,9 +4,9 @@
 registeredName = ShowSettingsButton
 fqName = dev.biserman.planet.gui.ShowSettingsButton
 relativeSourcePath = src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt
-baseType = CheckButton
+baseType = OptionButton
 supertypes = [
-    godot.api.CheckButton,
+    godot.api.OptionButton,
 	godot.api.Button,
 	godot.api.BaseButton,
 	godot.api.Control,
@@ -25,5 +25,5 @@ properties = [
     
 ]
 functions = [
-    _pressed
+    _ready
 ]

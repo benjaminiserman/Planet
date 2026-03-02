@@ -17,7 +17,7 @@ class TileVectorRenderer(
     val getFn: (PlanetTile) -> Vector3,
     val color: Color = Color(1.0, 1.0, 1.0),
     val cutoff: Double = 0.0,
-    override val visibleByDefault: Boolean = false
+    override val categories: List<String> = listOf()
 ) :
     DebugRenderer<Planet>(parent) {
 
