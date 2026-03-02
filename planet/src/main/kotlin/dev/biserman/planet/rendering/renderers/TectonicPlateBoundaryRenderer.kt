@@ -8,7 +8,7 @@ import dev.biserman.planet.rendering.MeshData
 import godot.api.Node
 import godot.api.StandardMaterial3D
 
-class TectonicPlateBoundaryRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
+class TectonicPlateBoundaryRenderer(parent: Node, val lift: Double, override val categories: List<String> = listOf()) :
     DebugRenderer<Planet>(parent) {
     override val name = "tectonic_plate_boundary"
 

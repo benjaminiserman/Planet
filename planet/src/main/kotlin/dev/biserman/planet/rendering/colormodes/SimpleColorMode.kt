@@ -8,7 +8,7 @@ import godot.core.Color
 class SimpleColorMode(
     planetRenderer: PlanetRenderer,
     override val name: String,
-    override val visibleByDefault: Boolean = false,
+    override val categories: List<String>,
     val getFn: (PlanetTile) -> Color?,
 ) : PlanetColorMode(planetRenderer) {
     override fun colorsFor(planetTile: PlanetTile): Sequence<Color?> = sequence {

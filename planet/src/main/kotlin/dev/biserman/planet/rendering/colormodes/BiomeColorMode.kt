@@ -16,7 +16,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
-class BiomeColorMode(planetRenderer: PlanetRenderer, override val visibleByDefault: Boolean) :
+class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: List<String>) :
     PlanetColorMode(planetRenderer) {
     override val name = "biome"
 

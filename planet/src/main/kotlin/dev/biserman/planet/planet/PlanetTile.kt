@@ -281,60 +281,94 @@ class PlanetTile(
     }
 
     @JsonIgnore
-    fun getInfoText(): String = """
+    fun getInfoText(tab: String): String = when (tab) {
+        "basic" -> """
         elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
-        temperature: ${temperature.formatDigits()}
-        moisture: ${moisture.formatDigits(4)} (${(ClimateSimulation.toPrecipitation(moisture) / 12.0).toInt()}mm)
-        movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
         position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()})
-        spring displacement: ${springDisplacement.formatDigits()}
-        edge resistance: ${edgeResistance.formatDigits()}
-        divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
-        subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tectonicPlate?.id] ?: 0.0).formatDigits()}
-        erosion delta: ${erosionDelta.formatDigits()}m
-        accrued deposit: ${accruedDeposit.formatDigits()}m
-        surface stone: ${stoneColumn.surface.stoneComponent.debugName}
-        middle stone: ${stoneColumn.middle.stoneComponent.debugName}
-        deep stone: ${stoneColumn.deep.stoneComponent.debugName}
-        slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My
         plate: ${tectonicPlate?.name ?: "null"}
-        insolation: ${insolation.formatDigits()} (avg: ${
-        annualInsolation.average()
-            .formatDigits()
-    }, min: ${annualInsolation.minOrNull()?.formatDigits()}, max: ${annualInsolation.maxOrNull()?.formatDigits()})
-        edge depth: $edgeDepth tiles
-        continentiality: $continentiality tiles
-        hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
-        deposit flow: ${depositFlow.formatDigits()}
-        water flow: ${waterFlow.formatDigits()}
-        airPressure: ${airPressure.formatDigits()}
-        warm current distance: ${planet.warmCurrentDistanceMap[tileId] ?: "null"}
-        cool current distance: ${planet.coolCurrentDistanceMap[tileId] ?: "null"}
-        itcz distance: ${planet.itczDistanceMap[tileId] ?: "null"}
-    """.trimIndent() + (if (planet.convergenceZones.contains(tile.id)) {
-        val convergenceZone = planet.convergenceZones[tile.id]!!
-        "\n" + """
-        CONVERGENCE
-        speed: ${convergenceZone.speed.formatDigits()}
-        strength: ${convergenceZone.subductionStrengths[tectonicPlate?.id ?: -1]?.formatDigits() ?: "not found"}
-        subducting plates: ${convergenceZone.subductingPlates.size}
-        subducting mass: ${convergenceZone.subductingMass.formatDigits()}
+    """.trimIndent() + if (tileId in planet.climateMap) {
+            val climateDatum = planet.climateMap[tileId]!!
+            "\n" + """
+            koppen climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
+            hersfeldt climate: ${hersfeldt.getOrNull()?.name ?: "unclassified"}(${hersfeldt.getOrNull()?.id ?: "null"})
+            average temperature: ${climateDatum.averageTemperature.formatDigits()}°C
+            annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
+            insolation: ${insolation.formatDigits()} (avg: ${
+                annualInsolation.average()
+                    .formatDigits()
+            }, min: ${annualInsolation.minOrNull()?.formatDigits()}, max: ${
+                annualInsolation.maxOrNull()
+                    ?.formatDigits()
+            })
         """.trimIndent()
-    } else "") + if (tileId in planet.climateMap) {
-        val climateDatum = planet.climateMap[tileId]!!
-        "\n" + """
-        koppen climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
-        hersfeldt climate: ${hersfeldt.getOrNull()?.name ?: "unclassified"}(${hersfeldt.getOrNull()?.id ?: "null"})
-        average temperature: ${climateDatum.averageTemperature.formatDigits()}°C
-        annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
-        """.trimIndent() + "\n${
-            climateDatum.months.mapIndexed { index, month ->
-                MonthIndex.entries[index].name to "${
-                    month.averageTemperature.formatDigits(1)
-                }°C, ${month.precipitation.toInt()}mm"
-            }.joinToString("\n") { "  ${it.first}: ${it.second}" }
-        }"
-    } else ""
+        } else ""
+
+        "terrain" -> """
+            elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
+            edge depth: $edgeDepth tiles
+            continentiality: $continentiality tiles
+            prominence: ${prominence.formatDigits()}
+            slope: ${slope.formatDigits()} (${contiguousSlope.formatDigits()}|${nonContiguousSlope.formatDigits()})
+        """.trimIndent()
+
+        "climate" -> """
+            airPressure: ${airPressure.formatDigits()}
+            current step temperature: ${temperature.formatDigits()}
+            current step moisture: ${moisture.formatDigits(4)} (${(ClimateSimulation.toPrecipitation(moisture) / 12.0).toInt()}mm)
+            warm current distance: ${planet.warmCurrentDistanceMap[tileId] ?: "null"}
+            cool current distance: ${planet.coolCurrentDistanceMap[tileId] ?: "null"}
+            itcz distance: ${planet.itczDistanceMap[tileId] ?: "null"}
+        """.trimIndent() + if (tileId in planet.climateMap) {
+            val climateDatum = planet.climateMap[tileId]!!
+            "\n" + """
+            koppen climate: ${koppen.getOrNull()?.name ?: "unclassified"}(${koppen.getOrNull()?.id ?: "null"})
+            hersfeldt climate: ${hersfeldt.getOrNull()?.name ?: "unclassified"}(${hersfeldt.getOrNull()?.id ?: "null"})
+            average temperature: ${climateDatum.averageTemperature.formatDigits()}°C
+            annual precipitation: ${climateDatum.annualPrecipitation.formatDigits()}mm
+            insolation: ${insolation.formatDigits()} (avg: ${
+                annualInsolation.average()
+                    .formatDigits()
+            }, min: ${annualInsolation.minOrNull()?.formatDigits()}, max: ${
+                annualInsolation.maxOrNull()
+                    ?.formatDigits()
+            })
+        """.trimIndent() + "\nMONTHLY DATA\n${
+                climateDatum.months.mapIndexed { index, month ->
+                    MonthIndex.entries[index].name to "${
+                        month.averageTemperature.formatDigits(1)
+                    }°C, ${month.precipitation.toInt()}mm"
+                }.joinToString("\n") { "  ${it.first}: ${it.second}" }
+            }"
+        } else ""
+
+        "tectonics" -> """
+            formation time: $formationTime My
+            plate: ${tectonicPlate?.name ?: "null"}
+            movement: ${movement.formatDigits()} (${movement.length().formatDigits()})
+            spring displacement: ${springDisplacement.formatDigits()}
+            edge resistance: ${edgeResistance.formatDigits()}
+            divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
+            subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tectonicPlate?.id] ?: 0.0).formatDigits()}
+            hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
+            deposit flow: ${depositFlow.formatDigits()}
+            water flow: ${waterFlow.formatDigits()}
+            erosion delta: ${erosionDelta.formatDigits()}m
+            accrued deposit: ${accruedDeposit.formatDigits()}m
+            surface stone: ${stoneColumn.surface.stoneComponent.debugName}
+            middle stone: ${stoneColumn.middle.stoneComponent.debugName}
+            deep stone: ${stoneColumn.deep.stoneComponent.debugName}
+        """.trimIndent() + (if (planet.convergenceZones.contains(tile.id)) {
+            val convergenceZone = planet.convergenceZones[tile.id]!!
+            "\n" + """
+            CONVERGENCE
+            speed: ${convergenceZone.speed.formatDigits()}
+            strength: ${convergenceZone.subductionStrengths[tectonicPlate?.id ?: -1]?.formatDigits() ?: "not found"}
+            subducting plates: ${convergenceZone.subductingPlates.size}
+            subducting mass: ${convergenceZone.subductingMass.formatDigits()}
+        """.trimIndent()
+        } else "")
+        else -> ""
+    }
 }

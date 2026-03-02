@@ -6,7 +6,7 @@ import dev.biserman.planet.rendering.MeshData
 import godot.api.Node
 import godot.api.StandardMaterial3D
 
-class CellWireframeRenderer(parent: Node, val lift: Double, override val visibleByDefault: Boolean = false) :
+class CellWireframeRenderer(parent: Node, val lift: Double, override val categories: List<String> = listOf()) :
     DebugRenderer<Planet>(parent) {
     override val name = "cell_wireframe"
 

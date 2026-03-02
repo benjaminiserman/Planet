@@ -91,8 +91,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
     }
 
     val planetDebugRenders = listOf(
-        CellWireframeRenderer(parent, lift = 1.005, visibleByDefault = false),
-        SimpleDebugRenderer(parent, "tectonic_boundary_movement") { planet ->
+        CellWireframeRenderer(parent, lift = 1.005, categories = listOf("debug", "feature")),
+        SimpleDebugRenderer(
+            parent,
+            "tectonic_boundary_movement",
+            categories = listOf("tectonics", "feature")
+        ) { planet ->
             planet.tectonicPlates.flatMap { plate ->
                 val edgeVectors = plate.tiles.filter { it.isTectonicBoundary }
                     .filter { it.movement.length() > 0.00005 }
@@ -100,27 +104,31 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 vectorMesh(edgeVectors, plate.debugColor)
             }
         },
-        TectonicPlateBoundaryRenderer(parent, lift = 1.005, visibleByDefault = false),
-        TileMovementRenderer(parent, lift = 1.005, visibleByDefault = false),
+        TectonicPlateBoundaryRenderer(parent, lift = 1.005, categories = listOf("tectonics", "feature")),
+        TileMovementRenderer(parent, lift = 1.005, categories = listOf("tectonics", "feature")),
         TileVectorRenderer(
             parent,
             "mantle_convection",
             lift = 1.005,
             getFn = { planet.noise.mantleConvection.sample4d(it.tile.position, planet.tectonicAge.toDouble()) },
             color = Color(1.0, 0.5, 0.0, 1.0),
-            visibleByDefault = false
+            categories = listOf("tectonics", "feature")
         ),
         TileVectorRenderer(
-            parent, "spring_displacement", lift = 1.005, getFn = { it.springDisplacement }, visibleByDefault = false
+            parent,
+            "spring_displacement",
+            lift = 1.005,
+            getFn = { it.springDisplacement },
+            categories = listOf("tectonics", "feature")
         ),
         TileVectorRenderer(
             parent,
             "edge_interaction",
             lift = 1.005,
             getFn = { it.getEdgeForces().sum() * 10 },
-            visibleByDefault = false
+            categories = listOf("tectonics", "feature")
         ),
-        SimpleDebugRenderer(parent, "rivers") { planet ->
+        SimpleDebugRenderer(parent, "rivers", categories = listOf("terrain", "feature")) { planet ->
             val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
                 .distinctBy { it.position }
                 .associateWith { it.tiles.map { tile -> planet.getTile(tile).elevation }.average() }
@@ -145,7 +153,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
             )
         },
-        SimpleDebugRenderer(parent, "climate_cells") { planet ->
+        SimpleDebugRenderer(parent, "climate_cells", categories = listOf("climate", "feature")) { planet ->
             val bands = listOf(-60, -30, 0, +30, +60).map { it.toDouble() }
             val verts = mutableListOf<MutVertex>()
             val edges = mutableListOf<MutEdge>()
@@ -181,54 +189,54 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             "wind",
             lift = 1.005,
             getFn = { it.prevailingWind * 2.5 },
-            visibleByDefault = false
+            categories = listOf("climate", "feature")
         ),
     )
 
     val planetColorModes = listOf(
-        BiomeColorMode(this, visibleByDefault = true),
+        BiomeColorMode(this, categories = listOf("default", "biome", "terrain", "base_layer")),
         SimpleColorMode(
-            this, "fast_biome", visibleByDefault = false
+            this, "fast_biome", categories = listOf("biome", "debug", "base_layer")
         ) { if (it.isAboveWater) Color.darkGreen else Color.darkBlue },
         SimpleColorMode(
-            this, "koppen", visibleByDefault = false
+            this, "koppen", categories = listOf("biome", "base_layer")
         ) { it.koppen.getOrNull()?.color },
         SimpleColorMode(
-            this, "hersfeldt", visibleByDefault = false
+            this, "hersfeldt", categories = listOf("biome", "base_layer")
         ) { it.hersfeldt.getOrNull()?.color },
         SimpleColorMode(
-            this, "koppen_terrain", visibleByDefault = false
+            this, "koppen_terrain", categories = listOf("biome", "base_layer")
         ) { it.koppen.getOrNull()?.terrainColor },
         SimpleDoubleColorMode(
-            this, "elevation", visibleByDefault = false,
+            this, "elevation", categories = listOf("terrain", "overlay"),
         ) {
             it.elevation.scaleAndCoerceIn(-10000.0..10000.0, 0.0..1.0)
         },
         SimpleDoubleColorMode(
-            this, "density", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
+            this, "density", categories = listOf("terrain", "overlay"), colorFn = redOutsideRange(-1.0..1.0)
         ) { it.density.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
-            this, "mountain_elevation", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
+            this, "mountain_elevation", categories = listOf("terrain", "overlay"), colorFn = redOutsideRange(-1.0..1.0)
         ) { it.elevation.scaleAndCoerceIn(2000.0..12000.0, 0.0..1.0) },
         SimpleDoubleColorMode(
-            this, "plate_density", visibleByDefault = false, colorFn = redOutsideRange(-1.0..1.0)
+            this, "plate_density", categories = listOf("tectonics", "overlay"), colorFn = redOutsideRange(-1.0..1.0)
         ) { it.tectonicPlate?.density?.adjustRange(-1.0..1.0, 0.0..1.0) },
         SimpleDoubleColorMode(
             this,
             "temperature",
-            visibleByDefault = false,
+            categories = listOf("climate", "base_layer"),
             colorFn = redWhenNull { colorTemperature(it) }
         ) { it.temperature },
         SimpleDoubleColorMode(
             this,
             "average_temperature",
-            visibleByDefault = false,
+            categories = listOf("climate", "base_layer"),
             colorFn = redWhenNull { colorTemperature(it) }
         ) { planet.climateMap[it.tileId]?.averageTemperature },
         SimpleDoubleColorMode(
             this,
             "moisture",
-            visibleByDefault = false,
+            categories = listOf("climate", "base_layer"),
             colorFn = redWhenNull {
                 if (it == 0.0) Color.yellow else Color(
                     0.0,
@@ -237,7 +245,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                     1.0
                 )
             }) { it.moisture },
-        SimpleColorMode(this, "annual_precipitation", visibleByDefault = false)
+        SimpleColorMode(this, "annual_precipitation", categories = listOf("climate", "base_layer"))
         {
             colorAnnualRainfall(
                 it.planet.climateMap[it.tileId]?.annualPrecipitation ?: return@SimpleColorMode Color.red
@@ -246,7 +254,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleDoubleColorMode(
             this,
             "hotspots",
-            visibleByDefault = false,
+            categories = listOf("tectonics", "overlay"),
             colorFn = redWhenNull { Color(it, it / 2.0, 0.0, 1.0) }) {
             planet.noise.hotspots.sample4d(
                 it.tile.position,
@@ -254,7 +262,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             )
         },
         SimpleColorMode(
-            this, "convergence_zones", visibleByDefault = false,
+            this, "convergence_zones", categories = listOf("tectonics", "overlay"),
         ) {
             val convergenceZone = planet.convergenceZones[it.tile.id] ?: return@SimpleColorMode null
             val subductionStrength =
@@ -264,25 +272,25 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             (if (subductionStrength > 0) Color.blue * 3.0 else Color.green * 2.0) * strengthFactor
         },
         SimpleColorMode(
-            this, "divergence_zones", visibleByDefault = false,
+            this, "divergence_zones", categories = listOf("tectonics", "overlay"),
         ) { if (it.tile.id in planet.divergenceZones) Color.red * planet.divergenceZones[it.tile.id]!!.strength else null },
         SimpleColorMode(
-            this, "tectonic_plates", visibleByDefault = false,
+            this, "tectonic_plates", categories = listOf("tectonics", "base_layer"),
         ) { it.tectonicPlate?.debugColor ?: Color.black },
         SimpleColorMode(
-            this, "slope", visibleByDefault = false,
+            this, "slope", categories = listOf("terrain", "overlay"),
         ) { Color.white * it.slope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "contiguous_slope", visibleByDefault = false,
+            this, "contiguous_slope", categories = listOf("terrain", "overlay")
         ) { Color.white * it.contiguousSlope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "non_contiguous_slope", visibleByDefault = false,
+            this, "non_contiguous_slope", categories = listOf("terrain", "overlay"),
         ) { Color.white * it.nonContiguousSlope.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "prominence", visibleByDefault = false,
+            this, "prominence", categories = listOf("terrain", "overlay"),
         ) { Color.white * it.prominence.scaleAndCoerceIn(0.0..2000.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "erosion", visibleByDefault = false,
+            this, "erosion", categories = listOf("erosion", "overlay"),
         ) {
             val scaled = it.erosionDelta.scaleAndCoerceIn(-50.0..50.0, -1.0..1.0).absoluteValue
             when {
@@ -292,45 +300,45 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             }
         },
         SimpleColorMode(
-            this, "deposit_flow", visibleByDefault = false,
+            this, "deposit_flow", categories = listOf("erosion", "overlay"),
         ) { Color.green * it.depositFlow.scaleAndCoerceIn(0.0..250.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "water_flow", visibleByDefault = false,
+            this, "water_flow", categories = listOf("erosion", "overlay"),
         ) { Color.blue * it.waterFlow.scaleAndCoerceIn(0.0..50.0, 0.0..1.0) },
         SimpleColorMode(
-            this, "crust_age", visibleByDefault = false,
+            this, "crust_age", categories = listOf("tectonics", "overlay"),
         ) {
             Color.white * it.formationTime.toDouble()
                 .scaleAndCoerceIn(planet.oldestCrust.toDouble()..planet.youngestCrust.toDouble(), 0.0..1.0)
         },
         SimpleColorMode(
-            this, "insolation", visibleByDefault = false,
+            this, "insolation", categories = listOf("climate", "overlay"),
         ) { planetTile ->
             Color.black.transparent.lerp(Color.orange, planetTile.insolation)
         },
         SimpleColorMode(
-            this, "annual_insolation", visibleByDefault = false,
+            this, "annual_insolation", categories = listOf("climate", "overlay"),
         ) { planetTile ->
             Color.black.transparent.lerp(Color.orange, planetTile.annualInsolation.average())
         },
         SimpleColorMode(
-            this, "edge_depth", visibleByDefault = false,
+            this, "edge_depth", categories = listOf("terrain", "overlay"),
         ) { planetTile ->
             Color.white * (planetTile.edgeDepth / 40.0)
         },
         SimpleColorMode(
-            this, "continentiality", visibleByDefault = false,
+            this, "continentiality", categories = listOf("terrain", "overlay"),
         ) { planetTile ->
             if (planetTile.continentiality >= 0) Color.red * (planetTile.continentiality / 40.0)
             else Color.blue * (-planetTile.continentiality / 40.0)
         },
         SimpleColorMode(
-            this, "itcz", visibleByDefault = false,
+            this, "itcz", categories = listOf("climate", "overlay"),
         ) { planetTile ->
             val distance = planet.itczDistanceMap[planetTile.tile.id] ?: return@SimpleColorMode null
             if (distance == -1) Color.red else Color.blue * max(0.0, 1 - distance / 5.0)
         },
-        SimpleColorMode(this, "air_pressure", visibleByDefault = false) { planetTile ->
+        SimpleColorMode(this, "air_pressure", categories = listOf("climate", "base_layer")) { planetTile ->
             colorAirPressure(planetTile.airPressure)
 //            if (airPressure <= ClimateSimulation.basePressure) {
 //                Color.black.lerp(Color.blue, ((airPressure - ClimateSimulation.basePressure) / 25).pow(2))
@@ -342,20 +350,32 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 //            }
 
         },
-        SimpleColorMode(this, "ocean_currents", visibleByDefault = false) {
+        SimpleColorMode(this, "ocean_currents", categories = listOf("climate", "overlay")) {
             val current = planet.oceanCurrents[it.tile.id] ?: return@SimpleColorMode null
             if (current.temperature > 0) Color.red * current.temperature
             else Color.blue * current.temperature
         },
-        SimpleColorMode(this, "surface_stone", visibleByDefault = false) { it.stoneColumn.surface.colors[0] },
-        SimpleColorMode(this, "middle_stone", visibleByDefault = false) { it.stoneColumn.middle.colors[0] },
-        SimpleColorMode(this, "deep_stone", visibleByDefault = false) { it.stoneColumn.deep.colors[0] },
+        SimpleColorMode(
+            this,
+            "surface_stone",
+            categories = listOf("tectonics", "base_layer")
+        ) { it.stoneColumn.surface.colors[0] },
+        SimpleColorMode(
+            this,
+            "middle_stone",
+            categories = listOf("tectonics", "base_layer")
+        ) { it.stoneColumn.middle.colors[0] },
+        SimpleColorMode(
+            this,
+            "deep_stone",
+            categories = listOf("tectonics", "base_layer")
+        ) { it.stoneColumn.deep.colors[0] },
         SimpleColorMode(
             this,
             "grey_land",
-            visibleByDefault = false
+            categories = listOf("debug", "base_layer")
         ) { if (it.isAboveWater) Color.dimGray else Color.black },
-        SimpleColorMode(this, "debug_color", visibleByDefault = false) { it.debugColor },
+        SimpleColorMode(this, "debug_color", categories = listOf("debug")) { it.debugColor },
     )
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }

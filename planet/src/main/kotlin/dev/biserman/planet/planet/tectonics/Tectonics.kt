@@ -488,8 +488,8 @@ object Tectonics {
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
         // hacky way to stop simulation from running forever
-        if (planet.tectonicAge % tectonicSimulationStop == 0) {
-            Main.instance.timerActive = "none"
+        if (tectonicSimulationStop > 0 && planet.tectonicAge % tectonicSimulationStop == 0) {
+            Main.instance.timerActive = false
         }
     }
 

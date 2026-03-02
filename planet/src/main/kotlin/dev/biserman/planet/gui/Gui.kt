@@ -22,19 +22,21 @@ import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.*
 import godot.core.Color
-import godot.core.Vector2
 import godot.core.connect
 import godot.global.GD
 import java.io.File
+import java.util.Locale.getDefault
 import kotlin.math.min
 
 @RegisterClass
 class Gui() : Node() {
-    val infoboxContainer by lazy { findChild("InfoboxContainer") as ScrollContainer }
-    val infoboxLabel by lazy { infoboxContainer.findChild("Label") as Label }
+    val infoboxContainer by lazy { findChild("InfoboxContainer") as TabContainer }
     val daysPassedLabel by lazy { findChild("DaysPassed") as Label }
     val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
     val statsGraph by lazy { StatsGraph(findChild("DebugGraph") as CanvasItem) }
+
+    val showSettingsButton by lazy { findChild("ShowSettingsButton") as ShowSettingsButton }
+    val clearMapButton by lazy { findChild("ClearMapButton") as Button }
 
     val saveButton by lazy { findChild("SaveButton") as Button }
     val loadButton by lazy { findChild("LoadButton") as Button }
@@ -42,6 +44,10 @@ class Gui() : Node() {
     val importButton by lazy { findChild("ImportButton") as Button }
     val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
     val calculateClimateButton by lazy { findChild("CalculateClimateButton") as Button }
+    val playButton by lazy { findChild("PlayButton") as Button }
+
+    val simulationOptionButton by lazy { findChild("SimulationOptionButton") as OptionButton }
+    val selectedSimulation get() = simulationOptions[simulationOptionButton.selected]
 
     val saveDialog by lazy { findChild("SaveDialog") as FileDialog }
     val loadDialog by lazy { findChild("LoadDialog") as FileDialog }
@@ -67,7 +73,13 @@ class Gui() : Node() {
     }
 
     fun updateInfobox() {
-        infoboxLabel.text = if (selectedTile == null) "" else Main.instance.planet.getTile(selectedTile!!).getInfoText()
+        infoboxContainer.getChildren().forEach { tab ->
+            val label = tab.findChild("Label") as? Label
+            if (tab is ScrollContainer && label is Label) {
+                label.text = if (selectedTile == null) "" else Main.instance.planet.getTile(selectedTile!!)
+                    .getInfoText(tab.name.toString().lowercase())
+            }
+        }
     }
 
     var selectedTile: Tile? = null
@@ -84,13 +96,41 @@ class Gui() : Node() {
             }
         }
 
+    val isPlayToggled get() = playButton.text == "■"
+    fun togglePlayButton(shouldToggleOn: Boolean = !isPlayToggled) {
+        playButton.text = if (shouldToggleOn) "■" else "▶"
+        Main.instance.timerActive = shouldToggleOn
+    }
+
 
     @RegisterFunction
     override fun _ready() {
         instance = this
-        buttons.forEach { addChild(it) }
-        addToggle("Show Stats", defaultValue = statsGraph.visible) { statsGraph.visible = it }
-        addToggle("Track Stats", defaultValue = statsGraph.trackStats) { statsGraph.trackStats = it }
+        showSettingsButton.mapLayerButtons.forEach { addChild(it.button) }
+        showSettingsButton.addToggle("Show Stats", listOf("stats")) { statsGraph.visible = it }
+        showSettingsButton.addToggle("Track Stats", listOf("stats")) { statsGraph.trackStats = it }
+
+        clearMapButton.pressed.connect { showSettingsButton.resetToggles() }
+
+        simulationOptions.clear()
+        Main.simulations.keys.forEachIndexed { index, simulationName ->
+            simulationOptionButton.addItem(
+                "Run ${
+                    simulationName.replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(
+                            getDefault()
+                        ) else it.toString()
+                    }
+                } Simulation")
+            simulationOptions[index] = simulationName
+        }
+        simulationOptionButton.select(0)
+
+        simulationOptionButton.itemSelected.connect {
+            togglePlayButton(false)
+        }
+
+        playButton.pressed.connect { togglePlayButton() }
 
         saveDialog.fileSelected.connect { filename ->
             Serialization.save(filename.removePrefix("res:\\"), Main.instance.planet)
@@ -159,29 +199,10 @@ class Gui() : Node() {
         }
     }
 
+    class MapLayerCheckButton(val button: ToggleButton, val categories: List<String>)
+
     companion object {
         lateinit var instance: Gui private set
-        val buttons = mutableListOf<CheckButton>()
-
-        var settingsVisible = false
-            set(value) {
-                field = value
-                buttons.forEach { it.setVisible(value) }
-            }
-
-        private val toggles = mutableMapOf<String, Boolean>()
-        fun addToggle(toggle: String, defaultValue: Boolean = false, onClick: (Boolean) -> Any) {
-            toggles[toggle] = defaultValue
-            buttons += ToggleButton(default = defaultValue, onClick = {
-                toggles[toggle] = it
-                onClick(it)
-            }).also {
-                it.text = toggle
-                it.setPosition(Vector2(0, 10 * buttons.size + 25))
-                it.scale = Vector2(0.6, 0.6)
-                it.setVisible(settingsVisible)
-                instance.addChild(it)
-            }
-        }
+        val simulationOptions = mutableMapOf<Int, String>()
     }
 }
