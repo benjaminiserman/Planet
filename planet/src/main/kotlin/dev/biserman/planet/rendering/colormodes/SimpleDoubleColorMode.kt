@@ -9,7 +9,7 @@ class SimpleDoubleColorMode(
     planetRenderer: PlanetRenderer,
     override val name: String,
     val colorFn: (Double?) -> Color = defaultColorFn,
-    override val visibleByDefault: Boolean = false,
+    override val categories: List<String>,
     val getFn: (PlanetTile) -> Double?,
 ) : PlanetColorMode(planetRenderer) {
     override fun colorsFor(planetTile: PlanetTile): Sequence<Color> = sequence {

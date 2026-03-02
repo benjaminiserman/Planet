@@ -30,13 +30,6 @@ class Main : Node() {
 		Tectonics.stepTectonicPlateForces(newPlanet)
 		planetRenderer = PlanetRenderer(this, newPlanet)
 
-		Gui.addToggle("Run Tectonics Simulation", defaultValue = false) {
-			timerActive = if (it) "tectonics" else "none"
-		}
-		Gui.addToggle("Run Climate Simulation", defaultValue = false) {
-			timerActive = if (it) "climate" else "none"
-		}
-
 		updatePlanet(newPlanet)
 	}
 
@@ -63,7 +56,7 @@ class Main : Node() {
 	}
 
 	val timerStep = 0.1
-	var timerActive = "none"
+	var timerActive = false
 		set(value) {
 			field = value
 			timerTime = timerStep
@@ -72,14 +65,11 @@ class Main : Node() {
 
 	@RegisterFunction
 	override fun _process(delta: Double) {
-		if (timerActive != "none") {
+		if (timerActive) {
 			timerTime += delta
 			if (timerTime >= timerStep) {
 				timerTime = 0.0
-				when (timerActive) {
-					"tectonics" -> Tectonics.stepTectonicsSimulation(planet)
-					"climate" -> ClimateSimulation.stepClimateSimulation(planet)
-				}
+				simulations[Gui.instance.selectedSimulation]!!.invoke(planet)
 				planetRenderer.update(planet)
 			}
 		}
@@ -95,5 +85,11 @@ class Main : Node() {
 	companion object {
 		lateinit var instance: Main
 		val debugRandom = Random(0)
+
+		val simulations = mapOf(
+			"tectonics" to { planet: Planet -> Tectonics.stepTectonicsSimulation(planet) },
+			"climate" to { planet: Planet -> ClimateSimulation.stepClimateSimulation(planet)},
+			"erosion" to { planet: Planet -> Tectonics.performErosion(planet) }
+		)
 	}
 }
