@@ -60,6 +60,7 @@ class ShowSettingsButton() : OptionButton() {
             "feature",
             "overlay",
             "base_layer",
+            "terrain",
             "biome",
             "climate",
             "tectonics",

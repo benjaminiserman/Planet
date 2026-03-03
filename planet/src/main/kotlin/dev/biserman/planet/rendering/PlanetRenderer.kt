@@ -15,6 +15,7 @@ import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
 import dev.biserman.planet.utils.alphaAverage
+import dev.biserman.planet.utils.randomHsv
 import dev.biserman.planet.utils.sum
 import dev.biserman.planet.utils.transparent
 import godot.api.MeshInstance3D
@@ -129,13 +130,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             categories = listOf("tectonics", "feature")
         ),
         SimpleDebugRenderer(parent, "rivers", categories = listOf("terrain", "feature")) { planet ->
-            val pointElevations = planet.planetTiles.values.flatMap { it.tile.corners }
-                .distinctBy { it.position }
-                .associateWith { it.tiles.map { tile -> planet.getTile(tile).elevation }.average() }
-
-            val riverSegments =
-                pointElevations.keys.map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
-                    .filter { pointElevations[it.first]!! > 0 || pointElevations[it.second]!! > 0 }
+            val riverSegments = planet.riverBasinMap.values.flatten()
 
             val verts = mutableListOf<MutVertex>()
             val edges = mutableListOf<MutEdge>()
@@ -152,6 +147,27 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
                 MeshData(
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
             )
+        },
+        SimpleDebugRenderer(parent, "river_basins", categories = listOf("terrain", "feature")) { planet ->
+            planet.riverBasinMap.flatMap { (mouth, riverSegments) ->
+                val verts = mutableListOf<MutVertex>()
+                val edges = mutableListOf<MutEdge>()
+
+                val lift = 1.001
+                for (segment in riverSegments) {
+                    val length = verts.size
+                    verts.add(MutVertex(segment.first.position * lift))
+                    verts.add(MutVertex(segment.second.position * lift))
+                    edges.add(MutEdge(mutableListOf(length, length + 1)))
+                }
+
+                val color =
+                    if (mouth.tiles.any { !planet.planetTiles[it.id]!!.isAboveWater }) Color.randomHsv() else Color.white
+                listOf(
+                    MeshData(
+                        MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = color })
+                )
+            }
         },
         SimpleDebugRenderer(parent, "climate_cells", categories = listOf("climate", "feature")) { planet ->
             val bands = listOf(-60, -30, 0, +30, +60).map { it.toDouble() }

@@ -42,4 +42,6 @@ object UtilityExtensions {
 
     fun <T> (Set<T>).cartesianProduct(vararg collections: Set<T>): Set<List<T>> =
         cartesianProduct(this.toSet(), *collections)
+
+    operator fun <T> (Pair<T, T>).contains(element: T) = first == element || second == element
 }

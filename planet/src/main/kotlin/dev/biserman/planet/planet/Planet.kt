@@ -15,9 +15,13 @@ import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
 import dev.biserman.planet.utils.Path
+import dev.biserman.planet.utils.UtilityExtensions.contains
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
+import dev.biserman.planet.utils.floodFill
+import dev.biserman.planet.utils.floodFillPartitionForest
+import kotlin.collections.average
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -47,6 +51,35 @@ class Planet(val seed: Int, val size: Int) {
     @get:JsonIgnore
     val edgeDepthMap by memo({ tectonicAge }) {
         PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
+    }
+
+    @get:JsonIgnore
+    val riverBasinMap by memo({ tectonicAge }) {
+        val pointElevations = planetTiles.values.flatMap { it.tile.corners }
+            .distinctBy { it.position }
+            .associateWith { it.tiles.map { tile -> getTile(tile).elevation }.average() }
+
+        val riverSegments =
+            pointElevations.keys
+                .map { it to it.corners.minBy { corner -> pointElevations[corner]!! } }
+                .filter { riverSegment ->
+                    riverSegment.toList()
+                        .count { corner -> corner.tiles.any { !planetTiles[it.id]!!.isAboveWater } } <= 1
+                }
+
+        val riverPoints = riverSegments.flatMap { it.toList() }.sortedBy { pointElevations[it] }
+
+        val riverBasins = floodFillPartitionForest(riverPoints) { node ->
+            node.corners.filter { otherNode ->
+                riverSegments.any { node in it && otherNode in it }
+            }
+        }.mapValues { (_, basin) ->
+            basin.flatMap { riverNode ->
+                riverSegments.filter { it.contains(riverNode) }
+            }.toSet()
+        }
+
+        riverBasins
     }
 
     @get:JsonIgnore

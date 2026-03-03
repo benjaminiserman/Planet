@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
 [ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
 [ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="4_m7jmp"]
-[ext_resource type="Script" uid="uid://d2kmwp8b8fhwj" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
+[ext_resource type="Script" uid="uid://bp2qgsh74bun4" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
 [ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_y2354"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
@@ -138,6 +138,7 @@ initial_position = 2
 ok_button_text = "Open"
 file_mode = 0
 access = 2
+root_subfolder = "./save"
 filters = PackedStringArray("*.json")
 
 [node name="MenuButtons" type="HBoxContainer" parent="GUI"]
@@ -156,7 +157,6 @@ alignment = 2
 clip_contents = true
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-selected = 0
 fit_to_longest_item = false
 
 [node name="PlayButton" type="Button" parent="GUI/MenuButtons"]
@@ -216,6 +216,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -317.0
 offset_top = -537.0
+grow_horizontal = 0
+grow_vertical = 0
 current_tab = 0
 
 [node name="Basic" type="ScrollContainer" parent="GUI/InfoboxContainer"]
