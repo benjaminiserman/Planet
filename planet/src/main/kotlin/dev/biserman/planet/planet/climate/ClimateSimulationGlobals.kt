@@ -14,6 +14,7 @@ object ClimateSimulationGlobals {
     var northSpringEquinox = 286.0
     var yearLength = 365.242
     var opticalDepthConstant = -0.14
+    var insolationToWm2 = 340.0 // convert [0, 1] range insolation to W/m^2
 
     // ITCZ PATHFINDING
 
@@ -104,6 +105,7 @@ object ClimateSimulationGlobals {
     // MOISTURE
 
     var maxMoistureSteps = 50 // the maximum amount of steps the moisture simulator can run
+    var moistureToMm = 120.0 // scalar to convert moisture to mm
     var startingMoistureMultiplier = 1.5 // multiply all starting moisture by this varue
     var minStartingMoisture = 0.05 // minimum starting moisture
     var maxStartingMoisture = 3.0 // maximum starting moisture

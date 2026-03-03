@@ -58,6 +58,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistur
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalarMax
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.insolationToWm2
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczAirPressureMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczAirPressureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczMoistureExp
@@ -75,6 +76,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minUpslopeMoi
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.moistureCoolingExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.moistureCoolingTargetTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.moisturePropagationMultiplier
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.moistureToMm
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanBaseTemp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanInsolationScale
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMinBaseTemp
@@ -425,8 +427,8 @@ object ClimateSimulation {
     fun (PlanetTile).calculateClimateDatumMonth(): ClimateDatumMonth {
         return ClimateDatumMonth(
             averageTemperature,
-            insolation * 500.0,
-            moisture * 120.0
+            insolation * insolationToWm2,
+            moisture * moistureToMm
         )
     }
 
