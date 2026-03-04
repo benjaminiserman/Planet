@@ -19,6 +19,8 @@ class Main : Node() {
 	lateinit var planet: Planet private set
 	lateinit var planetRenderer: PlanetRenderer
 
+	var copyElevation: Double? = 0.0
+
 	@RegisterFunction
 	override fun _ready() {
 		instance = this
@@ -41,18 +43,34 @@ class Main : Node() {
 
 		if (Input.isActionJustPressed("next")) {
 			Tectonics.stepTectonicsSimulation(planet)
+			planet.terrainChangeCount++
 			planetRenderer.update(planet)
 		}
 
-		if (Input.isActionJustPressed("erode")) {
-			Tectonics.performErosion(planet)
+		val selectedTile = planet.planetTiles[Gui.instance.selectedTile?.id] ?: return
+		if (Input.isActionJustPressed("place_land")) {
+			selectedTile.elevation = 1.0
+			planet.terrainChangeCount++
 			planetRenderer.update(planet)
 		}
 
-//        if (Input.isActionJustPressed("play")) {
-//            timerActive = !timerActive
-//            timerTime = 0.33
-//        }
+		if (Input.isActionJustPressed("place_ocean")) {
+			selectedTile.elevation = -1.0
+			planet.terrainChangeCount++
+			planetRenderer.update(planet)
+		}
+
+		if (Input.isActionJustPressed("paste")) {
+			if (copyElevation != null) {
+				selectedTile.elevation = copyElevation!!
+				planet.terrainChangeCount++
+				planetRenderer.update(planet)
+			}
+		}
+
+		if (Input.isActionJustPressed("copy")) {
+			copyElevation = selectedTile.elevation
+		}
 	}
 
 	val timerStep = 0.1

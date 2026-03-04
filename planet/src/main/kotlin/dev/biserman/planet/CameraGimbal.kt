@@ -3,6 +3,8 @@ package dev.biserman.planet
 import dev.biserman.planet.geometry.intersectRaySphere
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.gui.Gui
+import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.topology.Tile
 import godot.annotation.Export
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
@@ -13,13 +15,10 @@ import godot.core.Vector2
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.math.PI
+import kotlin.times
 
 @RegisterClass
 class CameraGimbal : Node3D() {
-	@Export
-	@RegisterProperty
-	var target = Vector3.ZERO
-
 	@Export
 	@RegisterProperty
 	var rotationSpeed = PI.toFloat() / 3
@@ -50,6 +49,27 @@ class CameraGimbal : Node3D() {
 	val camera by lazy { innerGimbal.findChild("Camera3D") as Camera3D }
 
 	var clickStartPosition: Vector2? = null
+
+	val hoveredPoint
+		get(): Vector3? {
+			val viewport = getViewport()!!
+			val origin = camera.projectRayOrigin(viewport.getMousePosition())
+			val normal = camera.projectRayNormal(viewport.getMousePosition())
+
+			val t = intersectRaySphere(origin, normal, Vector3.ZERO, 1.0)
+			return if (t == null) null
+			else origin + normal * t
+		}
+
+	val hoveredTile
+		get(): Tile? {
+			val hitPoint = hoveredPoint ?: return null
+			val planet = Main.instance.planet
+			return planet.topology.rTree
+				.nearest(hitPoint.toPoint(), planet.topology.averageRadius * 2, 1)
+				.first()
+				.value()
+		}
 
 	@RegisterFunction
 	override fun _unhandledInput(event: InputEvent?) {
@@ -85,23 +105,7 @@ class CameraGimbal : Node3D() {
 			clickStart != null &&
 			event.position.distanceTo(clickStart) == 0.0
 		) {
-			val origin = camera.projectRayOrigin(event.position)
-			val normal = camera.projectRayNormal(event.position)
-
-			val t = intersectRaySphere(origin, normal, Vector3.ZERO, 1.0)
-			if (t != null) {
-				val hitPoint = origin + normal * t
-				target = hitPoint
-				val planet = Main.instance.planet
-				val selectedTile =
-					planet.topology.rTree
-						.nearest(hitPoint.toPoint(), planet.topology.averageRadius * 2, 1)
-						.first()
-						.value()
-				Gui.instance.selectedTile = selectedTile
-			} else {
-				Gui.instance.selectedTile = null
-			}
+			Gui.instance.selectedTile = hoveredTile
 		}
 	}
 
@@ -125,7 +129,7 @@ class CameraGimbal : Node3D() {
 	override fun _process(delta: Double) {
 		handleKeyboardInput(delta)
 		scale = GD.lerp(scale, Vector3.ONE * zoom, zoomSpeed)
-		globalTransform.origin = target
+		globalTransform.origin = hoveredPoint ?: Vector3.ZERO
 		innerGimbal.setRotation(
 			Vector3(
 				GD.clamp(innerGimbal.rotation.x, -PI / 2, PI / 2),
@@ -133,5 +137,14 @@ class CameraGimbal : Node3D() {
 				innerGimbal.rotation.z
 			)
 		)
+	}
+
+	@RegisterFunction
+	override fun _ready() {
+		instance = this
+	}
+
+	companion object {
+		lateinit var instance: CameraGimbal
 	}
 }
