@@ -474,9 +474,9 @@ object Tectonics {
                 performErosionTime +
                 runGuardrailsTime
 
-        planet.tectonicAge += 1
+        planet.tectonicAge++
+        planet.terrainChangeCount++
 
-        Gui.instance.tectonicAgeLabel.setText("${planet.tectonicAge} My")
         Gui.instance.updateInfobox()
         Gui.instance.statsGraph.update(planet)
 

@@ -193,7 +193,8 @@ class Gui() : Node() {
                     value.r8.toDouble().adjustRange(threshold..255.0, 1.0..6400.0)
                 }
             }
-            Main.instance.planet.tectonicAge = min(-1, Main.instance.planet.tectonicAge - 1)
+            Main.instance.planet.tectonicAge = 0
+            Main.instance.planet.terrainChangeCount++
             OceanCurrents.viaEarthlikeHeuristic(Main.instance.planet, 7)
             Main.instance.planetRenderer.update(Main.instance.planet)
         }

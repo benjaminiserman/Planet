@@ -18,8 +18,7 @@ signals = [
     
 ]
 properties = [
-    target,
-	rotation_speed,
+    rotation_speed,
 	mouse_control,
 	mouse_sensitivity,
 	max_zoom,
@@ -28,5 +27,6 @@ properties = [
 ]
 functions = [
     _unhandled_input,
-	_process
+	_process,
+	_ready
 ]

@@ -59,8 +59,8 @@ class PlanetTile(
     val temperature get() = averageTemperature
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo({ planet.tectonicAge }, { planet.daysPassed }) { calculateAirPressure() }
-    val prevailingWind by memo({ planet.tectonicAge }, { planet.daysPassed }) { calculatePrevailingWind() }
+    val airPressure by memo({ planet.terrainChangeCount }, { planet.daysPassed }) { calculateAirPressure() }
+    val prevailingWind by memo({ planet.terrainChangeCount }, { planet.daysPassed }) { calculatePrevailingWind() }
 
     val isIceCap
         get() = elevation >= (1 - tile.position.y.absoluteValue).pow(0.5) * 6500 ||
@@ -129,20 +129,20 @@ class PlanetTile(
     val isAboveWater get() = elevation > planet.seaLevel
 
     @get:JsonIgnore
-    val contiguousSlope by memo({ planet.tectonicAge }) {
+    val contiguousSlope by memo({ planet.terrainChangeCount }) {
         sqrt(neighbors.filter { it.isAboveWater == isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
 
     @get:JsonIgnore
-    val nonContiguousSlope by memo({ planet.tectonicAge }) {
+    val nonContiguousSlope by memo({ planet.terrainChangeCount }) {
         sqrt(neighbors.filter { it.isAboveWater != isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
     }
 
     @get:JsonIgnore
-    val slope by memo({ planet.tectonicAge }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
+    val slope by memo({ planet.terrainChangeCount }) { sqrt(neighbors.map { (it.elevation - elevation).pow(2) }.average()) }
 
     @get:JsonIgnore
-    val prominence by memo({ planet.tectonicAge }) {
+    val prominence by memo({ planet.terrainChangeCount }) {
         val computed =
             sqrt(
                 neighbors

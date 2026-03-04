@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
-import dev.biserman.planet.planet.WorldKinds
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -14,12 +14,10 @@ import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
-import dev.biserman.planet.utils.Path
 import dev.biserman.planet.utils.UtilityExtensions.contains
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
-import dev.biserman.planet.utils.floodFill
 import dev.biserman.planet.utils.floodFillPartitionForest
 import kotlin.collections.average
 
@@ -41,7 +39,7 @@ class Planet(val seed: Int, val size: Int) {
     var planetTiles = topology.tiles.associate { tile -> tile.id to PlanetTile(this, tile.id) }
 
     @get:JsonIgnore
-    val contiguousRegions by memo({ tectonicAge }) {
+    val contiguousRegions by memo({ terrainChangeCount }) {
         PlanetRegion(
             this,
             planetTiles.values.toMutableSet()
@@ -49,12 +47,12 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     @get:JsonIgnore
-    val edgeDepthMap by memo({ tectonicAge }) {
+    val edgeDepthMap by memo({ terrainChangeCount }) {
         PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
     }
 
     @get:JsonIgnore
-    val riverBasinMap by memo({ tectonicAge }) {
+    val riverBasinMap by memo({ terrainChangeCount }) {
         val pointElevations = planetTiles.values.flatMap { it.tile.corners }
             .distinctBy { it.position }
             .associateWith { it.tiles.map { tile -> getTile(tile).elevation }.average() }
@@ -83,7 +81,7 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     @get:JsonIgnore
-    val continentialityMap by memo({ tectonicAge }) {
+    val continentialityMap by memo({ terrainChangeCount }) {
         val tilesToFlip = contiguousRegions
             .filter { region -> region.tiles.maxOf { it.edgeDepth } < 1 }
             .flatMap { it.tiles }
@@ -127,11 +125,11 @@ class Planet(val seed: Int, val size: Int) {
         }
     }
 
-    val pointNemo by memo({ tectonicAge }) {
+    val pointNemo by memo({ terrainChangeCount }) {
         planetTiles.values.minBy { it.continentiality }
     }
 
-    val waterCoverage by memo({ tectonicAge }) {
+    val waterCoverage by memo({ terrainChangeCount }) {
         1.0 - planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
     }
 
@@ -149,12 +147,18 @@ class Planet(val seed: Int, val size: Int) {
     var oceanCurrents: MutableMap<Int, OceanCurrent> = mutableMapOf()
 
     var tectonicAge = 0
+        set(value) {
+            field = value
+            Gui.instance.tectonicAgeLabel.setText("$tectonicAge My")
+        }
+
     var daysPassed = 0
     var nextPlateId = 0
 
     var seaLevel: Double = 0.0
 
     val radiusMeters = 6378137.0
+    var terrainChangeCount: ULong = 0uL
 
     val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
     val youngestCrust by memo({ tectonicAge }) { planetTiles.values.maxOf { it.formationTime } }

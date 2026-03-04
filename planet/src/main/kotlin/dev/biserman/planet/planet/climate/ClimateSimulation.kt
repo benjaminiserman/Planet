@@ -295,6 +295,7 @@ object ClimateSimulation {
             }
             ((equatorEffect + ferrelEffect + oceanEffect) * startingMoistureMultiplier).coerceIn(minStartingMoisture..maxStartingMoisture)
         }
+        val startingMoisureSum = currentMoisture.values.sum()
         val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
 
         var steps = 0
@@ -353,7 +354,7 @@ object ClimateSimulation {
                 .map { neighbor -> finalMoisture[neighbor] ?: 0.0 }
                 .average()
         }
-        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()}")
+        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()} / $startingMoisureSum")
     }
 
     val (PlanetTile).averageTemperature: Double

@@ -110,7 +110,7 @@ object ClimateSimulationGlobals {
     var minStartingMoisture = 0.05 // minimum starting moisture
     var maxStartingMoisture = 3.0 // maximum starting moisture
     var oceanMoistureInsolationExp = 3.0 // higher exp -> less ocean moisture & most seasonality
-    var oceanMoistureInsolationNowVsAnnualLerp = 0.7
+    var oceanMoistureInsolationNowVsAnnualLerp = 1.0
     var averageInsolationMoistureCutoff = 0.5
 
     // awful hack to help moisture propagate into continental interiors
@@ -121,13 +121,13 @@ object ClimateSimulationGlobals {
     var itczMoistureExp = 1.5 // higher exp -> less ITCZ effect & faster effect decay with distance
     var itczMoistureScalar = 1.5 // how much is moisture multiplied by directly under the ITCZ
 
-    var equatorMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for equator moisture effect
+    var equatorMoistureEffectMaxContinentiality = 9.0 // maximum continentiality for equator moisture effect
     var equatorMoistureEffectScalar = 1.0 // maximum amount that equator can effect moisture
     var equatorMoistureEffectInsolationExp = 4.0 // higher exp -> lower moisture effect at equator & faster drop-off
     var equatorMoistureEffectMaxDistance = 2.0 // max distance that equatorial updraft effects moisture, in °latitude
 
     var ferrelMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for ferrel moisture effect
-    var ferrelMoistureEffectScalar = 0.7 // exponential falloff rate for ferrel moisture effect
+    var ferrelMoistureEffectScalar = 1.5 // exponential falloff rate for ferrel moisture effect
     var ferrelMoistureEffectMax = 0.4 // maximum amount that ferrel cell updraft can effect moisture
     var ferrelMoistureEffectInsolationExp = 0.75 // higher exp -> lower ferrel moisture effect & faster drop-off
     var ferrelMoistureEffectMaxDistance = 15.0 // max distance that ferrel cell updraft effects moisture
