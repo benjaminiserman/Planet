@@ -21,6 +21,16 @@ object ClimateSimulationGlobals {
     var itczPathfindingNowVsAnnualInsolationLerp = 0.6
     var itczPathfindingContinentialityWeight = 0.01
 
+    // OCEAN CURRENTS IDENTIFICATION
+
+    var minCurrentCirculationRadius = 4
+    var minOceanTilesForCurrent = 50
+    var minCurrentScanlineProportion = 0.4
+    var targetCurrentRadiusProportion = 0.35
+    var oceanCurrentStrengthPow = 3.0
+    var oceanCurrentStrengthDiagonalization = 0.66
+    var oceanCurrentMinStrength = 0.1
+
     // AIR PRESSURE
 
     var airPressureSolarDeclinationScalar = -0.75 //-0.85
@@ -69,7 +79,7 @@ object ClimateSimulationGlobals {
 
     // TEMPERATURE
 
-    var baseTemperature = 239.0 // °K, base temperature of land
+    var baseTemperature = 238.5 // °K, base temperature of land
     var baseTemperatureInsolationScalar = 86.5 // °K, increasing by 1°K ≈ 0.9°K increase in tropical summer temperatures
 
     var oceanMinBaseTemp = 256.0 // °K, lowest possible ocean temperature
@@ -127,11 +137,17 @@ object ClimateSimulationGlobals {
     var equatorMoistureEffectMaxDistance = 2.0 // max distance that equatorial updraft effects moisture, in °latitude
 
     var ferrelMoistureEffectMaxContinentiality = 12.0 // maximum continentiality for ferrel moisture effect
-    var ferrelMoistureEffectScalar = 1.5 // exponential falloff rate for ferrel moisture effect
+    var ferrelMoistureEffectScalar = 1.25 // exponential falloff rate for ferrel moisture effect
     var ferrelMoistureEffectMax = 0.4 // maximum amount that ferrel cell updraft can effect moisture
     var ferrelMoistureEffectInsolationExp = 0.75 // higher exp -> lower ferrel moisture effect & faster drop-off
     var ferrelMoistureEffectMaxDistance = 15.0 // max distance that ferrel cell updraft effects moisture
     var ferrelMoistureEffectLatitude = 60.0 // °latitude at which ferrel moisture effect is centered
+
+    var hadleyMoistureEffectScalar = -3.5 // exponential falloff rate for hadley moisture effect
+    var hadleyMoistureEffectMax = 0.4 // maximum amount that hadley cell downdraft can effect moisture
+    var hadleyMoistureEffectInsolationExp = 0.75 // higher exp -> lower hadley moisture effect & faster drop-off
+    var hadleyMoistureEffectMaxDistance = 10.0 // max distance that hadley cell updraft effects moisture
+    var hadleyMoistureEffectLatitude = 30.0 // °latitude at which hadley moisture effect is centered
 
     var landPrecipitationScalar = 1.0 // scalar for all land precipitation
     var oceanPrecipitationScalar = 0.5 // scalar for all oceanic precipitation

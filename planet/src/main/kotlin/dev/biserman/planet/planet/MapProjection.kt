@@ -50,7 +50,7 @@ object MapProjections {
                         this.backward(
                             Vector2(
                                 newX,
-                                y.toDouble() / imageY - 0.5,
+                                -(y.toDouble() / imageY - 0.5),
                             )
                         ).toVector3()
                     ).clamp(Color.black, Color.white).toARGB32()
