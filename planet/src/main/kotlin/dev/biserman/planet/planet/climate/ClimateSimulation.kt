@@ -56,6 +56,11 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistur
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.ferrelMoistureEffectScalar
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectInsolationExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectLatitude
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMax
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMaxDistance
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalarMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.insolationToWm2
@@ -126,13 +131,15 @@ object ClimateSimulation {
 
     @Suppress("UnusedUnaryOperator")
     val bands = listOf(
+        +180 to +5.0,
         +90 to +5.0,
         +60 to -7.5,
-        +30 to +5.0,
+        +30 to +7.5,
         0 to +5.0,
-        -30 to +5.0,
+        -30 to +7.5,
         -60 to -7.5,
         -90 to +5.0,
+        -180 to +5.0,
     ).map { Band(it.first.toDouble(), it.second.toDouble()) }
     val basePressure = 1010.0
 
@@ -263,6 +270,10 @@ object ClimateSimulation {
                     (1 - (geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue / ferrelMoistureEffectMaxDistance)
                         .coerceIn(0.0, ferrelMoistureEffectMax) *
                     max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
+            val hadleyEffect = hadleyMoistureEffectScalar *
+                    tile.insolation.pow(hadleyMoistureEffectInsolationExp) *
+                    (1 - (geoPoint.latitudeDegrees.absoluteValue - hadleyMoistureEffectLatitude).absoluteValue / hadleyMoistureEffectMaxDistance)
+                        .coerceIn(0.0, hadleyMoistureEffectMax)
             val polarEffect = (tile.averageInsolation / averageInsolationMoistureCutoff).coerceIn(0.0..1.0)
             val oceanEffect = if (tile.isAboveWater) 0.0
             else {
@@ -293,9 +304,10 @@ object ClimateSimulation {
 
                 ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * polarEffect)
             }
-            ((equatorEffect + ferrelEffect + oceanEffect) * startingMoistureMultiplier).coerceIn(minStartingMoisture..maxStartingMoisture)
+            ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) * startingMoistureMultiplier)
+                .coerceIn(minStartingMoisture..maxStartingMoisture)
         }
-        val startingMoisureSum = currentMoisture.values.sum()
+        val startingMoistureSum = currentMoisture.values.sum()
         val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
 
         var steps = 0
@@ -354,7 +366,7 @@ object ClimateSimulation {
                 .map { neighbor -> finalMoisture[neighbor] ?: 0.0 }
                 .average()
         }
-        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()} / $startingMoisureSum")
+        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()} / $startingMoistureSum")
     }
 
     val (PlanetTile).averageTemperature: Double
@@ -417,7 +429,10 @@ object ClimateSimulation {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
-                    min(continentiality * inlandWaterVsLandTemperatureContinentialityScalar, inlandWaterVsLandTemperatureContinentialityScalarMax)
+                    min(
+                        continentiality * inlandWaterVsLandTemperatureContinentialityScalar,
+                        inlandWaterVsLandTemperatureContinentialityScalarMax
+                    )
                 )
             }
 
@@ -435,7 +450,6 @@ object ClimateSimulation {
 
     fun calculateClimate(planet: Planet): Map<PlanetTile, ClimateDatum> {
         val startDate = planet.daysPassed
-
         val months = 12
         val totalSamples = months * climateSimulationSamplesPerMonth
         val monthToTileClimate = (0..<totalSamples).map { i ->

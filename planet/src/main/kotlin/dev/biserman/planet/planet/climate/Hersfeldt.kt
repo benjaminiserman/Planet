@@ -936,7 +936,7 @@ object Hersfeldt : ClimateClassifier {
             }
 
             // Supertropical
-            if (gddResults.totalGint >= 1250 && growthSupply >= 0.8) {
+            if (gddResults.totalGint <= 1250 && growthSupply >= 0.8) {
                 return when {
                     summerType == SummerType.HOT && aridityFactor >= 0.75 ->
                         if (evaporationRatio < 0.45) SUPERTROPICAL_MONSOON_FOREST

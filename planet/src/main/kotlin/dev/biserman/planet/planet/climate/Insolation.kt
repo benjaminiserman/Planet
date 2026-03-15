@@ -14,7 +14,7 @@ import kotlin.math.*
 object Insolation {
     // Earth–Sun distance correction
     fun eccentricityFactor(dayOfYear: Double): Double {
-        return 1.0 + orbitEccentricity * 2 * cos(2.0 * Math.PI * (dayOfYear + periapsis) / 365.0)
+        return 1.0 + orbitEccentricity * 2 * cos(2.0 * Math.PI * (dayOfYear + periapsis) / yearLength)
     }
 
     // Solar declination (radians, Cooper’s formula)
@@ -43,6 +43,6 @@ object Insolation {
         val cosZ = cosZenith(latitude, dayOfYear)
         val m = airMass(cosZ)
         val transmittance = exp(opticalDepthConstant * m)
-        return solarConstant * e0 * cosZ * transmittance
+        return (solarConstant * e0 * cosZ * transmittance).coerceIn(0.0, 1.0).absoluteValue
     }
 }

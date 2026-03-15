@@ -319,6 +319,7 @@ class PlanetTile(
             current step moisture: ${moisture.formatDigits(4)} (${(ClimateSimulation.toPrecipitation(moisture) / 12.0).toInt()}mm)
             warm current distance: ${planet.warmCurrentDistanceMap[tileId] ?: "null"}
             cool current distance: ${planet.coolCurrentDistanceMap[tileId] ?: "null"}
+            current temperature: ${planet.oceanCurrents[tileId]?.temperature?.formatDigits() ?: "null"}
             itcz distance: ${planet.itczDistanceMap[tileId] ?: "null"}
         """.trimIndent() + if (tileId in planet.climateMap) {
             val climateDatum = planet.climateMap[tileId]!!
