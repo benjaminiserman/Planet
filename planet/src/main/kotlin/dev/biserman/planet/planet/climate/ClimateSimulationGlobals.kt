@@ -103,9 +103,12 @@ object ClimateSimulationGlobals {
     var maxOceanCurrentTemperatureContinentiality = 5.0
     var warmCurrentTemperatureStrength = 2.5 // °K, the max temperature increase from a warm current
     var warmCurrentTemperatureDistance = 3.0 // the furthest away that a warm current can affect temperature (in tiles)
+    var warmCurrentTemperatureAverageInsolationExp = 1.5
+    var warmCurrentTemperatureInsolationExp = 1.5
     var coolCurrentTemperatureStrength = -0.3 // °K, the max temperature decrease from a cool current
     var coolCurrentTemperatureDistance = 3.0 // the furthest away that a cool current can affect temperature (in tiles)
-    var currentTemperatureAverageInsolationExp = 1.5
+    var coolCurrentTemperatureAverageInsolationExp = 1.5
+    var coolCurrentTemperatureInsolationExp = 1.5
 
     var moistureCoolingTargetTemperature = 273.15 // °K, the temperature that added moisture warms/cools towards
     var moistureCoolingExp = 1.5 // higher exp -> less moisture cooling & faster moisture cooling drop-off
@@ -156,9 +159,10 @@ object ClimateSimulationGlobals {
     var maxOceanCurrentMoistureContinentiality = 5.0
     var warmCurrentMoistureStrength = 12.0 // °K, the max moisture increase from a warm current
     var warmCurrentMoistureDistance = 2.0 // the furthest away that a warm current can affect moisture
+    var warmCurrentMoistureAverageInsolationExp = 1.25
     var coolCurrentMoistureStrength = -2.5 // °K, the max moisture decrease from a cool current
     var coolCurrentMoistureDistance = 4.0 // the furthest away that a cool current can affect moisture
-    var currentMoistureAverageInsolationExp = 1.25
+    var coolCurrentMoistureAverageInsolationExp = 1.25
 
     var minPrecipitation = 0.01 // min % of moisture to precipitate per tile a cloud moves
     var upslopeOfMinMoisture = 750.0 // at what slope does moisture propagation drop to the % below
