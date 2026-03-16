@@ -459,6 +459,7 @@ object Tectonics {
     fun stepTectonicsSimulation(planet: Planet) {
         val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
         val geologyTime = measureTime { Geology.simulateGeology(planet) }
+        //meteor impacts
         val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
         val performErosionTime = measureTime { performErosion(planet) }
         val runGuardrailsTime = measureTime {

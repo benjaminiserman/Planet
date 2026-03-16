@@ -66,6 +66,10 @@ object TectonicGlobals {
     var minPercentContinentalGuardrail = 0.15
     var maxPercentContinentalGuardrail = 0.55
 
+    var meteorImpactChance = 0.01
+    var minMeteorElevationChange = 200.0
+    var maxMeteorElevationChange = 2000.0
+
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore
     val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 1000.0)
