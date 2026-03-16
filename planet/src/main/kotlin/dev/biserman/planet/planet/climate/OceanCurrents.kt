@@ -142,7 +142,7 @@ object OceanCurrents {
                         (averageNeighbor - edgeTile.tile.position).cross(edgeTile.tile.position) * polarity,
                         if (temperature.isNaN()) 0.0 else temperature
                     )
-                }
+                }.filter { it.temperature.absoluteValue >= oceanCurrentMinStrength }
             }
         }
 
@@ -152,11 +152,11 @@ object OceanCurrents {
     fun (Planet).updateCurrentDistanceMap() {
         warmCurrentDistanceMap = PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap {
             val current = oceanCurrents[it.tileId]
-            current != null && current.temperature >= oceanCurrentMinStrength
+            current != null && current.temperature > 0
         }.mapKeys { it.key.tileId }
         coolCurrentDistanceMap = PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap {
             val current = oceanCurrents[it.tileId]
-            current != null && current.temperature <= -oceanCurrentMinStrength
+            current != null && current.temperature < 0
         }.mapKeys { it.key.tileId }
     }
 }
