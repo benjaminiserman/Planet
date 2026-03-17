@@ -31,5 +31,10 @@ object Meteor {
         if(elevationChange > 0.0) {
             epicenter.elevation -= elevationChange
         }
+
+        val shockMetamorphic = epicenter.stoneColumn.middle.stoneComponent.placementType.metamorphicForm
+        if(shockMetamorphic != null) {
+            epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, shockMetamorphic)
+        }
     }
 }
