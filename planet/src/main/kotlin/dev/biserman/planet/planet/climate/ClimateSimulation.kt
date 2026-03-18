@@ -62,6 +62,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistur
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectScalar
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityBase
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalarMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.insolationToWm2
@@ -97,6 +98,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsL
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsLandTemperatureLerpMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsLandTemperatureLerpMin
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.upslopeMoistureExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.upslopePrecipitationFactor
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureContinentialityCenter
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureMaxDistance
@@ -338,17 +340,16 @@ object ClimateSimulation {
                 val totalWeight = neighborWeights.values.sum()
                 neighborWeights.forEach { (neighbor, weight) ->
                     val moistureProvided = if (totalWeight == 0.0) 0.0 else moisture * weight / totalWeight
-                    val precipitation =
-                        moistureProvided *
-                                max(
-                                    minPrecipitation,
-                                    (tile.slopeAboveWaterTo(neighbor) / upslopeOfMinMoisture)
-                                        .pow(upslopeMoistureExp)
-                                        .coerceIn(minUpslopeMoisture..1.0) *
-                                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
-                                                .coerceIn(0.0..1.0)
-                                )
-                    finalMoisture[tile] = (finalMoisture[tile] ?: 0.0) + precipitation
+                    val slopePrecipitationFactor = (tile.slopeAboveWaterTo(neighbor) / upslopeOfMinMoisture)
+                        .pow(upslopeMoistureExp)
+                        .coerceIn(minUpslopeMoisture..1.0) *
+                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
+                                .coerceIn(0.0..1.0)
+                    val precipitation = moistureProvided * max(minPrecipitation, slopePrecipitationFactor)
+                    finalMoisture[tile] =
+                        (finalMoisture[tile] ?: 0.0) + precipitation * (1 - upslopePrecipitationFactor)
+                    finalMoisture[neighbor] =
+                        (finalMoisture[neighbor] ?: 0.0) + precipitation * upslopePrecipitationFactor
                     nextStep[neighbor] =
                         (nextStep[neighbor] ?: 0.0) + moistureProvided * moisturePropagationMultiplier - precipitation
                 }
@@ -411,8 +412,7 @@ object ClimateSimulation {
                 lerp(
                     moistureCoolingTargetTemperature,
                     localBaseTemperature,
-                    max(0.0, 1 - (moisture / maxMoistureForCooling))
-                        .pow(moistureCoolingExp)
+                    max(0.0, 1 - (moisture / maxMoistureForCooling).pow(moistureCoolingExp))
                         .scaleAndCoerceIn(0.0..1.0, (1 - maxMoistureCoolingLerp)..1.0)
                 )
 
@@ -429,7 +429,7 @@ object ClimateSimulation {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
-                    (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
+                    (neighbors.filter { !it.isAboveWater }.size / neighbors.size.toDouble())
                         .pow(shoreWaterVsLandTemperatureLerpExp)
                         .adjustRange(0.0..1.0, shoreWaterVsLandTemperatureLerpMin..shoreWaterVsLandTemperatureLerpMax)
                 )
@@ -438,7 +438,7 @@ object ClimateSimulation {
                     oceanTemperature,
                     adjustedTemperature,
                     min(
-                        continentiality * inlandWaterVsLandTemperatureContinentialityScalar,
+                        (continentiality - 1) * inlandWaterVsLandTemperatureContinentialityScalar + inlandWaterVsLandTemperatureContinentialityBase,
                         inlandWaterVsLandTemperatureContinentialityScalarMax
                     )
                 )

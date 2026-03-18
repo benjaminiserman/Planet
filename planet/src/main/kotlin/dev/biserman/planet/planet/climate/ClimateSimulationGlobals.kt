@@ -95,6 +95,7 @@ object ClimateSimulationGlobals {
     var shoreWaterVsLandTemperatureLerpMax = 0.1 // max lerp like above but for shorelines, modulated by peninsularity
     var inlandWaterVsLandTemperatureContinentialityScalar = 0.2 // lerp scalar for inland tiles based on continentiality
     var inlandWaterVsLandTemperatureContinentialityScalarMax = 1.0
+    var inlandWaterVsLandTemperatureContinentialityBase = 0.2
 
     var dryLapseRate = -0.0098 // °C/meter
     var dryLapseRateScalar = 0.66 // linear scalar on dry lapse rate
@@ -166,6 +167,7 @@ object ClimateSimulationGlobals {
 
     var minPrecipitation = 0.01 // min % of moisture to precipitate per tile a cloud moves
     var upslopeOfMinMoisture = 750.0 // at what slope does moisture propagation drop to the % below
+    var upslopePrecipitationFactor = 0.5
     var minUpslopeMoisture = 0.1 // proportional, must be ≤ 1.0
     var upslopeMoistureExp = 2.0 // higher exp -> less moisture & faster moisture loss upslope
     var saturationThreshold = 1.0 // simulator tries to push water away from tiles with moisture higher than this varue
