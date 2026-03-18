@@ -429,7 +429,7 @@ object ClimateSimulation {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
-                    (neighbors.filter { !it.isAboveWater }.size / neighbors.size.toDouble())
+                    (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
                         .pow(shoreWaterVsLandTemperatureLerpExp)
                         .adjustRange(0.0..1.0, shoreWaterVsLandTemperatureLerpMin..shoreWaterVsLandTemperatureLerpMax)
                 )
