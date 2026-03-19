@@ -14,12 +14,18 @@ import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
+import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.UtilityExtensions.contains
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.floodFillPartitionForest
+import godot.core.Vector3
 import kotlin.collections.average
+import kotlin.math.PI
+import kotlin.math.absoluteValue
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -127,6 +133,44 @@ class Planet(val seed: Int, val size: Int) {
 
     val pointNemo by memo({ terrainChangeCount }) {
         planetTiles.values.minBy { it.continentiality }
+    }
+
+    val internationalDateLine by memo({ terrainChangeCount }) {
+//        fun costFn(fromTile: PlanetTile, toTile: PlanetTile): Double {
+//            val landPenalty = if (toTile.isAboveWater) 5.0 * (1 - toTile.tile.position.y.absoluteValue).pow(0.2) else 0.0
+//            val direction = (toTile.tile.position - fromTile.tile.position).normalized()
+//            val alignment = direction.dot(Vector3.DOWN)
+//            val deviationPenalty = 1.0 - alignment
+//
+//            return landPenalty + deviationPenalty * 5.0
+//        }
+//
+//        fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
+//            val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
+//            val crossProduct = tile.tile.position.cross(tileToNeighbor)
+//            val dotProduct = crossProduct.dot(Vector3.RIGHT)
+//            dotProduct > 0
+//        }
+//
+//        val startTile = planetTiles.values.maxBy { it.tile.position.y }
+//        val validStartNeighbors = neighborFn(startTile)
+//        val goal = planetTiles.values.minBy { it.tile.position.y }
+//
+//        fun goalFn(tile: PlanetTile): Boolean = tile == goal
+//        fun heuristic(tile: PlanetTile) = (tile.tile.position - goal.tile.position).length()
+//
+//        val path = AStar.path(startTile, ::goalFn, ::heuristic, ::costFn, ::neighborFn, searchExhaustively = true)
+//        if (path.nodes.size == 0) {
+//            throw Exception("No path found!")
+//        }
+//
+//        path
+
+        (0..359).minBy { longitude ->
+            planetTiles.values
+                .filter { (it.tile.position.toGeoPoint().longitudeDegrees - longitude).absoluteValue <= 2.5 }
+                .count { it.isAboveWater }
+        } * PI / 180.0
     }
 
     val waterCoverage by memo({ terrainChangeCount }) {
