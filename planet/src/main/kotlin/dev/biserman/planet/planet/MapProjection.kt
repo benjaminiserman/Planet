@@ -16,6 +16,7 @@ import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -36,12 +37,17 @@ object MapProjections {
         colorFn: (Planet).(Vector3) -> Color
     ): BufferedImage {
         val image = BufferedImage(imageX, imageY, BufferedImage.TYPE_INT_ARGB)
-        val edgeX = forward(planet.pointNemo.tile.position.toGeoPoint()).x
+//        val edgeX = forward(planet.pointNemo.tile.position.toGeoPoint()).x
+        val edgeX = forward(
+            GeoPoint(0.0, planet.internationalDateLine)
+        ).x
+
+        GD.print(edgeX)
 
         for (x in 0..<imageX) {
             for (y in 0..<imageY) {
                 val startX = 1 - ((x.toDouble() / imageX) - 0.5)
-                val offset = (1 - edgeX) + 0.5
+                val offset = edgeX + 0.5
                 val newX = if (startX + offset > 1) startX + offset - 1 else startX + offset
                 image.setRGB(
                     x,
@@ -107,7 +113,10 @@ object MapProjections {
         val imageRTree = (0..<image.width).flatMap { x ->
             (0..<image.height).map { y ->
                 Pair(
-                    Vector2(-(x.toDouble() / image.width - 0.5), (image.height - y.toDouble() - 1) / image.height - 0.5),
+                    Vector2(
+                        -(x.toDouble() / image.width - 0.5),
+                        (image.height - y.toDouble() - 1) / image.height - 0.5
+                    ),
                     image.getRGB(x, y).toRGB()
                 )
             }
