@@ -118,6 +118,7 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.UtilityExtensions.formatGeo
 import dev.biserman.planet.utils.UtilityExtensions.radToDeg
 import dev.biserman.planet.utils.UtilityExtensions.signPow
+import dev.biserman.planet.utils.UtilityExtensions.weightedAverage
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
 import godot.core.Vector3
@@ -416,18 +417,26 @@ object ClimateSimulation {
                         .scaleAndCoerceIn(0.0..1.0, (1 - maxMoistureCoolingLerp)..1.0)
                 )
 
-            val averageTemperature = if (continentiality < 0) {
+            val averageTemperature = if (!isAboveWater) {
                 lerp(
                     adjustedTemperature,
                     oceanTemperature,
-                    min(oceanWaterVsLandTemperatureLerp + -continentiality * oceanWaterVsLandTemperatureLerpScalar, 1.0)
+                    (oceanWaterVsLandTemperatureLerp + -continentiality * oceanWaterVsLandTemperatureLerpScalar)
+                        .coerceIn((-inlandWaterVsLandTemperatureContinentialityScalarMax + 1)..1.0)
                 )
-            } else if (continentiality == 0) {
+            } else if (continentiality <= 0) {
                 lerp(
                     oceanTemperature,
                     adjustedTemperature,
-                    (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
-                        .pow(shoreWaterVsLandTemperatureLerpExp)
+//                    (neighbors.filter { it.isAboveWater }.size / neighbors.size.toDouble())
+//                        .pow(shoreWaterVsLandTemperatureLerpExp)
+//                        .adjustRange(0.0..1.0, shoreWaterVsLandTemperatureLerpMin..shoreWaterVsLandTemperatureLerpMax)
+                    neighbors.map {
+                        (if (it.isAboveWater) 1.0 else 0.0) to max(
+                            0.0,
+                            it.prevailingWind.dot(tile.position - it.tile.position) + backwardsWind
+                        )
+                    }.weightedAverage()
                         .adjustRange(0.0..1.0, shoreWaterVsLandTemperatureLerpMin..shoreWaterVsLandTemperatureLerpMax)
                 )
             } else {

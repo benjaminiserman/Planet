@@ -30,6 +30,8 @@ object ClimateSimulationGlobals {
     var oceanCurrentStrengthPow = 3.0
     var oceanCurrentStrengthDiagonalization = 0.66
     var oceanCurrentMinStrength = 0.1
+    var oceanCurrentMaxLatitude = 65.0
+    var oceanCurrentEquatorwardRelaxation = 0.8
 
     // AIR PRESSURE
 

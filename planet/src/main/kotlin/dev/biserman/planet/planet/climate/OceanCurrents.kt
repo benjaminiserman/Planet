@@ -10,12 +10,15 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minCurrentCirculationRadius
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minCurrentScanlineProportion
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minOceanTilesForCurrent
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentEquatorwardRelaxation
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentMaxLatitude
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentMinStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentStrengthDiagonalization
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentStrengthPow
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.targetCurrentRadiusProportion
 import dev.biserman.planet.utils.UtilityExtensions.formatGeo
 import dev.biserman.planet.utils.toCardinal
+import godot.common.util.lerp
 import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
@@ -58,8 +61,14 @@ object OceanCurrents {
         val equatorialCellIndex = cells / 2
         val bands = (0..<cells).map { i ->
             OceanBand(
-                bottomLatitudeDegrees = max(-75 + i * degreesPerCell, -60.0),
-                topLatitudeDegrees = min(-75 + (i + 1) * degreesPerCell, 60.0),
+                bottomLatitudeDegrees = max(
+                    lerp(-75.0 + i * degreesPerCell, 0.0, oceanCurrentEquatorwardRelaxation),
+                    -oceanCurrentMaxLatitude / oceanCurrentEquatorwardRelaxation
+                ),
+                topLatitudeDegrees = min(
+                    lerp(-75.0 + (i + 1) * degreesPerCell, 0.0, oceanCurrentEquatorwardRelaxation),
+                    oceanCurrentMaxLatitude / oceanCurrentEquatorwardRelaxation
+                ),
                 polarity = when {
                     i == equatorialCellIndex -> 0.0
                     abs(equatorialCellIndex - i) % 2 == 0 -> -1.0
