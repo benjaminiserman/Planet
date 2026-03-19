@@ -408,16 +408,13 @@ object ClimateSimulation {
                 ) * oceanInsolationScale
             ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
-            val moistureAdjustedTemperature =
+            val adjustedTemperature =
                 lerp(
                     moistureCoolingTargetTemperature,
-                    localBaseTemperature,
+                    localBaseTemperature + elevationAdjustment,
                     max(0.0, 1 - (moisture / maxMoistureForCooling).pow(moistureCoolingExp))
                         .scaleAndCoerceIn(0.0..1.0, (1 - maxMoistureCoolingLerp)..1.0)
                 )
-
-            val adjustedTemperature =
-                moistureAdjustedTemperature + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val averageTemperature = if (continentiality < 0) {
                 lerp(
