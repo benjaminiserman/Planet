@@ -18,23 +18,25 @@ object Meteor {
                 mid-layer metamorphism
                 lower total elevation
          */
-        if(planet.random.nextDouble() < meteorImpactChance) return
+        if (planet.random.nextDouble() < meteorImpactChance) return
 
         val epicenter = planet.planetTiles.values.random()
         epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, StonePlacementType.Meteoric)
 
         var elevationChange = planet.random.nextDouble(maxMeteorElevationChange - minMeteorElevationChange) + minMeteorElevationChange
         val metersUnderWater = planet.seaLevel - epicenter.elevation
-        if(metersUnderWater > 0.0) {
+        if (metersUnderWater > 0.0) {
             elevationChange -= metersUnderWater
         }
-        if(elevationChange > 0.0) {
+        if (elevationChange > 0.0) {
             epicenter.elevation -= elevationChange
         }
 
         val shockMetamorphic = epicenter.stoneColumn.middle.stoneComponent.placementType.metamorphicForm
-        if(shockMetamorphic != null) {
+        if (shockMetamorphic != null) {
             epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, shockMetamorphic)
         }
+
+        planet.lastMeteorImpact = planet.tectonicAge
     }
 }
