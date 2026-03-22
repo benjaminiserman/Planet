@@ -6,6 +6,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.minMeteorElevationCh
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxMeteorElevationChange
 import dev.biserman.planet.things.StonePlacementType
 import dev.biserman.planet.things.StoneType
+import godot.global.GD
 import kotlin.math.min
 
 object Meteor {
@@ -21,6 +22,7 @@ object Meteor {
         if (planet.random.nextDouble() < meteorImpactChance) return
 
         val epicenter = planet.planetTiles.values.random()
+
         epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, StonePlacementType.Meteoric)
 
         var elevationChange = planet.random.nextDouble(maxMeteorElevationChange - minMeteorElevationChange) + minMeteorElevationChange
@@ -34,9 +36,9 @@ object Meteor {
 
         val shockMetamorphic = epicenter.stoneColumn.middle.stoneComponent.placementType.metamorphicForm
         if (shockMetamorphic != null) {
-            epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, shockMetamorphic)
+            epicenter.stoneColumn.middle = epicenter.stoneColumn.getLayer(epicenter, shockMetamorphic)
         }
 
-        planet.lastMeteorImpact = planet.tectonicAge
+        planet.lastMeteorImpact = planet.tectonicAge + 1
     }
 }
