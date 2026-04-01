@@ -1,6 +1,9 @@
 {
   "accruedDepositThreshold": 400.0,
   "accruedErosionThreshold": -2500.0,
+  "biotaDistributionClearChance": 0.025,
+  "biotaDistributionCount": 10,
+  "biotaDistributionTerrestrialMaxSlope": 750.0,
   "continentElevationCutoff": -250.0,
   "continentSpringDamping": 0.1,
   "continentSpringSearchRadius": 2.0,

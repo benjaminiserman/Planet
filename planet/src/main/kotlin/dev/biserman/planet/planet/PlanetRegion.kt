@@ -167,4 +167,6 @@ class PlanetRegion(
 
         return PlanetRegion(planet, tiles + other.tiles)
     }
+
+    operator fun contains(tile: PlanetTile) = tile in tiles
 }

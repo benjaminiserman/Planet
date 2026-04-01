@@ -9,6 +9,7 @@ import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionCount
 import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
@@ -136,36 +137,6 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val internationalDateLine by memo({ terrainChangeCount }) {
-//        fun costFn(fromTile: PlanetTile, toTile: PlanetTile): Double {
-//            val landPenalty = if (toTile.isAboveWater) 5.0 * (1 - toTile.tile.position.y.absoluteValue).pow(0.2) else 0.0
-//            val direction = (toTile.tile.position - fromTile.tile.position).normalized()
-//            val alignment = direction.dot(Vector3.DOWN)
-//            val deviationPenalty = 1.0 - alignment
-//
-//            return landPenalty + deviationPenalty * 5.0
-//        }
-//
-//        fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
-//            val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
-//            val crossProduct = tile.tile.position.cross(tileToNeighbor)
-//            val dotProduct = crossProduct.dot(Vector3.RIGHT)
-//            dotProduct > 0
-//        }
-//
-//        val startTile = planetTiles.values.maxBy { it.tile.position.y }
-//        val validStartNeighbors = neighborFn(startTile)
-//        val goal = planetTiles.values.minBy { it.tile.position.y }
-//
-//        fun goalFn(tile: PlanetTile): Boolean = tile == goal
-//        fun heuristic(tile: PlanetTile) = (tile.tile.position - goal.tile.position).length()
-//
-//        val path = AStar.path(startTile, ::goalFn, ::heuristic, ::costFn, ::neighborFn, searchExhaustively = true)
-//        if (path.nodes.size == 0) {
-//            throw Exception("No path found!")
-//        }
-//
-//        path
-
         (0..359).minBy { longitude ->
             planetTiles.values
                 .filter { (it.tile.position.toGeoPoint().longitudeDegrees - longitude).absoluteValue <= 2.5 }
@@ -189,6 +160,8 @@ class Planet(val seed: Int, val size: Int) {
     var divergenceZones: MutableMap<Int, DivergenceZone> = mutableMapOf()
 
     var oceanCurrents: MutableMap<Int, OceanCurrent> = mutableMapOf()
+
+    var biotaDistributions: List<BiotaDistribution> = listOf()
 
     var tectonicAge = 0
         set(value) {
@@ -217,6 +190,7 @@ class Planet(val seed: Int, val size: Int) {
         tectonicPlates.forEach { plate ->
             plate.torque = noise.mantleConvection.sample4d(plate.region.tiles.first().tile.position, 0.0)
         }
+        biotaDistributions = (1..biotaDistributionCount).map { BiotaDistribution.random(this) }
     }
 
     fun makeTopology(degree: Int): Topology {
