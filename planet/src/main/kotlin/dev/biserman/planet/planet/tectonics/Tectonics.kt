@@ -3,6 +3,7 @@ package dev.biserman.planet.planet.tectonics
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
+import dev.biserman.planet.planet.BiotaDistribution
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
@@ -40,6 +41,7 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.sum
 import godot.common.util.lerp
+import godot.core.Color
 import godot.core.Vector3
 import godot.global.GD
 import kotlin.collections.associateWith
@@ -52,6 +54,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.time.Duration
 import kotlin.time.measureTime
 
 object Tectonics {
@@ -456,23 +459,27 @@ object Tectonics {
         }
     }
 
-    fun stepTectonicsSimulation(planet: Planet) {
-        val movePlanetTilesTime = measureTime { movePlanetTiles(planet) }
-        val geologyTime = measureTime { Geology.simulateGeology(planet) }
-        val tectonicPlateForcesTime = measureTime { stepTectonicPlateForces(planet) }
-        val performErosionTime = measureTime { performErosion(planet) }
-        val runGuardrailsTime = measureTime {
-            planet.planetTiles.values.forEach {
-                it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
-            }
-            runGuardrails(planet)
-        }
+    fun wrapMeasureTime(name: String, block: () -> Unit): Pair<String, Duration> = name to measureTime(block)
 
-        val timeTaken = movePlanetTilesTime +
-                geologyTime +
-                tectonicPlateForcesTime +
-                performErosionTime +
-                runGuardrailsTime
+    fun stepTectonicsSimulation(planet: Planet) {
+        val steps = listOf(
+            wrapMeasureTime("movePlanetTiles") { movePlanetTiles(planet) },
+            wrapMeasureTime("simulateGeology") { Geology.simulateGeology(planet) },
+            wrapMeasureTime("stepTectonicPlateForces") { stepTectonicPlateForces(planet) },
+            wrapMeasureTime("performErosion") { performErosion(planet) },
+            wrapMeasureTime("runGuardrails") {
+                planet.planetTiles.values.forEach {
+                    it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
+                }
+                runGuardrails(planet)
+            },
+            wrapMeasureTime("distributeBiota") { BiotaDistribution.updatePlanet(planet) }
+        )
+        val timeTaken = steps.map { it.second }.sumOf { it.inWholeMilliseconds }
+
+        planet.planetTiles.values.forEach {
+            it.debugColor = if (it in planet.biotaDistributions[0].region) Color.red else Color.black
+        }
 
         planet.tectonicAge++
         planet.terrainChangeCount++
@@ -482,12 +489,8 @@ object Tectonics {
 
         val percentContinental =
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
-        GD.print("completed step ${planet.tectonicAge} in ${timeTaken.inWholeMilliseconds}ms")
-        GD.print(" - movePlanetTiles: ${movePlanetTilesTime.inWholeMilliseconds}ms")
-        GD.print(" - simulateGeology: ${geologyTime.inWholeMilliseconds}ms")
-        GD.print(" - tectonicPlateForces: ${tectonicPlateForcesTime.inWholeMilliseconds}ms")
-        GD.print(" - performErosion: ${performErosionTime.inWholeMilliseconds}ms")
-        GD.print(" - runGuardrails: ${runGuardrailsTime.inWholeMilliseconds}ms")
+        GD.print("completed step ${planet.tectonicAge} in ${timeTaken}ms")
+        steps.forEach { (name, time) -> GD.print(" - $name: ${time.inWholeMilliseconds}ms") }
         GD.print("continental crust: ${(percentContinental * 100).toInt()}%, ${planet.tectonicPlates.size} plates")
         GD.print("average movement: ${planet.planetTiles.values.sumOf { it.movement.length() } / planet.planetTiles.size}")
 
