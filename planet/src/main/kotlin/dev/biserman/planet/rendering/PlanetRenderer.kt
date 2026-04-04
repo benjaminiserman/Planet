@@ -354,6 +354,11 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             val distance = planet.itczDistanceMap[planetTile.tile.id] ?: return@SimpleColorMode null
             if (distance == -1) Color.red else Color.blue * max(0.0, 1 - distance / 5.0)
         },
+        SimpleColorMode(
+            this, "date_line", categories = listOf("debug", "overlay"),
+        ) { planetTile ->
+            if ((planetTile.tile.position.toGeoPoint().longitudeDegrees - (planet.internationalDateLine * 180 / PI)).absoluteValue <= 2.5) Color.white else Color.black
+        },
         SimpleColorMode(this, "air_pressure", categories = listOf("climate", "base_layer")) { planetTile ->
             colorAirPressure(planetTile.airPressure)
 //            if (airPressure <= ClimateSimulation.basePressure) {

@@ -66,9 +66,15 @@ object TectonicGlobals {
     var minPercentContinentalGuardrail = 0.15
     var maxPercentContinentalGuardrail = 0.55
 
+<<<<<<< HEAD
     var meteorImpactChance = 0.01
     var minMeteorElevationChange = 200.0
     var maxMeteorElevationChange = 2000.0
+=======
+    var biotaDistributionCount = 20
+    var biotaDistributionClearChance = 0.025
+    var biotaDistributionTerrestrialMaxSlope = 750.0
+>>>>>>> 49aaa926c3adab1184d5a43ecb0841d5e521c279
 
     var estimatedAverageRadius = 0.020775855876950022
     @JsonIgnore

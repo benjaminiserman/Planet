@@ -9,17 +9,24 @@ import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionCount
 import dev.biserman.planet.planet.tectonics.TectonicPlate
 import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
+import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.UtilityExtensions.contains
 import dev.biserman.planet.utils.memo
 import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.floodFillPartitionForest
+import godot.core.Vector3
 import kotlin.collections.average
+import kotlin.math.PI
+import kotlin.math.absoluteValue
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -129,6 +136,14 @@ class Planet(val seed: Int, val size: Int) {
         planetTiles.values.minBy { it.continentiality }
     }
 
+    val internationalDateLine by memo({ terrainChangeCount }) {
+        (0..359).minBy { longitude ->
+            planetTiles.values
+                .filter { (it.tile.position.toGeoPoint().longitudeDegrees - longitude).absoluteValue <= 2.5 }
+                .count { it.isAboveWater }
+        } * PI / 180.0
+    }
+
     val waterCoverage by memo({ terrainChangeCount }) {
         1.0 - planetTiles.values.filter { it.isAboveWater }.size / planetTiles.size.toDouble()
     }
@@ -145,6 +160,8 @@ class Planet(val seed: Int, val size: Int) {
     var divergenceZones: MutableMap<Int, DivergenceZone> = mutableMapOf()
 
     var oceanCurrents: MutableMap<Int, OceanCurrent> = mutableMapOf()
+
+    var biotaDistributions: List<BiotaDistribution> = listOf()
 
     var tectonicAge = 0
         set(value) {
@@ -175,6 +192,7 @@ class Planet(val seed: Int, val size: Int) {
         tectonicPlates.forEach { plate ->
             plate.torque = noise.mantleConvection.sample4d(plate.region.tiles.first().tile.position, 0.0)
         }
+        biotaDistributions = (1..biotaDistributionCount).map { BiotaDistribution.random(this) }
     }
 
     fun makeTopology(degree: Int): Topology {

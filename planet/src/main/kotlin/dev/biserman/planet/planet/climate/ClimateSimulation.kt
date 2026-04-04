@@ -38,12 +38,13 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentAi
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentAirPressureMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentAirPressureMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentAirPressureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentMoistureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentMoistureDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentMoistureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureDistance
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.coolCurrentTemperatureStrength
-import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.currentMoistureAverageInsolationExp
-import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.currentTemperatureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRate
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.dryLapseRateScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.equatorMoistureEffectInsolationExp
@@ -61,6 +62,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistur
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.hadleyMoistureEffectScalar
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityBase
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.inlandWaterVsLandTemperatureContinentialityScalarMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.insolationToWm2
@@ -96,13 +98,17 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsL
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsLandTemperatureLerpMax
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.shoreWaterVsLandTemperatureLerpMin
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.upslopeMoistureExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.upslopePrecipitationFactor
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureContinentialityCenter
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureMaxContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureMaxDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentAirPressureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentMoistureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentMoistureDistance
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentMoistureStrength
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureAverageInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureDistance
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
@@ -228,7 +234,7 @@ object ClimateSimulation {
                     .scaleAndCoerce01(0.0..warmCurrentAirPressureMaxDistance) * warmContinentialityFactor * insolation
             val coolCurrentStrength =
                 (coolCurrentAirPressureMaxDistance - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0))
-                    .scaleAndCoerce01(0.0..coolCurrentAirPressureMaxDistance) * coolContinentialityFactor * (1 - insolation)
+                    .scaleAndCoerce01(0.0..coolCurrentAirPressureMaxDistance) * coolContinentialityFactor * insolation
             warmCurrentStrength * warmCurrentAirPressureStrength + coolCurrentStrength * coolCurrentAirPressureStrength
         }
 
@@ -287,7 +293,7 @@ object ClimateSimulation {
                     )
                 val warmCurrentEffect =
                     warmCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
-                        currentMoistureAverageInsolationExp
+                        warmCurrentMoistureAverageInsolationExp
                     ) * oceanCurrentContinentialityFactor *
                             max(
                                 warmCurrentMoistureDistance - (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
@@ -295,7 +301,7 @@ object ClimateSimulation {
                             )
                 val coolCurrentEffect =
                     coolCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
-                        currentMoistureAverageInsolationExp
+                        coolCurrentMoistureAverageInsolationExp
                     ) * oceanCurrentContinentialityFactor *
                             max(
                                 coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
@@ -334,17 +340,16 @@ object ClimateSimulation {
                 val totalWeight = neighborWeights.values.sum()
                 neighborWeights.forEach { (neighbor, weight) ->
                     val moistureProvided = if (totalWeight == 0.0) 0.0 else moisture * weight / totalWeight
-                    val precipitation =
-                        moistureProvided *
-                                max(
-                                    minPrecipitation,
-                                    (tile.slopeAboveWaterTo(neighbor) / upslopeOfMinMoisture)
-                                        .pow(upslopeMoistureExp)
-                                        .coerceIn(minUpslopeMoisture..1.0) *
-                                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
-                                                .coerceIn(0.0..1.0)
-                                )
-                    finalMoisture[tile] = (finalMoisture[tile] ?: 0.0) + precipitation
+                    val slopePrecipitationFactor = (tile.slopeAboveWaterTo(neighbor) / upslopeOfMinMoisture)
+                        .pow(upslopeMoistureExp)
+                        .coerceIn(minUpslopeMoisture..1.0) *
+                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
+                                .coerceIn(0.0..1.0)
+                    val precipitation = moistureProvided * max(minPrecipitation, slopePrecipitationFactor)
+                    finalMoisture[tile] =
+                        (finalMoisture[tile] ?: 0.0) + precipitation * (1 - upslopePrecipitationFactor)
+                    finalMoisture[neighbor] =
+                        (finalMoisture[neighbor] ?: 0.0) + precipitation * upslopePrecipitationFactor
                     nextStep[neighbor] =
                         (nextStep[neighbor] ?: 0.0) + moistureProvided * moisturePropagationMultiplier - precipitation
                 }
@@ -383,12 +388,16 @@ object ClimateSimulation {
                 warmCurrentTemperatureStrength * max(
                     warmCurrentTemperatureDistance - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
-                ) * insolation * averageInsolation.pow(currentTemperatureAverageInsolationExp) * oceanCurrentContinentialityFactor
+                ) * max(insolation, 0.1).pow(warmCurrentTemperatureInsolationExp) * averageInsolation.pow(
+                    warmCurrentTemperatureAverageInsolationExp
+                ) * oceanCurrentContinentialityFactor
             val coolCurrentAdjustment =
                 coolCurrentTemperatureStrength * max(
                     coolCurrentTemperatureDistance - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
-                ) * insolation * averageInsolation.pow(currentTemperatureAverageInsolationExp) * oceanCurrentContinentialityFactor
+                ) * max(insolation, 0.1).pow(coolCurrentTemperatureInsolationExp) * averageInsolation.pow(
+                    coolCurrentTemperatureAverageInsolationExp
+                ) * oceanCurrentContinentialityFactor
 
             val elevationAdjustment = dryLapseRate * dryLapseRateScalar * max(0.0, elevation)
 
@@ -403,8 +412,7 @@ object ClimateSimulation {
                 lerp(
                     moistureCoolingTargetTemperature,
                     localBaseTemperature,
-                    max(0.0, 1 - (moisture / maxMoistureForCooling))
-                        .pow(moistureCoolingExp)
+                    max(0.0, 1 - (moisture / maxMoistureForCooling).pow(moistureCoolingExp))
                         .scaleAndCoerceIn(0.0..1.0, (1 - maxMoistureCoolingLerp)..1.0)
                 )
 
@@ -430,7 +438,7 @@ object ClimateSimulation {
                     oceanTemperature,
                     adjustedTemperature,
                     min(
-                        continentiality * inlandWaterVsLandTemperatureContinentialityScalar,
+                        (continentiality - 1) * inlandWaterVsLandTemperatureContinentialityScalar + inlandWaterVsLandTemperatureContinentialityBase,
                         inlandWaterVsLandTemperatureContinentialityScalarMax
                     )
                 )
