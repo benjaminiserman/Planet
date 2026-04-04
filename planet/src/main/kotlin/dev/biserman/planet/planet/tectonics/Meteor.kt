@@ -11,32 +11,22 @@ import kotlin.math.min
 
 object Meteor {
     fun impactMeteor(planet: Planet) {
-        /*
-            intake planet
-            roll dice
-            add impact
-                replace surface layer with meteor
-                mid-layer metamorphism
-                lower total elevation
-         */
         if (planet.random.nextDouble() < meteorImpactChance) return
 
-        val epicenter = planet.planetTiles.values.random()
+        val impactTile = planet.planetTiles.values.random()
 
-        epicenter.stoneColumn.surface = epicenter.stoneColumn.getLayer(epicenter, StonePlacementType.Meteoric)
+        impactTile.stoneColumn.surface = impactTile.stoneColumn.getLayer(impactTile, StonePlacementType.Meteoric)
 
-        var elevationChange = planet.random.nextDouble(maxMeteorElevationChange - minMeteorElevationChange) + minMeteorElevationChange
-        val metersUnderWater = planet.seaLevel - epicenter.elevation
-        if (metersUnderWater > 0.0) {
-            elevationChange -= metersUnderWater
-        }
+        val initialElevationChange = planet.random.nextDouble(maxMeteorElevationChange - minMeteorElevationChange) + minMeteorElevationChange
+        val metersUnderWater = planet.seaLevel - impactTile.elevation
+        val elevationChange = if (metersUnderWater > 0.0) initialElevationChange - metersUnderWater else initialElevationChange
         if (elevationChange > 0.0) {
-            epicenter.elevation -= elevationChange
+            impactTile.elevation -= elevationChange
         }
 
-        val shockMetamorphic = epicenter.stoneColumn.middle.stoneComponent.placementType.metamorphicForm
+        val shockMetamorphic = impactTile.stoneColumn.middle.stoneComponent.placementType.metamorphicForm
         if (shockMetamorphic != null) {
-            epicenter.stoneColumn.middle = epicenter.stoneColumn.getLayer(epicenter, shockMetamorphic)
+            impactTile.stoneColumn.middle = impactTile.stoneColumn.getLayer(impactTile, shockMetamorphic)
         }
 
         planet.lastMeteorImpact = planet.tectonicAge + 1
