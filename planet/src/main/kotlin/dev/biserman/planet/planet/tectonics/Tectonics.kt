@@ -8,6 +8,7 @@ import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.PointForce
+import dev.biserman.planet.planet.tectonics.Meteor.impactMeteor
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringDamping
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringSearchRadius
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringStiffness
@@ -465,6 +466,7 @@ object Tectonics {
         val steps = listOf(
             wrapMeasureTime("movePlanetTiles") { movePlanetTiles(planet) },
             wrapMeasureTime("simulateGeology") { Geology.simulateGeology(planet) },
+            wrapMeasureTime("impactMeteor") { impactMeteor(planet) },
             wrapMeasureTime("stepTectonicPlateForces") { stepTectonicPlateForces(planet) },
             wrapMeasureTime("performErosion") { performErosion(planet) },
             wrapMeasureTime("runGuardrails") {
