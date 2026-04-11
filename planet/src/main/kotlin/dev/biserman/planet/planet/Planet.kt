@@ -180,6 +180,8 @@ class Planet(val seed: Int, val size: Int) {
     val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
     val youngestCrust by memo({ tectonicAge }) { planetTiles.values.maxOf { it.formationTime } }
 
+    var lastMeteorImpact = 0
+
     init {
         planetTiles.values.forEach {
             it.planetInit()
