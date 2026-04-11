@@ -11,6 +11,7 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.weightedBagOf
 import godot.core.Color
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Concept> = emptyList()) {
     AlluvialDeposition(StoneType.Sedimentary, listOf(Concept.RIVER)),
@@ -98,6 +99,10 @@ interface StonePlacementCondition {
             planetTile.continentiality in (center - distance)..(center + distance)
     }
 
+    class TimeSinceMeteorImpactBelow(val threshold: Int) : StonePlacementCondition {
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.tectonicAge - planetTile.planet.lastMeteorImpact < threshold && planetTile.planet.lastMeteorImpact != 0
+    }
+
     companion object {
         val conditionBag = weightedBagOf<(Random) -> StonePlacementCondition>(
             { random: Random -> MantleConvectionMagnitudeAbove(random.nextDouble(0.25, 0.75)) } to 1,
@@ -110,7 +115,8 @@ interface StonePlacementCondition {
             { random: Random -> WaterCoverageBelow(random.nextDouble()) } to 1,
             { random: Random -> ContinentialityAbove(random.nextInt(-10, 10)) } to 1,
             { random: Random -> ContinentialityBelow(random.nextInt(-10, 10)) } to 1,
-            { random: Random -> ContinentialityAround(random.nextInt(-10, 10), random.nextInt(1, 5)) } to 1
+            { random: Random -> ContinentialityAround(random.nextInt(-10, 10), random.nextInt(1, 5)) } to 1,
+            { random: Random -> TimeSinceMeteorImpactBelow(random.nextInt(2, 20)) } to 1
         )
     }
 }
