@@ -6,11 +6,11 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.planet.PlanetTile
 import godot.core.Color
 
-//@JsonIdentityInfo(
-//    generator = ObjectIdGenerators.IntSequenceGenerator::class,
-//    scope = ResourceComponent::class,
-//    property = "id",
-//)
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = Resource::class,
+    property = "id",
+)
 open class Resource(var components: ComponentSet<ResourceComponent>, var colors: List<Color>, override var concepts: List<Concept>) :
     Kind(concepts)
 

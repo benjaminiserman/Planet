@@ -1,29 +1,23 @@
 package dev.biserman.planet.utils
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.PropertyAccessor
+import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.databind.BeanDescription
+import com.fasterxml.jackson.databind.DeserializationConfig
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JavaType
-import com.fasterxml.jackson.databind.JsonMappingException
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException
-import com.fasterxml.jackson.databind.introspect.AnnotatedConstructor
+import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier
+import com.fasterxml.jackson.databind.deser.ResolvableDeserializer
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember
-import com.fasterxml.jackson.databind.introspect.AnnotationIntrospectorPair
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
-import com.fasterxml.jackson.module.kotlin.addDeserializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.things.ComponentSet
@@ -32,9 +26,7 @@ import dev.biserman.planet.things.ComponentSetSerializer
 import dev.biserman.planet.things.MutableComponentSet
 import godot.core.Vector2
 import godot.core.Vector3
-import godot.global.GD
 import java.io.File
-import kotlin.reflect.KClass
 
 
 @Suppress("FunctionName", "unused")
@@ -63,6 +55,81 @@ abstract class Vector2Mixin {
 
     @JsonIgnore
     abstract fun isNormalized(): Boolean
+}
+
+class DedupingObjectIdResolver : SimpleObjectIdResolver() {
+    override fun bindItem(id: ObjectIdGenerator.IdKey?, ob: Any?) {
+        _items[id] = ob
+    }
+
+    override fun newForDeserialization(context: Any?): ObjectIdResolver {
+        return DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
+    }
+}
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+annotation class DedupeDuplicateIds
+class DedupingDeserializerModifier : BeanDeserializerModifier() {
+    override fun modifyDeserializer(
+        config: DeserializationConfig,
+        beanDesc: BeanDescription,
+        deserializer: JsonDeserializer<*>
+    ): JsonDeserializer<*> {
+        val objectIdInfo = beanDesc.objectIdInfo ?: return deserializer
+        if (beanDesc.classInfo.getAnnotation(DedupeDuplicateIds::class.java) == null) {
+            return deserializer
+        }
+
+        val idProp = beanDesc.findProperties()
+            .find { it.name == objectIdInfo.propertyName.simpleName }
+            ?: return deserializer
+
+        val scopeClass = objectIdInfo.scope ?: beanDesc.beanClass
+
+        @Suppress("UNCHECKED_CAST")
+        return GenericDedupingDeserializer(
+            deserializer as JsonDeserializer<Any>,
+            scopeClass,
+            idProp
+        )
+    }
+}
+
+class GenericDedupingDeserializer(
+    private val delegate: JsonDeserializer<Any>,
+    private val scopeClass: Class<*>,
+    private val idProperty: BeanPropertyDefinition
+) : JsonDeserializer<Any>(), ResolvableDeserializer {
+
+    private val accessor: AnnotatedMember? = idProperty.accessor
+
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Any {
+        val built = delegate.deserialize(p, ctxt)
+        val id = accessor?.getValue(built) ?: return built
+
+        val key = scopeClass to id
+
+        @Suppress("UNCHECKED_CAST")
+        val seen = ctxt.getAttribute(DEDUP_ATTR_KEY) as? MutableMap<Pair<Class<*>, Any>, Any>
+            ?: HashMap<Pair<Class<*>, Any>, Any>().also {
+                ctxt.setAttribute(DEDUP_ATTR_KEY, it)
+            }
+
+        return seen.getOrPut(key) { built }
+    }
+
+    // BeanDeserializer relies on resolve() being forwarded to wire up forward references
+    // between properties. Skipping this can silently break unrelated identity refs.
+    override fun resolve(ctxt: DeserializationContext) {
+        if (delegate is ResolvableDeserializer) {
+            delegate.resolve(ctxt)
+        }
+    }
+
+    companion object {
+        private const val DEDUP_ATTR_KEY = "genericIdDedup"
+    }
 }
 
 object Serialization {
