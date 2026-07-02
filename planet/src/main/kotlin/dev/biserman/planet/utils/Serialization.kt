@@ -27,6 +27,8 @@ import dev.biserman.planet.things.MutableComponentSet
 import godot.core.Vector2
 import godot.core.Vector3
 import java.io.File
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 
 @Suppress("FunctionName", "unused")
@@ -165,10 +167,23 @@ object Serialization {
         }
 
     fun save(filename: String, planet: Planet) {
-        objectMapper.writeValue(File(filename), planet)
+        GZIPOutputStream(File(filename).outputStream()).use { gzipOut ->
+            objectMapper.writeValue(gzipOut, planet)
+        }
     }
 
     fun load(filename: String): Planet {
-        return objectMapper.readValue(File(filename), Planet::class.java)
+        val file = File(filename)
+        val isGzipped = file.inputStream().use { stream ->
+            val header = ByteArray(2)
+            val bytesRead = stream.read(header)
+            bytesRead == 2 && header[0] == 0x1f.toByte() && header[1] == 0x8b.toByte()
+        }
+
+        return if (isGzipped) {
+            GZIPInputStream(file.inputStream()).use { objectMapper.readValue(it, Planet::class.java) }
+        } else {
+            objectMapper.readValue(file, Planet::class.java)
+        }
     }
 }
