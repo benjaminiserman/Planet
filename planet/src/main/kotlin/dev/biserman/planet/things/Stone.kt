@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.utils.DedupeDuplicateIds
+import dev.biserman.planet.utils.DedupingObjectIdResolver
 import dev.biserman.planet.utils.weightedBagOf
 import godot.core.Color
 import kotlin.random.Random
@@ -132,6 +134,13 @@ data class StoneComponent(
     val type get() = placementType.stoneType
 }
 
+@DedupeDuplicateIds
+@JsonIdentityInfo(
+    generator = ObjectIdGenerators.IntSequenceGenerator::class,
+    scope = Resource::class,
+    property = "id",
+    resolver = DedupingObjectIdResolver::class
+)
 class Stone(
     components: MutableComponentSet<ResourceComponent>,
     colors: List<Color>,
