@@ -1,10 +1,22 @@
 package dev.biserman.planet.planet
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import dev.biserman.planet.planet.BiotaDistributionMethod.Companion.available
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionClearChance
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionTerrestrialMaxSlope
 import kotlin.math.absoluteValue
 
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type",
+    defaultImpl = BiotaDistributionTerrestrial::class
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = BiotaDistributionTerrestrial::class, name = "terrestrial"),
+    JsonSubTypes.Type(value = BiotaDistributionAquatic::class, name = "aquatic")
+)
 interface BiotaDistributionMethod {
     fun isValid(tile: PlanetTile): Boolean
     fun neighborsFor(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter(::isValid)
