@@ -130,10 +130,16 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.time.measureTime
 
 
 object ClimateSimulation {
     data class Band(val latitude: Double, val pressureDelta: Double)
+    private data class MoistureRoute(
+        val neighborId: Int,
+        val moistureFraction: Double,
+        val upslopePrecipitation: Double
+    )
 
     @Suppress("UnusedUnaryOperator")
     val bands = listOf(
@@ -175,19 +181,42 @@ object ClimateSimulation {
     }
 
     fun updatePlanetClimate(planet: Planet) {
-        planet.oceanCurrents = OceanCurrents.viaEarthlikeHeuristic(planet, 7)
-            .distinctBy { it.planetTile }
-            .associate { it.planetTile.tileId to it }
-            .toMutableMap()
-        planet.updateCurrentDistanceMap()
+        lateinit var oceanCurrents: List<OceanCurrent>
+        val generateOceanCurrentsTime = measureTime {
+            oceanCurrents = OceanCurrents.viaEarthlikeHeuristic(planet, 7)
+        }
+        val indexOceanCurrentsTime = measureTime {
+            planet.oceanCurrents = oceanCurrents
+                .distinctBy { it.planetTile }
+                .associate { it.planetTile.tileId to it }
+                .toMutableMap()
+        }
+        val currentDistanceMapsTime = measureTime {
+            planet.updateCurrentDistanceMap()
+        }
 
-        val itcz = planet.calculateItcz().nodes.toSet()
-        planet.itczDistanceMap = PlanetRegion(planet, planet.planetTiles.values.toMutableSet())
-            .calculateEdgeDepthMap { it in itcz }
-            .mapValues { it.value + if (it.key in itcz) -1 else 0 }
-            .mapKeys { it.key.tileId }
+        lateinit var itcz: Set<PlanetTile>
+        val calculateItczTime = measureTime {
+            itcz = planet.calculateItcz().nodes.toSet()
+        }
+        val itczDistanceMapTime = measureTime {
+            planet.itczDistanceMap = PlanetRegion(planet, planet.planetTiles.values.toMutableSet())
+                .calculateEdgeDepthMap { it in itcz }
+                .mapValues { it.value + if (it.key in itcz) -1 else 0 }
+                .mapKeys { it.key.tileId }
+        }
 
-        simulateMoisture(planet)
+        val simulateMoistureTime = measureTime {
+            simulateMoisture(planet)
+        }
+
+        GD.print("climate update breakdown:")
+        GD.print(" - generateOceanCurrents: ${generateOceanCurrentsTime.inWholeMilliseconds}ms")
+        GD.print(" - indexOceanCurrents: ${indexOceanCurrentsTime.inWholeMilliseconds}ms")
+        GD.print(" - updateCurrentDistanceMaps: ${currentDistanceMapsTime.inWholeMilliseconds}ms")
+        GD.print(" - calculateItcz: ${calculateItczTime.inWholeMilliseconds}ms")
+        GD.print(" - calculateItczDistanceMap: ${itczDistanceMapTime.inWholeMilliseconds}ms")
+        GD.print(" - simulateMoisture: ${simulateMoistureTime.inWholeMilliseconds}ms")
     }
 
     fun (PlanetTile).calculatePrevailingWind(): Vector3 {
@@ -265,113 +294,165 @@ object ClimateSimulation {
     }
 
     fun simulateMoisture(planet: Planet) {
-        var currentMoisture = planet.planetTiles.values.associateWith { tile ->
-            val geoPoint = tile.tile.position.toGeoPoint()
-            val equatorEffect = equatorMoistureEffectScalar *
-                    tile.insolation.pow(equatorMoistureEffectInsolationExp) *
-                    max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / equatorMoistureEffectMaxDistance) *
-                    max(0.0, 1 - (tile.continentiality / equatorMoistureEffectMaxContinentiality))
-            val ferrelEffect = ferrelMoistureEffectScalar *
-                    tile.insolation.pow(ferrelMoistureEffectInsolationExp) *
-                    (1 - (geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue / ferrelMoistureEffectMaxDistance)
-                        .coerceIn(0.0, ferrelMoistureEffectMax) *
-                    max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
-            val hadleyEffect = hadleyMoistureEffectScalar *
-                    tile.insolation.pow(hadleyMoistureEffectInsolationExp) *
-                    (1 - (geoPoint.latitudeDegrees.absoluteValue - hadleyMoistureEffectLatitude).absoluteValue / hadleyMoistureEffectMaxDistance)
-                        .coerceIn(0.0, hadleyMoistureEffectMax)
-            val polarEffect = (tile.averageInsolation / averageInsolationMoistureCutoff).coerceIn(0.0..1.0)
-            val oceanEffect = if (tile.isAboveWater) 0.0
-            else {
-                val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentMoistureContinentiality
-                val oceanCurrentContinentialityFactor = if (tile.continentiality >= 0) 1.0 else {
-                    max(0.0, 1.0 + (tile.continentiality + 1) * oceanCurrentContinentialityScalar)
-                }
-                val oceanMoistureInsolation =
-                    lerp(tile.insolation, tile.averageInsolation, oceanMoistureInsolationNowVsAnnualLerp).pow(
-                        oceanMoistureInsolationExp
-                    )
-                val warmCurrentEffect =
-                    warmCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
-                        warmCurrentMoistureAverageInsolationExp
-                    ) * oceanCurrentContinentialityFactor *
-                            max(
-                                warmCurrentMoistureDistance - (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
-                                    ?: warmCurrentMoistureDistance), 0.0
-                            )
-                val coolCurrentEffect =
-                    coolCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
-                        coolCurrentMoistureAverageInsolationExp
-                    ) * oceanCurrentContinentialityFactor *
-                            max(
-                                coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
-                                    ?: coolCurrentMoistureDistance), 0.0
-                            )
+        val tiles = planet.planetTiles.values.toList()
+        var currentMoisture = DoubleArray(planet.topology.tiles.size)
+        val finalMoisture = DoubleArray(planet.topology.tiles.size)
+        val initializeMoistureTime = measureTime {
+            for (tile in tiles) {
+                val geoPoint = tile.tile.position.toGeoPoint()
+                val equatorEffect = equatorMoistureEffectScalar *
+                        tile.insolation.pow(equatorMoistureEffectInsolationExp) *
+                        max(0.0, 1 - geoPoint.latitudeDegrees.absoluteValue / equatorMoistureEffectMaxDistance) *
+                        max(0.0, 1 - (tile.continentiality / equatorMoistureEffectMaxContinentiality))
+                val ferrelEffect = ferrelMoistureEffectScalar *
+                        tile.insolation.pow(ferrelMoistureEffectInsolationExp) *
+                        (1 - (geoPoint.latitudeDegrees.absoluteValue - ferrelMoistureEffectLatitude).absoluteValue / ferrelMoistureEffectMaxDistance)
+                            .coerceIn(0.0, ferrelMoistureEffectMax) *
+                        max(0.0, 1 - (tile.continentiality / ferrelMoistureEffectMaxContinentiality))
+                val hadleyEffect = hadleyMoistureEffectScalar *
+                        tile.insolation.pow(hadleyMoistureEffectInsolationExp) *
+                        (1 - (geoPoint.latitudeDegrees.absoluteValue - hadleyMoistureEffectLatitude).absoluteValue / hadleyMoistureEffectMaxDistance)
+                            .coerceIn(0.0, hadleyMoistureEffectMax)
+                val polarEffect = (tile.averageInsolation / averageInsolationMoistureCutoff).coerceIn(0.0..1.0)
+                val oceanEffect = if (tile.isAboveWater) 0.0
+                else {
+                    val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentMoistureContinentiality
+                    val oceanCurrentContinentialityFactor = if (tile.continentiality >= 0) 1.0 else {
+                        max(0.0, 1.0 + (tile.continentiality + 1) * oceanCurrentContinentialityScalar)
+                    }
+                    val oceanMoistureInsolation =
+                        lerp(tile.insolation, tile.averageInsolation, oceanMoistureInsolationNowVsAnnualLerp).pow(
+                            oceanMoistureInsolationExp
+                        )
+                    val warmCurrentEffect =
+                        warmCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
+                            warmCurrentMoistureAverageInsolationExp
+                        ) * oceanCurrentContinentialityFactor *
+                                max(
+                                    warmCurrentMoistureDistance - (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
+                                        ?: warmCurrentMoistureDistance), 0.0
+                                )
+                    val coolCurrentEffect =
+                        coolCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
+                            coolCurrentMoistureAverageInsolationExp
+                        ) * oceanCurrentContinentialityFactor *
+                                max(
+                                    coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
+                                        ?: coolCurrentMoistureDistance), 0.0
+                                )
 
-                ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * polarEffect)
+                    ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * polarEffect)
+                }
+                currentMoisture[tile.tileId] =
+                    ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) * startingMoistureMultiplier)
+                    .coerceIn(minStartingMoisture..maxStartingMoisture)
             }
-            ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) * startingMoistureMultiplier)
-                .coerceIn(minStartingMoisture..maxStartingMoisture)
         }
-        val startingMoistureSum = currentMoisture.values.sum()
-        val finalMoisture = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
+        val startingMoistureSum = currentMoisture.sum()
+
+        val moistureRoutes = Array<List<MoistureRoute>>(planet.topology.tiles.size) { emptyList() }
+        val prepareRoutesTime = measureTime {
+            for (tile in tiles) {
+                val neighbors = tile.neighbors
+                val weights = DoubleArray(neighbors.size)
+                val slopes = DoubleArray(neighbors.size)
+                val prevailingWind = tile.prevailingWind
+                var totalWeight = 0.0
+
+                for (index in neighbors.indices) {
+                    val neighbor = neighbors[index]
+                    val rawWeight = if (prevailingWind == Vector3.ZERO) {
+                        1.0
+                    } else {
+                        val delta = (neighbor.tile.position - tile.tile.position).normalized()
+                        prevailingWind.dot(delta) + backwardsWind
+                    }
+                    if (rawWeight <= 0.0) continue
+
+                    val slope = tile.slopeAboveWaterTo(neighbor)
+                    val weight = rawWeight *
+                            (1 - slope / windBlockingSlope).coerceIn(1 - maxWindBlocking..1.0) *
+                            tile.tile.borderFor(neighbor.tile).length.pow(0.1)
+                    weights[index] = weight
+                    slopes[index] = slope
+                    totalWeight += weight
+                }
+
+                val routes = ArrayList<MoistureRoute>(neighbors.size)
+                for (index in neighbors.indices) {
+                    if (weights[index] == 0.0) continue
+                    routes.add(
+                        MoistureRoute(
+                            neighbors[index].tileId,
+                            if (totalWeight == 0.0) 0.0 else weights[index] / totalWeight,
+                            (slopes[index] / upslopeOfMinMoisture)
+                                .pow(upslopeMoistureExp)
+                                .coerceIn(minUpslopeMoisture..1.0)
+                        )
+                    )
+                }
+                moistureRoutes[tile.tileId] = routes
+            }
+        }
 
         var steps = 0
-        while (currentMoisture.values.any { it > 0.01 } && steps < maxMoistureSteps) {
-            steps += 1
-            val nextStep = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
+        val propagateMoistureTime = measureTime {
+            var nextMoisture = DoubleArray(currentMoisture.size)
+            while (currentMoisture.any { it > 0.01 } && steps < maxMoistureSteps) {
+                steps += 1
+                nextMoisture.fill(0.0)
 
-            currentMoisture.forEach { (tile, moisture) ->
-                val neighborWeights = if (tile.prevailingWind == Vector3.ZERO) {
-                    tile.neighbors.associateWith { 1.0 }
-                } else {
-                    tile.neighbors.associateWith { neighbor ->
-                        val delta = (neighbor.tile.position - tile.tile.position).normalized()
-                        (tile.prevailingWind.dot(delta) + backwardsWind)
+                for (tile in tiles) {
+                    val tileId = tile.tileId
+                    val moisture = currentMoisture[tileId]
+                    for (route in moistureRoutes[tileId]) {
+                        val moistureProvided = moisture * route.moistureFraction
+                        val slopePrecipitationFactor = route.upslopePrecipitation *
+                                (1 - (finalMoisture[tileId] / saturationThreshold).pow(2))
+                                    .coerceIn(0.0..1.0)
+                        val precipitation = moistureProvided * max(minPrecipitation, slopePrecipitationFactor)
+                        finalMoisture[tileId] += precipitation * (1 - upslopePrecipitationFactor)
+                        finalMoisture[route.neighborId] += precipitation * upslopePrecipitationFactor
+                        nextMoisture[route.neighborId] +=
+                            moistureProvided * moisturePropagationMultiplier - precipitation
                     }
-                }.filter { (_, weight) -> weight > 0.0 }
-                    .mapValues { (neighbor, weight) ->
-                        weight *
-                                (1 - (tile.slopeAboveWaterTo(neighbor) / windBlockingSlope))
-                                    .coerceIn(1 - maxWindBlocking..1.0) *
-                                tile.tile.borderFor(neighbor.tile).length.pow(0.1)
-                    }
-
-                val totalWeight = neighborWeights.values.sum()
-                neighborWeights.forEach { (neighbor, weight) ->
-                    val moistureProvided = if (totalWeight == 0.0) 0.0 else moisture * weight / totalWeight
-                    val slopePrecipitationFactor = (tile.slopeAboveWaterTo(neighbor) / upslopeOfMinMoisture)
-                        .pow(upslopeMoistureExp)
-                        .coerceIn(minUpslopeMoisture..1.0) *
-                            (1 - ((finalMoisture[tile] ?: 0.0) / saturationThreshold).pow(2))
-                                .coerceIn(0.0..1.0)
-                    val precipitation = moistureProvided * max(minPrecipitation, slopePrecipitationFactor)
-                    finalMoisture[tile] =
-                        (finalMoisture[tile] ?: 0.0) + precipitation * (1 - upslopePrecipitationFactor)
-                    finalMoisture[neighbor] =
-                        (finalMoisture[neighbor] ?: 0.0) + precipitation * upslopePrecipitationFactor
-                    nextStep[neighbor] =
-                        (nextStep[neighbor] ?: 0.0) + moistureProvided * moisturePropagationMultiplier - precipitation
                 }
+
+                val previousMoisture = currentMoisture
+                currentMoisture = nextMoisture
+                nextMoisture = previousMoisture
             }
-
-            currentMoisture = nextStep
         }
 
-        finalMoisture.mapValuesTo(finalMoisture) { (tile, moisture) ->
-            val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / itczMoistureMaxDistance)
-                .pow(itczMoistureExp)
-                .adjustRange(0.0..1.0, 1.0..itczMoistureScalar)
-            moisture * itczEffect * if (tile.isAboveWater) landPrecipitationScalar else oceanPrecipitationScalar
+        val adjustMoistureTime = measureTime {
+            for (tile in tiles) {
+                val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / itczMoistureMaxDistance)
+                    .pow(itczMoistureExp)
+                    .adjustRange(0.0..1.0, 1.0..itczMoistureScalar)
+                finalMoisture[tile.tileId] *=
+                    itczEffect * if (tile.isAboveWater) landPrecipitationScalar else oceanPrecipitationScalar
+            }
         }
-        planet.planetTiles.values.forEach { tile ->
-            tile.moisture = tile.neighbors
-                .plus(tile)
-                .filter { it.isAboveWater == tile.isAboveWater }
-                .map { neighbor -> finalMoisture[neighbor] ?: 0.0 }
-                .average()
+        val smoothMoistureTime = measureTime {
+            for (tile in tiles) {
+                var moisture = finalMoisture[tile.tileId]
+                var sampleCount = 1
+                for (neighbor in tile.neighbors) {
+                    if (neighbor.isAboveWater == tile.isAboveWater) {
+                        moisture += finalMoisture[neighbor.tileId]
+                        sampleCount += 1
+                    }
+                }
+                tile.moisture = moisture / sampleCount
+            }
         }
-        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.values.sum()} / $startingMoistureSum")
+        GD.print("Finished moisture simulation in $steps/$maxMoistureSteps steps. Remaining moisture: ${currentMoisture.sum()} / $startingMoistureSum")
+        GD.print("moisture simulation breakdown:")
+        GD.print(" - initializeMoisture: ${initializeMoistureTime.inWholeMilliseconds}ms")
+        GD.print(" - prepareMoistureRoutes: ${prepareRoutesTime.inWholeMilliseconds}ms")
+        GD.print(" - propagateMoisture ($steps steps): ${propagateMoistureTime.inWholeMilliseconds}ms")
+        GD.print(" - adjustMoisture: ${adjustMoistureTime.inWholeMilliseconds}ms")
+        GD.print(" - smoothMoisture: ${smoothMoistureTime.inWholeMilliseconds}ms")
     }
 
     val (PlanetTile).averageTemperature: Double
