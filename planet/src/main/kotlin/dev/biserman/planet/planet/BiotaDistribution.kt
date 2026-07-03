@@ -5,10 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import dev.biserman.planet.planet.BiotaDistributionMethod.Companion.available
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionClearChance
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionTerrestrialMaxSlope
-import godot.global.GD
 import kotlin.math.absoluteValue
-import kotlin.time.Duration
-import kotlin.time.measureTime
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -72,17 +69,6 @@ class BiotaDistribution(val method: BiotaDistributionMethod, val region: PlanetR
     }
 
     companion object {
-        private inline fun <T> profileStep(
-            timings: MutableList<Pair<String, Duration>>,
-            name: String,
-            block: () -> T
-        ): T {
-            var result: T? = null
-            timings += name to measureTime { result = block() }
-            @Suppress("UNCHECKED_CAST")
-            return result as T
-        }
-
         private fun randomValidTile(planet: Planet, method: BiotaDistributionMethod): PlanetTile {
             var selectedTile: PlanetTile? = null
             var count = 0
@@ -101,26 +87,13 @@ class BiotaDistribution(val method: BiotaDistributionMethod, val region: PlanetR
         }
 
         fun updatePlanet(planet: Planet) {
-            val timings = mutableListOf<Pair<String, Duration>>()
-            var resetCount = 0
-            var spreadCount = 0
-
             planet.biotaDistributions = planet.biotaDistributions.map { distribution ->
                 if (planet.random.nextDouble() <= biotaDistributionClearChance) {
-                    resetCount += 1
-                    profileStep(timings, "reset") { random(planet) }
+                    random(planet)
                 } else {
-                    spreadCount += 1
-                    profileStep(timings, "spread") { distribution.also { it.spread() } }
+                    distribution.also { it.spread() }
                 }
             }
-
-            GD.print("biota update breakdown: reset=$resetCount spread=$spreadCount")
-            timings.groupBy { it.first }
-                .mapValues { (_, values) -> values.sumOf { it.second.inWholeMilliseconds } }
-                .forEach { (name, time) ->
-                    GD.print(" - biota.$name: ${time}ms")
-                }
         }
     }
 }

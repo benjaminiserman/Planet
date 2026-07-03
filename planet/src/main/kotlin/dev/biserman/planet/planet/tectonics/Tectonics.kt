@@ -59,17 +59,6 @@ import kotlin.time.Duration
 import kotlin.time.measureTime
 
 object Tectonics {
-    private inline fun <T> profileStep(
-        timings: MutableList<Pair<String, Duration>>,
-        name: String,
-        block: () -> T
-    ): T {
-        var result: T? = null
-        timings += name to measureTime { result = block() }
-        @Suppress("UNCHECKED_CAST")
-        return result as T
-    }
-
     fun seedPlates(planet: Planet, plateCount: Int): MutableList<TectonicPlate> {
         val plates = (1..plateCount).map { TectonicPlate(planet) }
         val remainingTiles = planet.planetTiles.values.shuffled(planet.random).toMutableList()
@@ -310,31 +299,21 @@ object Tectonics {
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
     fun movePlanetTiles(planet: Planet) {
-        val timings = mutableListOf<Pair<String, Duration>>()
         val searchRadius = planet.topology.averageRadius
-        val originalMovedTiles = profileStep(timings, "collectMovedTiles") {
-            planet.planetTiles.values.filter { it.tectonicPlate != null }
-                .sortedByDescending { it.elevation }
-                .associateWith { tile -> tile.tile.position + tile.movement }
-        }
-        val springProximityLists = profileStep(timings, "prepareSpringProximity") {
+        val originalMovedTiles = planet.planetTiles.values.filter { it.tectonicPlate != null }
+            .sortedByDescending { it.elevation }
+            .associateWith { tile -> tile.tile.position + tile.movement }
+        val springProximityLists =
             proximityListsFor(originalMovedTiles, searchRadius * continentSpringSearchRadius)
-        }
-        val movedTiles = profileStep(timings, "springAndDamp") {
-            springAndDamp(originalMovedTiles, springProximityLists)
-        }
-        profileStep(timings, "updateSpringDisplacement") {
-            planet.planetTiles.forEach { (_, planetTile) ->
-                planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
-            }
+        val movedTiles = springAndDamp(originalMovedTiles, springProximityLists)
+        planet.planetTiles.forEach { (_, planetTile) ->
+            planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
 
         val convergenceZones = mutableMapOf<Tile, ConvergenceZone>()
-        val newTileMap = profileStep(timings, "initializeTileMap") {
-            LinkedHashMap<Tile, PlanetTile?>(planet.topology.tiles.size).also { map ->
-                for (tile in planet.topology.tiles) {
-                    map[tile] = null
-                }
+        val newTileMap = LinkedHashMap<Tile, PlanetTile?>(planet.topology.tiles.size).also { map ->
+            for (tile in planet.topology.tiles) {
+                map[tile] = null
             }
         }
 
@@ -342,13 +321,10 @@ object Tectonics {
         for ((planetTile, newPosition) in movedTiles) {
             movedTilesById[planetTile.tile.id] = MovedTile(planetTile, newPosition)
         }
-        val classificationProximityLists = profileStep(timings, "prepareClassificationProximity") {
-            proximityListsFor(movedTiles, searchRadius * convergenceSearchRadius)
-        }
+        val classificationProximityLists = proximityListsFor(movedTiles, searchRadius * convergenceSearchRadius)
         val possibleDivergenceZones = mutableListOf<Tile>()
         val convergenceSearchDistance = searchRadius * convergenceSearchRadius
-        profileStep(timings, "classifyTiles") {
-            for (tile in planet.topology.tiles) {
+        for (tile in planet.topology.tiles) {
                 val nearestMovedTiles = nearestMovedTiles(
                     classificationProximityLists[tile.id],
                     movedTilesById,
@@ -403,40 +379,32 @@ object Tectonics {
                 } else {
                     possibleDivergenceZones.add(tile)
                 }
-            }
         }
 
         val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
-        profileStep(timings, "fillDivergenceZones") {
-            possibleDivergenceZones.forEach { tile ->
-                val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(
-                    planet, tile, newTileMap, movedTiles
-                )
-                newTileMap[tile] = newPlanetTile
-                if (divergenceZone != null) {
-                    divergenceZones[tile] = divergenceZone
-                }
+        possibleDivergenceZones.forEach { tile ->
+            val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(
+                planet, tile, newTileMap, movedTiles
+            )
+            newTileMap[tile] = newPlanetTile
+            if (divergenceZone != null) {
+                divergenceZones[tile] = divergenceZone
             }
         }
 
-        profileStep(timings, "retargetTiles") {
-            newTileMap.forEach { (tile, newPlanetTile) ->
-                newPlanetTile?.tile = tile
-            }
+        newTileMap.forEach { (tile, newPlanetTile) ->
+            newPlanetTile?.tile = tile
         }
 
         val activeTiles = newTileMap.values.filterNotNull()
-        val plateRegions = profileStep(timings, "buildPlateRegions") {
-            PlanetRegion(planet, activeTiles)
-                .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate }
-                .toMutableMap()
-                .mapValues { (_, value) ->
-                    value.sortedByDescending { it.tiles.size }
-                }
-        }
+        val plateRegions = PlanetRegion(planet, activeTiles)
+            .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate }
+            .toMutableMap()
+            .mapValues { (_, value) ->
+                value.sortedByDescending { it.tiles.size }
+            }
 
-        profileStep(timings, "remapRegions") {
-            for ((plate, regions) in plateRegions) {
+        for ((plate, regions) in plateRegions) {
                 val regionsToRemap = regions.filter {
                     plate == null || it.tiles.size < regions.first().tiles.size || it.tiles.size < minPlateSize
                 }
@@ -462,16 +430,12 @@ object Tectonics {
                         }
                     }
                 }
-            }
         }
 
-        val newPlates = profileStep(timings, "findNewPlates") {
-            PlanetRegion(planet, activeTiles)
-                .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
-        }
+        val newPlates = PlanetRegion(planet, activeTiles)
+            .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
 
-        profileStep(timings, "createNewPlates") {
-            for (plate in newPlates) {
+        for (plate in newPlates) {
                 val newPlate = if (plate.tiles.size >= minPlateSize) {
                     TectonicPlate(planet)
                 } else {
@@ -480,56 +444,39 @@ object Tectonics {
                 GD.print("creating plate of size ${plate.tiles.size}")
                 planet.tectonicPlates.add(newPlate)
                 plate.tiles.forEach { it.tectonicPlate = newPlate }
-            }
         }
 
-        val subductionZonesRTree = profileStep(timings, "buildConvergenceRTree") {
+        val subductionZonesRTree =
             convergenceZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
-        }
 
-        profileStep(timings, "applyElevationEffects") {
-            activeTiles.forEach {
+        activeTiles.forEach {
                 it.elevation -= oceanicSubsidence(it.elevation)
                 it.elevation += ConvergenceZone.adjustElevation(it, subductionZonesRTree)
                 it.elevation = tryHotspotEruption(it)
                 it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
-            }
         }
 
-        profileStep(timings, "riftOversizedPlate") {
-            val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
-            oversizedPlate?.rift()
+        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
+        oversizedPlate?.rift()
+
+        val internalPlates = planet.tectonicPlates.associateWith { it.calculateNeighborLengths() }
+            .filter { (_, neighbors) -> neighbors.size == 1 }
+
+        internalPlates.forEach { (plate, neighbors) ->
+            plate.mergeInto(neighbors.keys.first())
         }
 
-        val internalPlates = profileStep(timings, "findInternalPlates") {
-            planet.tectonicPlates.associateWith { it.calculateNeighborLengths() }
-                .filter { (_, neighbors) -> neighbors.size == 1 }
+        planet.convergenceZones = LinkedHashMap<Int, ConvergenceZone>(convergenceZones.size).also { zones ->
+            convergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
         }
-
-        profileStep(timings, "mergeInternalPlates") {
-            internalPlates.forEach { (plate, neighbors) ->
-                plate.mergeInto(neighbors.keys.first())
-            }
+        planet.divergenceZones = LinkedHashMap<Int, DivergenceZone>(divergenceZones.size).also { zones ->
+            divergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
         }
-
-        profileStep(timings, "publishTileState") {
-            planet.convergenceZones = LinkedHashMap<Int, ConvergenceZone>(convergenceZones.size).also { zones ->
-                convergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
-            }
-            planet.divergenceZones = LinkedHashMap<Int, DivergenceZone>(divergenceZones.size).also { zones ->
-                divergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
-            }
-            planet.planetTiles = LinkedHashMap<Int, PlanetTile>(newTileMap.size).also { tiles ->
-                newTileMap.forEach { (tile, planetTile) -> tiles[tile.id] = planetTile!! }
-            }
+        planet.planetTiles = LinkedHashMap<Int, PlanetTile>(newTileMap.size).also { tiles ->
+            newTileMap.forEach { (tile, planetTile) -> tiles[tile.id] = planetTile!! }
         }
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
-
-        GD.print("movePlanetTiles breakdown:")
-        timings.forEach { (name, time) ->
-            GD.print(" - $name: ${time.inWholeMilliseconds}ms")
-        }
     }
 
     fun performErosion(planet: Planet) {
