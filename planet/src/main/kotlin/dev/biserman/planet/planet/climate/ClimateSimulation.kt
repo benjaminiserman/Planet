@@ -6,7 +6,6 @@ import dev.biserman.planet.geometry.scaleAndCoerceIn
 import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.gui.Gui
-import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.backwardsWind
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxMoistureSteps
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.upslopeOfMinMoisture
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxWindBlocking
@@ -295,6 +294,10 @@ object ClimateSimulation {
 
     fun simulateMoisture(planet: Planet) {
         val tiles = planet.planetTiles.values.toList()
+        val effectiveWarmCurrentMoistureDistance =
+            warmCurrentMoistureDistance * ClimateRuntimeConfig.oceanCurrentDistanceScale
+        val effectiveCoolCurrentMoistureDistance =
+            coolCurrentMoistureDistance * ClimateRuntimeConfig.oceanCurrentDistanceScale
         var currentMoisture = DoubleArray(planet.topology.tiles.size)
         val finalMoisture = DoubleArray(planet.topology.tiles.size)
         val initializeMoistureTime = measureTime {
@@ -325,27 +328,32 @@ object ClimateSimulation {
                             oceanMoistureInsolationExp
                         )
                     val warmCurrentEffect =
-                        warmCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
+                        warmCurrentMoistureStrength * ClimateRuntimeConfig.oceanCurrentScale *
+                                oceanMoistureInsolation * tile.averageInsolation.pow(
                             warmCurrentMoistureAverageInsolationExp
                         ) * oceanCurrentContinentialityFactor *
                                 max(
-                                    warmCurrentMoistureDistance - (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
-                                        ?: warmCurrentMoistureDistance), 0.0
+                                    effectiveWarmCurrentMoistureDistance -
+                                            (planet.warmCurrentDistanceMap[tile.tileId]?.toDouble()
+                                                ?: effectiveWarmCurrentMoistureDistance), 0.0
                                 )
                     val coolCurrentEffect =
-                        coolCurrentMoistureStrength * oceanMoistureInsolation * tile.averageInsolation.pow(
+                        coolCurrentMoistureStrength * ClimateRuntimeConfig.oceanCurrentScale *
+                                oceanMoistureInsolation * tile.averageInsolation.pow(
                             coolCurrentMoistureAverageInsolationExp
                         ) * oceanCurrentContinentialityFactor *
                                 max(
-                                    coolCurrentMoistureDistance - (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
-                                        ?: coolCurrentMoistureDistance), 0.0
+                                    effectiveCoolCurrentMoistureDistance -
+                                            (planet.coolCurrentDistanceMap[tile.tileId]?.toDouble()
+                                                ?: effectiveCoolCurrentMoistureDistance), 0.0
                                 )
 
                     ((oceanMoistureInsolation + warmCurrentEffect + coolCurrentEffect) * polarEffect)
                 }
                 currentMoisture[tile.tileId] =
-                    ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) * startingMoistureMultiplier)
-                    .coerceIn(minStartingMoisture..maxStartingMoisture)
+                    ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) *
+                            startingMoistureMultiplier * ClimateRuntimeConfig.moistureScale)
+                    .coerceIn((minStartingMoisture * ClimateRuntimeConfig.moistureScale)..(maxStartingMoisture * ClimateRuntimeConfig.moistureScale))
             }
         }
         val startingMoistureSum = currentMoisture.sum()
@@ -365,7 +373,7 @@ object ClimateSimulation {
                         1.0
                     } else {
                         val delta = (neighbor.tile.position - tile.tile.position).normalized()
-                        prevailingWind.dot(delta) + backwardsWind
+                        prevailingWind.dot(delta) + ClimateRuntimeConfig.backwardsWind
                     }
                     if (rawWeight <= 0.0) continue
 
@@ -424,11 +432,18 @@ object ClimateSimulation {
             }
         }
 
+        val effectiveItczMoistureScalar =
+            1.0 + (itczMoistureScalar - 1.0) * ClimateRuntimeConfig.monsoonScale
+        val effectiveItczMoistureMaxDistance =
+            itczMoistureMaxDistance * ClimateRuntimeConfig.monsoonDistanceScale
         val adjustMoistureTime = measureTime {
             for (tile in tiles) {
-                val itczEffect = max(0.0, 1 - planet.itczDistanceMap[tile.tileId]!! / itczMoistureMaxDistance)
+                val itczEffect = max(
+                    0.0,
+                    1 - planet.itczDistanceMap[tile.tileId]!! / effectiveItczMoistureMaxDistance
+                )
                     .pow(itczMoistureExp)
-                    .adjustRange(0.0..1.0, 1.0..itczMoistureScalar)
+                    .adjustRange(0.0..1.0, 1.0..effectiveItczMoistureScalar)
                 finalMoisture[tile.tileId] *=
                     itczEffect * if (tile.isAboveWater) landPrecipitationScalar else oceanPrecipitationScalar
             }
@@ -458,35 +473,51 @@ object ClimateSimulation {
     val (PlanetTile).averageTemperature: Double
         get() {
             val geoPoint = tile.position.toGeoPoint()
+            val greenhouseOffset = ClimateRuntimeConfig.greenhouseTemperatureOffset
+            val insolationTemperatureSign = ClimateRuntimeConfig.insolationTemperatureSign
+            val landInsolationScale =
+                (baseTemperatureInsolationScalar + ClimateRuntimeConfig.insolationTemperatureOffset) *
+                        insolationTemperatureSign
+            val effectiveOceanInsolationScale =
+                (oceanInsolationScale + ClimateRuntimeConfig.insolationTemperatureOffset) *
+                        insolationTemperatureSign
+            val effectiveWarmCurrentTemperatureDistance =
+                warmCurrentTemperatureDistance * ClimateRuntimeConfig.oceanCurrentDistanceScale
+            val effectiveCoolCurrentTemperatureDistance =
+                coolCurrentTemperatureDistance * ClimateRuntimeConfig.oceanCurrentDistanceScale
             val localBaseTemperature =
-                baseTemperature + insolation * baseTemperatureInsolationScalar
+                baseTemperature + greenhouseOffset + insolation * landInsolationScale
 
             val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentTemperatureContinentiality
             val oceanCurrentContinentialityFactor = if (continentiality >= 0) 1.0 else {
                 max(0.0, 1.0 + (continentiality + 1) * oceanCurrentContinentialityScalar)
             }
             val warmCurrentAdjustment =
-                warmCurrentTemperatureStrength * max(
-                    warmCurrentTemperatureDistance - (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
+                warmCurrentTemperatureStrength * ClimateRuntimeConfig.oceanCurrentScale * max(
+                    effectiveWarmCurrentTemperatureDistance -
+                            (planet.warmCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
                 ) * max(insolation, 0.1).pow(warmCurrentTemperatureInsolationExp) * averageInsolation.pow(
                     warmCurrentTemperatureAverageInsolationExp
                 ) * oceanCurrentContinentialityFactor
             val coolCurrentAdjustment =
-                coolCurrentTemperatureStrength * max(
-                    coolCurrentTemperatureDistance - (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
+                coolCurrentTemperatureStrength * ClimateRuntimeConfig.oceanCurrentScale * max(
+                    effectiveCoolCurrentTemperatureDistance -
+                            (planet.coolCurrentDistanceMap[tileId] ?: return 0.0),
                     0.0
                 ) * max(insolation, 0.1).pow(coolCurrentTemperatureInsolationExp) * averageInsolation.pow(
                     coolCurrentTemperatureAverageInsolationExp
                 ) * oceanCurrentContinentialityFactor
 
-            val elevationAdjustment = dryLapseRate * dryLapseRateScalar * max(0.0, elevation)
+            val elevationAdjustment = dryLapseRate * ClimateRuntimeConfig.lapseRateSign *
+                    dryLapseRateScalar * max(0.0, elevation)
 
             val oceanTemperature = max(
-                oceanMinBaseTemp,
-                oceanBaseTemp + lerp(insolation, annualInsolation.average(), oceanNowVsAnnualInsolationLerp).pow(
+                oceanMinBaseTemp + greenhouseOffset,
+                oceanBaseTemp + greenhouseOffset +
+                        lerp(insolation, annualInsolation.average(), oceanNowVsAnnualInsolationLerp).pow(
                     oceanNowVsAnnualInsolationLerpPow
-                ) * oceanInsolationScale
+                ) * effectiveOceanInsolationScale
             ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val moistureAdjustedTemperature =
@@ -532,7 +563,7 @@ object ClimateSimulation {
     fun (PlanetTile).calculateClimateDatumMonth(): ClimateDatumMonth {
         return ClimateDatumMonth(
             averageTemperature,
-            insolation * insolationToWm2,
+            lightLevel * insolationToWm2,
             moisture * moistureToMm
         )
     }

@@ -31,7 +31,7 @@
   "mantleConvectionStrength": 8.0E-4,
   "maxAverageContinentalHeightGuardrail": 1250.0,
   "maxElevation": 12000.0,
-  "maxMeteorImpactElevationChange": 2000.0,
+  "maxMeteorElevationChange": 2000.0,
   "maxPercentContinentalGuardrail": 0.55,
   "meteorImpactChance": 0.01,
   "minAverageContinentalHeightGuardrail": 750.0,
