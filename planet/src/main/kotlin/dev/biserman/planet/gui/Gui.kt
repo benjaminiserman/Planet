@@ -61,6 +61,7 @@ class Gui() : Node() {
     val randomizeSeedButton by lazy { findChild("RandomizeSeedButton") as Button }
     val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
     val brushTool by lazy { BrushTool(this) }
+    val climateConfigTool by lazy { ClimateConfigTool(this) }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -90,8 +91,18 @@ class Gui() : Node() {
         }
     }
 
+    private var statsGraphVisibleBeforeTileInspection = false
+
     var selectedTile: Tile? = null
         set(value) {
+            if (field == null && value != null) {
+                statsGraphVisibleBeforeTileInspection = statsGraph.visible
+                showSettingsButton.setHiddenForTileInspection(true)
+                statsGraph.visible = false
+            } else if (field != null && value == null) {
+                showSettingsButton.setHiddenForTileInspection(false)
+                statsGraph.visible = statsGraphVisibleBeforeTileInspection
+            }
             field = value
             selectedTileRenderer.update(value)
             if (value == null) {
@@ -138,8 +149,8 @@ class Gui() : Node() {
         generatePlanetButton.pressed.connect { submitSeed() }
         seedInput.textSubmitted.connect { submitSeed() }
         brushTool.initialize()
+        climateConfigTool.initialize()
 
-        showSettingsButton.mapLayerButtons.forEach { addChild(it.button) }
         showSettingsButton.addToggle("Show Stats", listOf("stats")) { statsGraph.visible = it }
         showSettingsButton.addToggle("Track Stats", listOf("stats")) { statsGraph.trackStats = it }
 

@@ -9,6 +9,7 @@ import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.planet.climate.ClimateClassification
 import dev.biserman.planet.planet.climate.ClimateSimulation
+import dev.biserman.planet.planet.climate.ClimateRuntimeConfig
 import dev.biserman.planet.planet.climate.ClimateSimulation.averageTemperature
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculateAirPressure
 import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingWind
@@ -59,8 +60,12 @@ class PlanetTile(
     val temperature get() = averageTemperature
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo({ planet.terrainChangeCount }, { planet.daysPassed }) { calculateAirPressure() }
-    val prevailingWind by memo({ planet.terrainChangeCount }, { planet.daysPassed }) { calculatePrevailingWind() }
+    val airPressure by memo(
+        { planet.terrainChangeCount }, { planet.daysPassed }, { ClimateRuntimeConfig.revision }
+    ) { calculateAirPressure() }
+    val prevailingWind by memo(
+        { planet.terrainChangeCount }, { planet.daysPassed }, { ClimateRuntimeConfig.revision }
+    ) { calculatePrevailingWind() }
 
     val isIceCap
         get() = elevation >= (1 - tile.position.y.absoluteValue).pow(0.5) * 6500 ||
@@ -103,7 +108,10 @@ class PlanetTile(
             tile.position.toGeoPoint().latitude
         )
 
-    val averageInsolation by memo {
+    @get:JsonIgnore
+    val lightLevel get() = insolation * ClimateRuntimeConfig.brightnessScale
+
+    val averageInsolation by memo({ ClimateRuntimeConfig.revision }) {
         (0..<12).map { it * 30.0 }.map {
             Insolation.directHorizontal(
                 it,
@@ -113,7 +121,7 @@ class PlanetTile(
     }
 
     @get:JsonIgnore
-    val annualInsolation by memo({ planet.tectonicAge }) {
+    val annualInsolation by memo({ planet.tectonicAge }, { ClimateRuntimeConfig.revision }) {
         (1..12).map {
             Insolation.directHorizontal(
                 it * 30 % yearLength,
@@ -121,6 +129,9 @@ class PlanetTile(
             )
         }
     }
+
+    @get:JsonIgnore
+    val averageAnnualLight get() = annualInsolation.average() * ClimateRuntimeConfig.brightnessScale
 
     @get:JsonIgnore
     val isContinentalCrust get() = elevation > TectonicGlobals.continentElevationCutoff

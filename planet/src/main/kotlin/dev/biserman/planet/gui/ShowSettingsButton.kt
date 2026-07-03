@@ -4,8 +4,10 @@ import dev.biserman.planet.gui.Gui.Companion.instance
 import dev.biserman.planet.gui.Gui.MapLayerCheckButton
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
+import godot.api.Control
 import godot.api.OptionButton
-import godot.core.Vector2
+import godot.api.PanelContainer
+import godot.api.VBoxContainer
 import godot.core.connect
 
 @RegisterClass
@@ -16,12 +18,26 @@ class ShowSettingsButton() : OptionButton() {
         set(value) {
             field = value
             mapLayerButtons.forEach { it.button.setVisible(value in it.categories) }
-            mapLayerButtons.filter { it.button.isVisible() }
-                .sortedBy { it.button.text }
-                .forEachIndexed { index, mapLayerCheckButton ->
-                    mapLayerCheckButton.button.setPosition(Vector2(0, 20 * index + 40))
-                }
+            settingsOptionsPanel.visible = !hiddenForTileInspection && value != "none"
         }
+
+    private var hiddenForTileInspection = false
+    private val settingsButtons by lazy {
+        instance.findChild("SettingsButtons") as Control
+    }
+
+    private val settingsOptionsPanel by lazy {
+        instance.findChild("SettingsOptionsPanel") as PanelContainer
+    }
+    private val settingsOptionsList by lazy {
+        instance.findChild("SettingsOptionsList") as VBoxContainer
+    }
+
+    fun setHiddenForTileInspection(hidden: Boolean) {
+        hiddenForTileInspection = hidden
+        settingsButtons.visible = !hidden
+        settingsOptionsPanel.visible = !hidden && settingsCategory != "none"
+    }
 
     private val toggles = mutableMapOf<String, Boolean>()
     fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any) {
@@ -32,10 +48,8 @@ class ShowSettingsButton() : OptionButton() {
             onClick(it)
         }).also {
             it.text = toggle
-            it.setPosition(Vector2(0, 20 * mapLayerButtons.size + 40))
-//            it.scale = Vector2(0.6, 0.6)
             it.setVisible(false)
-            instance.addChild(it)
+            settingsOptionsList.addChild(it)
         }, categories)
     }
 
@@ -63,6 +77,7 @@ class ShowSettingsButton() : OptionButton() {
             "terrain",
             "biome",
             "climate",
+            "stats",
             "tectonics",
             "debug"
         ).forEachIndexed { index, category ->
