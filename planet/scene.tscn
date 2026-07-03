@@ -212,6 +212,219 @@ layout_mode = 2
 tooltip_text = "Biota distribution to paint"
 fit_to_longest_item = false
 
+[node name="ClimateConfigPanel" type="PanelContainer" parent="GUI"]
+visible = false
+layout_mode = 0
+offset_left = 260.0
+offset_top = 90.0
+offset_right = 710.0
+offset_bottom = 650.0
+
+[node name="Margin" type="MarginContainer" parent="GUI/ClimateConfigPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Content" type="VBoxContainer" parent="GUI/ClimateConfigPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Runtime Climate"
+
+[node name="AxialTiltRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/AxialTiltRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Axial tilt"
+
+[node name="AxialTiltSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/AxialTiltRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -90.0
+max_value = 90.0
+step = 0.5
+value = 23.5
+
+[node name="AxialTiltValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/AxialTiltRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "23.5 deg"
+horizontal_alignment = 2
+
+[node name="EccentricityRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/EccentricityRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Orbital eccentricity"
+
+[node name="EccentricitySlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/EccentricityRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 0.95
+step = 0.001
+value = 0.017
+
+[node name="EccentricityValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/EccentricityRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0.017"
+horizontal_alignment = 2
+
+[node name="DistanceRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/DistanceRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Distance to star"
+
+[node name="DistanceSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/DistanceRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Positive values move the planet farther away and reduce insolation heating"
+min_value = -10.0
+max_value = 10.0
+
+[node name="DistanceValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/DistanceRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="GreenhouseRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/GreenhouseRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Greenhouse effect"
+
+[node name="GreenhouseSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/GreenhouseRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -10.0
+max_value = 10.0
+
+[node name="GreenhouseValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/GreenhouseRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="MoistureRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/MoistureRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Moisture"
+
+[node name="MoistureSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/MoistureRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -10.0
+max_value = 10.0
+
+[node name="MoistureValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/MoistureRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="OceanCurrentRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/OceanCurrentRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Ocean currents"
+
+[node name="OceanCurrentSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/OceanCurrentRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -10.0
+max_value = 10.0
+
+[node name="OceanCurrentValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/OceanCurrentRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="MonsoonRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/MonsoonRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Monsoon strength"
+
+[node name="MonsoonSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/MonsoonRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -10.0
+max_value = 10.0
+
+[node name="MonsoonValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/MonsoonRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="ModifierSeparator" type="HSeparator" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="ModifiersLabel" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+text = "Modifiers"
+
+[node name="HotHeavensModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+tooltip_text = "Reverse the dry lapse rate so higher elevations become warmer"
+text = "Hot Heavens"
+
+[node name="ClockworkWindsModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+tooltip_text = "Remove backwards wind propagation"
+text = "Clockwork Winds"
+
+[node name="ColdSunModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+tooltip_text = "Reverse temperature changes caused by insolation"
+text = "Cold Sun"
+
+[node name="DimSunModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+tooltip_text = "Reduce light available to biome growth without changing heat"
+text = "Dim Sun"
+
+[node name="TidallyLockedModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+tooltip_text = "Not available yet"
+disabled = true
+text = "Tidally Locked"
+
+[node name="ResetClimateConfigButton" type="Button" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+focus_mode = 0
+text = "Reset to Defaults"
+
 [node name="TectonicAge" type="Label" parent="GUI"]
 layout_mode = 1
 anchors_preset = 1
@@ -315,7 +528,7 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -850.0
+offset_left = -985.0
 offset_top = 5.0
 offset_right = -5.0
 offset_bottom = 41.0
@@ -329,6 +542,13 @@ focus_mode = 0
 toggle_mode = true
 button_pressed = true
 text = "Brush"
+
+[node name="ShowClimateConfigButton" type="Button" parent="GUI/MenuButtons"]
+layout_mode = 2
+tooltip_text = "Show or hide runtime climate settings"
+focus_mode = 0
+toggle_mode = true
+text = "Climate"
 
 [node name="SimulationOptionButton" type="OptionButton" parent="GUI/MenuButtons"]
 clip_contents = true

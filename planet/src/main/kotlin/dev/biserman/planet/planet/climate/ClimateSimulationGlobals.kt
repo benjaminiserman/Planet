@@ -120,7 +120,7 @@ object ClimateSimulationGlobals {
 
     var maxMoistureSteps = 50 // the maximum amount of steps the moisture simulator can run
     var moistureToMm = 120.0 // scalar to convert moisture to mm
-    var startingMoistureMultiplier = 1.5 // multiply all starting moisture by this varue
+    var startingMoistureMultiplier = 1.5 // multiply all starting moisture by this value
     var minStartingMoisture = 0.05 // minimum starting moisture
     var maxStartingMoisture = 3.0 // maximum starting moisture
     var oceanMoistureInsolationExp = 3.0 // higher exp -> less ocean moisture & most seasonality

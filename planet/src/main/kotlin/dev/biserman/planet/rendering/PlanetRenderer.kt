@@ -330,12 +330,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "insolation", categories = listOf("climate", "overlay"),
         ) { planetTile ->
-            Color.black.transparent.lerp(Color.orange, planetTile.insolation)
+            Color.black.transparent.lerp(Color.orange, planetTile.lightLevel)
         },
         SimpleColorMode(
             this, "annual_insolation", categories = listOf("climate", "overlay"),
         ) { planetTile ->
-            Color.black.transparent.lerp(Color.orange, planetTile.annualInsolation.average())
+            Color.black.transparent.lerp(Color.orange, planetTile.averageAnnualLight)
         },
         SimpleColorMode(
             this, "edge_depth", categories = listOf("terrain", "overlay"),
