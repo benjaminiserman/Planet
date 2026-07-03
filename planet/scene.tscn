@@ -414,11 +414,10 @@ layout_mode = 2
 tooltip_text = "Reduce light available to biome growth without changing heat"
 text = "Dim Sun"
 
-[node name="TidallyLockedModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
+[node name="HotspotHeatingModifier" type="CheckButton" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
-tooltip_text = "Not available yet"
-disabled = true
-text = "Tidally Locked"
+tooltip_text = "Add up to 30°C based on each tile's hotspot intensity"
+text = "Hotspot Heating"
 
 [node name="ResetClimateConfigButton" type="Button" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2

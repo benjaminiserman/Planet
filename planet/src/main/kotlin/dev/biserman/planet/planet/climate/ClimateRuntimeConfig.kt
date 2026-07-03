@@ -85,19 +85,27 @@ object ClimateRuntimeConfig {
                 revision++
             }
         }
+    var hotspotHeating = false
+        set(value) {
+            if (field != value) {
+                field = value
+                revision++
+            }
+        }
 
     // Positive distance means farther away, so it reduces insolation-driven heating.
     val insolationTemperatureOffset get() = -distanceToStar * 5.0
     val greenhouseTemperatureOffset get() = greenhouseEffect * 5.0
     val moistureScale get() = 1.0 + moisture / 10.0
     val oceanCurrentScale get() = maxOf(0.0, 1.0 + oceanCurrentStrength / 5.0)
-    val oceanCurrentDistanceScale get() = maxOf(0.0, 1.0 + oceanCurrentStrength / 10.0)
-    val monsoonScale get() = maxOf(0.0, 1.0 + monsoonStrength / 5.0)
-    val monsoonDistanceScale get() = maxOf(0.0, 1.0 + monsoonStrength / 10.0)
+    val oceanCurrentDistanceScale get() = maxOf(0.0, 1.0 + oceanCurrentStrength / 5.0)
+    val monsoonScale get() = maxOf(0.1, 1.0 + monsoonStrength / 5.0)
+    val monsoonDistanceScale get() = maxOf(0.1, 1.0 + monsoonStrength / 5.0)
     val insolationTemperatureSign get() = if (coldSun) -1.0 else 1.0
     val lapseRateSign get() = if (hotHeavens) -1.0 else 1.0
     val backwardsWind get() = if (clockworkWinds) 0.0 else ClimateSimulationGlobals.backwardsWind
     val brightnessScale get() = if (dimSun) 0.25 else 1.0
+    val maxHotspotTemperatureOffset get() = if (hotspotHeating) 120.0 else 0.0
 
     fun resetToDefaults() {
         axialTiltDegrees = DEFAULT_AXIAL_TILT_DEGREES
@@ -111,5 +119,6 @@ object ClimateRuntimeConfig {
         clockworkWinds = false
         coldSun = false
         dimSun = false
+        hotspotHeating = false
     }
 }
