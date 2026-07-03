@@ -103,7 +103,8 @@ class CameraGimbal : Node3D() {
 		if (event is InputEventMouse &&
 			Input.isActionJustReleased("click") &&
 			clickStart != null &&
-			event.position.distanceTo(clickStart) == 0.0
+			event.position.distanceTo(clickStart) == 0.0 &&
+			Main.instance.hasPlanet
 		) {
 			Gui.instance.selectedTile = hoveredTile
 		}

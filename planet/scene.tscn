@@ -43,6 +43,77 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_m7jmp")
 
+[node name="SeedSelection" type="ColorRect" parent="GUI"]
+z_index = 100
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.018, 0.024, 0.94)
+
+[node name="SeedPanel" type="PanelContainer" parent="GUI/SeedSelection"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -125.0
+offset_right = 210.0
+offset_bottom = 125.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="GUI/SeedSelection/SeedPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="GUI/SeedSelection/SeedPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="GUI/SeedSelection/SeedPanel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Create Planet"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="GUI/SeedSelection/SeedPanel/Margin/Content"]
+layout_mode = 2
+text = "Planet seed"
+
+[node name="SeedInput" type="LineEdit" parent="GUI/SeedSelection/SeedPanel/Margin/Content"]
+layout_mode = 2
+placeholder_text = "Enter a whole number"
+max_length = 11
+select_all_on_focus = true
+
+[node name="SeedErrorLabel" type="Label" parent="GUI/SeedSelection/SeedPanel/Margin/Content"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.42, 0.42, 1)
+text = "Invalid seed"
+autowrap_mode = 2
+
+[node name="Actions" type="HBoxContainer" parent="GUI/SeedSelection/SeedPanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="RandomizeSeedButton" type="Button" parent="GUI/SeedSelection/SeedPanel/Margin/Content/Actions"]
+layout_mode = 2
+text = "Random Seed"
+
+[node name="GeneratePlanetButton" type="Button" parent="GUI/SeedSelection/SeedPanel/Margin/Content/Actions"]
+layout_mode = 2
+text = "Generate Planet"
+
 [node name="TectonicAge" type="Label" parent="GUI"]
 layout_mode = 1
 anchors_preset = 1

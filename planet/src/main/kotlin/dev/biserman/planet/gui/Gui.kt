@@ -28,6 +28,7 @@ import godot.global.GD
 import java.io.File
 import java.util.Locale.getDefault
 import kotlin.math.min
+import kotlin.random.Random
 
 @RegisterClass
 class Gui() : Node() {
@@ -54,6 +55,11 @@ class Gui() : Node() {
     val loadDialog by lazy { findChild("LoadDialog") as FileDialog }
     val importDialog by lazy { findChild("ImportDialog") as FileDialog }
     val exportDialog by lazy { findChild("ExportDialog") as FileDialog }
+
+    val seedSelection by lazy { findChild("SeedSelection") as Control }
+    val seedInput by lazy { findChild("SeedInput") as LineEdit }
+    val randomizeSeedButton by lazy { findChild("RandomizeSeedButton") as Button }
+    val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -103,10 +109,34 @@ class Gui() : Node() {
         Main.instance.timerActive = shouldToggleOn
     }
 
+    fun showSeedSelection() {
+        seedInput.text = Random.nextInt().toString()
+        seedInput.editable = true
+        generatePlanetButton.disabled = false
+        seedSelection.visible = true
+        seedInput.grabFocus()
+        seedInput.selectAll()
+    }
+
+    private fun submitSeed() {
+        val seed = seedInput.text.trim().hashCode()
+        seedInput.editable = false
+        generatePlanetButton.disabled = true
+        Main.instance.generatePlanet(seed)
+        seedSelection.visible = false
+    }
 
     @RegisterFunction
     override fun _ready() {
         instance = this
+        randomizeSeedButton.pressed.connect {
+            seedInput.text = Random.nextInt().toString()
+            seedInput.grabFocus()
+            seedInput.selectAll()
+        }
+        generatePlanetButton.pressed.connect { submitSeed() }
+        seedInput.textSubmitted.connect { submitSeed() }
+
         showSettingsButton.mapLayerButtons.forEach { addChild(it.button) }
         showSettingsButton.addToggle("Show Stats", listOf("stats")) { statsGraph.visible = it }
         showSettingsButton.addToggle("Track Stats", listOf("stats")) { statsGraph.trackStats = it }
