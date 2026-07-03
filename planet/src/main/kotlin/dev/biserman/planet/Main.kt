@@ -24,8 +24,11 @@ class Main : Node() {
 	@RegisterFunction
 	override fun _ready() {
 		instance = this
+		Gui.instance.showSeedSelection()
+	}
 
-		val newPlanet = Planet(seed = 3, size = 35)
+	fun generatePlanet(seed: Int) {
+		val newPlanet = Planet(seed = seed, size = 35)
 		GD.print("tiles: ${newPlanet.topology.tiles.size}")
 		GD.print("average radius: ${newPlanet.topology.averageRadius}, area: ${newPlanet.topology.averageArea}")
 
@@ -37,7 +40,7 @@ class Main : Node() {
 
 	@RegisterFunction
 	override fun _unhandledInput(event: InputEvent?) {
-		if (event == null) {
+		if (event == null || !::planet.isInitialized || !::planetRenderer.isInitialized) {
 			return
 		}
 
@@ -83,7 +86,7 @@ class Main : Node() {
 
 	@RegisterFunction
 	override fun _process(delta: Double) {
-		if (timerActive) {
+		if (timerActive && ::planet.isInitialized && ::planetRenderer.isInitialized) {
 			timerTime += delta
 			if (timerTime >= timerStep) {
 				timerTime = 0.0
@@ -92,6 +95,8 @@ class Main : Node() {
 			}
 		}
 	}
+
+	val hasPlanet get() = ::planet.isInitialized
 
 	fun updatePlanet(newPlanet: Planet) {
 		GD.print("updating planet: $newPlanet")
