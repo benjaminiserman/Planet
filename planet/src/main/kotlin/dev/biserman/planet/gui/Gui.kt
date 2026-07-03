@@ -91,8 +91,18 @@ class Gui() : Node() {
         }
     }
 
+    private var statsGraphVisibleBeforeTileInspection = false
+
     var selectedTile: Tile? = null
         set(value) {
+            if (field == null && value != null) {
+                statsGraphVisibleBeforeTileInspection = statsGraph.visible
+                showSettingsButton.setHiddenForTileInspection(true)
+                statsGraph.visible = false
+            } else if (field != null && value == null) {
+                showSettingsButton.setHiddenForTileInspection(false)
+                statsGraph.visible = statsGraphVisibleBeforeTileInspection
+            }
             field = value
             selectedTileRenderer.update(value)
             if (value == null) {

@@ -4,6 +4,7 @@ import dev.biserman.planet.gui.Gui.Companion.instance
 import dev.biserman.planet.gui.Gui.MapLayerCheckButton
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
+import godot.api.Control
 import godot.api.OptionButton
 import godot.api.PanelContainer
 import godot.api.VBoxContainer
@@ -17,14 +18,25 @@ class ShowSettingsButton() : OptionButton() {
         set(value) {
             field = value
             mapLayerButtons.forEach { it.button.setVisible(value in it.categories) }
-            settingsOptionsPanel.visible = value != "none"
+            settingsOptionsPanel.visible = !hiddenForTileInspection && value != "none"
         }
+
+    private var hiddenForTileInspection = false
+    private val settingsButtons by lazy {
+        instance.findChild("SettingsButtons") as Control
+    }
 
     private val settingsOptionsPanel by lazy {
         instance.findChild("SettingsOptionsPanel") as PanelContainer
     }
     private val settingsOptionsList by lazy {
         instance.findChild("SettingsOptionsList") as VBoxContainer
+    }
+
+    fun setHiddenForTileInspection(hidden: Boolean) {
+        hiddenForTileInspection = hidden
+        settingsButtons.visible = !hidden
+        settingsOptionsPanel.visible = !hidden && settingsCategory != "none"
     }
 
     private val toggles = mutableMapOf<String, Boolean>()
