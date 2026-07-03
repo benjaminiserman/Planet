@@ -58,6 +58,8 @@ class PlanetTile(
 
     val density get() = -elevation.scaleAndCoerceUnit(-5000.0..5000.0)
     val temperature get() = averageTemperature
+    @get:JsonIgnore
+    val hotspot get() = planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble())
     var moisture = 0.0
     var elevation = -100000.0 // set it really low to make errors easier to see
     val airPressure by memo(
@@ -363,7 +365,7 @@ class PlanetTile(
             edge resistance: ${edgeResistance.formatDigits()}
             divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
             subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tectonicPlate?.id] ?: 0.0).formatDigits()}
-            hotspot: ${planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble()).formatDigits()}
+            hotspot: ${hotspot.formatDigits()}
             deposit flow: ${depositFlow.formatDigits()}
             water flow: ${waterFlow.formatDigits()}
             erosion delta: ${erosionDelta.formatDigits()}m

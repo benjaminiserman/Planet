@@ -57,6 +57,9 @@ class ClimateConfigTool(private val gui: Gui) {
         bindModifier("DimSunModifier", ClimateRuntimeConfig.dimSun) {
             ClimateRuntimeConfig.dimSun = it
         }
+        bindModifier("HotspotHeatingModifier", ClimateRuntimeConfig.hotspotHeating) {
+            ClimateRuntimeConfig.hotspotHeating = it
+        }
         resetButton.pressed.connect {
             ClimateRuntimeConfig.resetToDefaults()
             syncControlsToConfig()
@@ -108,6 +111,7 @@ class ClimateConfigTool(private val gui: Gui) {
         modifier("ClockworkWindsModifier").buttonPressed = ClimateRuntimeConfig.clockworkWinds
         modifier("ColdSunModifier").buttonPressed = ClimateRuntimeConfig.coldSun
         modifier("DimSunModifier").buttonPressed = ClimateRuntimeConfig.dimSun
+        modifier("HotspotHeatingModifier").buttonPressed = ClimateRuntimeConfig.hotspotHeating
     }
 
     private fun formatHalfDegree(value: Double): String =

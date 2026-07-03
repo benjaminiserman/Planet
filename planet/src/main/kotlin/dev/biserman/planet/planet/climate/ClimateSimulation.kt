@@ -556,7 +556,9 @@ object ClimateSimulation {
                 )
             }
 
-            val celsius = averageTemperature - 273.15
+            val hotspotTemperatureOffset =
+                hotspot.scaleAndCoerceIn(0.0..0.1, 0.0..1.0) * ClimateRuntimeConfig.maxHotspotTemperatureOffset
+            val celsius = averageTemperature - 273.15 + hotspotTemperatureOffset
             return celsius
         }
 
