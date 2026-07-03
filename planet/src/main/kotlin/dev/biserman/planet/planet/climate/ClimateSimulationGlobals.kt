@@ -3,7 +3,7 @@ package dev.biserman.planet.planet.climate
 @Suppress("MayBeConstant")
 object ClimateSimulationGlobals {
 
-    var climateSimulationSamplesPerMonth = 1
+    var climateSimulationSamplesPerMonth = 4
 
     // INSOLATION
 
