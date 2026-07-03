@@ -77,6 +77,23 @@ class CameraGimbal : Node3D() {
 			return
 		}
 
+		if (Main.instance.hasPlanet && Gui.instance.brushTool.isActive) {
+			if (event is InputEventMouseButton && event.buttonIndex == MouseButton.LEFT) {
+				if (event.pressed) {
+					hoveredTile?.let { Gui.instance.brushTool.apply(it) }
+				} else {
+					Gui.instance.brushTool.endStroke()
+				}
+				return
+			}
+			if (event is InputEventMouseMotion && Input.isMouseButtonPressed(MouseButton.LEFT)) {
+				if (Gui.instance.brushTool.isPainting) {
+					hoveredTile?.let { Gui.instance.brushTool.apply(it) }
+				}
+				return
+			}
+		}
+
 		zoom = GD.clamp(
 			zoom + when {
 				event.isActionPressed("cam_zoom_in") -> -zoomSpeed
@@ -89,7 +106,9 @@ class CameraGimbal : Node3D() {
 			clickStartPosition = event.position
 		}
 
-		if (mouseControl && event is InputEventMouseMotion && Input.isMouseButtonPressed(MouseButton.LEFT)) {
+		val isCameraDrag = Input.isMouseButtonPressed(MouseButton.RIGHT) ||
+			(!Gui.instance.brushTool.isActive && Input.isMouseButtonPressed(MouseButton.LEFT))
+		if (mouseControl && event is InputEventMouseMotion && isCameraDrag) {
 			if (event.relative.x != 0.0) {
 				rotateObjectLocal(Vector3.UP, -event.relative.x.toFloat() * mouseSensitivity)
 			}

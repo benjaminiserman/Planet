@@ -48,6 +48,7 @@ class Main : Node() {
 			Tectonics.stepTectonicsSimulation(planet)
 			planet.terrainChangeCount++
 			planetRenderer.update(planet)
+			Gui.instance.brushTool.refreshOptions()
 		}
 
 		val selectedTile = planet.planetTiles[Gui.instance.selectedTile?.id] ?: return
@@ -92,6 +93,7 @@ class Main : Node() {
 				timerTime = 0.0
 				simulations[Gui.instance.selectedSimulation]!!.invoke(planet)
 				planetRenderer.update(planet)
+				Gui.instance.brushTool.refreshOptions()
 			}
 		}
 	}
@@ -103,6 +105,7 @@ class Main : Node() {
 		planet = newPlanet
 		planetRenderer.update(newPlanet)
 		Gui.instance.statsGraph.planet = newPlanet
+		Gui.instance.brushTool.refreshOptions()
 	}
 
 	companion object {
