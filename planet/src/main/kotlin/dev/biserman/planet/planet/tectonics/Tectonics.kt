@@ -205,110 +205,184 @@ object Tectonics {
         }
     }
 
-    fun springAndDamp(tiles: Map<PlanetTile, Vector3>): Map<PlanetTile, Vector3> {
-        val continentalTilesRTree =
-            tiles.filter { it.key.isContinentalCrust }.entries.toRTree { it.value.toPoint() to it }
+    data class MovedTile(val tile: PlanetTile, val newPosition: Vector3)
+
+    private fun nearestMovedTiles(
+        candidates: IntArray,
+        movedTilesById: Array<MovedTile?>,
+        position: Vector3,
+        searchRadius: Double,
+        maxResults: Int
+    ): List<MovedTile> {
+        val nearest = ArrayList<MovedTile>(maxResults)
+        val distances = DoubleArray(maxResults)
+
+        for (tileId in candidates) {
+            val candidate = movedTilesById[tileId] ?: continue
+            val distance = candidate.newPosition.distanceTo(position)
+            if (distance > searchRadius) continue
+
+            var insertionIndex = nearest.size
+            while (insertionIndex > 0 && distance < distances[insertionIndex - 1]) {
+                insertionIndex--
+            }
+            if (insertionIndex >= maxResults) continue
+
+            if (nearest.size < maxResults) {
+                nearest.add(candidate)
+            }
+            var index = nearest.lastIndex
+            while (index > insertionIndex) {
+                nearest[index] = nearest[index - 1]
+                distances[index] = distances[index - 1]
+                index--
+            }
+            nearest[insertionIndex] = candidate
+            distances[insertionIndex] = distance
+        }
+
+        return nearest
+    }
+
+    private fun proximityListsFor(
+        tiles: Map<PlanetTile, Vector3>,
+        searchRadius: Double
+    ): List<IntArray> {
+        val maxDisplacement = tiles.maxOf { (tile, position) -> position.distanceTo(tile.tile.position) }
+        return tiles.keys.first().planet.topology.proximityLists(searchRadius + maxDisplacement)
+    }
+
+    private fun springAndDamp(
+        tiles: Map<PlanetTile, Vector3>,
+        proximityLists: List<IntArray>
+    ): Map<PlanetTile, Vector3> {
         val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
+        val movedTilesById = arrayOfNulls<MovedTile>(proximityLists.size)
+        for ((tile, position) in tiles) {
+            if (tile.isContinentalCrust) {
+                movedTilesById[tile.tile.id] = MovedTile(tile, position)
+            }
+        }
 
-        return tiles.mapValues { entry ->
-            val (planetTile, newPosition) = entry
-            val nearbyContinentalCrust = if (planetTile.isContinentalCrust) {
-                continentalTilesRTree.nearest(planetTile.tile.position.toPoint(), searchRadius, 6)
-                    .toList()
-                    .filter { (entry, _) -> entry.key != planetTile }
-                    .map { (entry, _) -> entry.key.tile to continentSpringStiffness }
-            } else listOf()
-
-            val displacement = nearbyContinentalCrust.fold(Vector3.ZERO) { sum, (otherTile, stiffness) ->
-                val restLength = (otherTile.position - planetTile.tile.position).length()
-                val currentDelta = (newPosition - tiles[planetTile.planet.getTile(otherTile)]!!)
-                sum + currentDelta * (currentDelta.length() - restLength) * -stiffness
+        val result = HashMap<PlanetTile, Vector3>(tiles.size)
+        for ((planetTile, newPosition) in tiles) {
+            var displacement = Vector3.ZERO
+            if (planetTile.isContinentalCrust) {
+                val nearbyTiles = nearestMovedTiles(
+                    proximityLists[planetTile.tile.id],
+                    movedTilesById,
+                    planetTile.tile.position,
+                    searchRadius,
+                    6
+                )
+                for (movedTile in nearbyTiles) {
+                    val otherTile = movedTile.tile
+                    if (otherTile != planetTile) {
+                        val restLength = (otherTile.tile.position - planetTile.tile.position).length()
+                        val currentDelta = newPosition - movedTile.newPosition
+                        displacement += currentDelta * (currentDelta.length() - restLength) * -continentSpringStiffness
+                    }
+                }
             }
 
-            newPosition.lerp(newPosition + displacement, 1 - continentSpringDamping)
+            result[planetTile] = newPosition.lerp(newPosition + displacement, 1 - continentSpringDamping)
         }
+        return result
+    }
+
+    fun springAndDamp(tiles: Map<PlanetTile, Vector3>): Map<PlanetTile, Vector3> {
+        val searchRadius = tiles.entries.first().key.planet.topology.averageRadius * continentSpringSearchRadius
+        return springAndDamp(tiles, proximityListsFor(tiles, searchRadius))
     }
 
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
-    data class MovedTile(val tile: PlanetTile, val newPosition: Vector3)
-
     fun movePlanetTiles(planet: Planet) {
+        val searchRadius = planet.topology.averageRadius
         val originalMovedTiles = planet.planetTiles.values.filter { it.tectonicPlate != null }
             .sortedByDescending { it.elevation }
             .associateWith { tile -> tile.tile.position + tile.movement }
-        val movedTiles = springAndDamp(originalMovedTiles)
+        val springProximityLists =
+            proximityListsFor(originalMovedTiles, searchRadius * continentSpringSearchRadius)
+        val movedTiles = springAndDamp(originalMovedTiles, springProximityLists)
         planet.planetTiles.forEach { (_, planetTile) ->
             planetTile.springDisplacement = movedTiles[planetTile]!! - originalMovedTiles[planetTile]!!
         }
 
         val convergenceZones = mutableMapOf<Tile, ConvergenceZone>()
-        val newTileMap = planet.planetTiles
-            .mapKeys { planet.topology.tiles[it.key] }
-            .mapValues { null as PlanetTile? }
-            .toMutableMap()
+        val newTileMap = LinkedHashMap<Tile, PlanetTile?>(planet.topology.tiles.size).also { map ->
+            for (tile in planet.topology.tiles) {
+                map[tile] = null
+            }
+        }
 
-        val movedTilesRTree =
-            movedTiles.entries.map { MovedTile(it.key, it.value) }.toRTree { movedTiles[it.tile]!!.toPoint() to it }
+        val movedTilesById = arrayOfNulls<MovedTile>(planet.topology.tiles.size)
+        for ((planetTile, newPosition) in movedTiles) {
+            movedTilesById[planetTile.tile.id] = MovedTile(planetTile, newPosition)
+        }
+        val classificationProximityLists = proximityListsFor(movedTiles, searchRadius * convergenceSearchRadius)
         val possibleDivergenceZones = mutableListOf<Tile>()
-        for ((tile, _) in newTileMap) {
-            val searchRadius = planet.topology.averageRadius
-            val nearestMovedTiles = movedTilesRTree.nearest(
-                tile.position.toPoint(), searchRadius * convergenceSearchRadius, searchMaxResults
-            ).toList()
-            val overlappingTiles =
-                nearestMovedTiles.filter { it.value().newPosition.distanceTo(tile.position) < searchRadius }
-            if (overlappingTiles.isNotEmpty()) {
-                val groups = overlappingTiles.map { it.value() }.groupBy { it.tile.tectonicPlate!! }
-                val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
-                val nearestMovedTile =
-                    overlappingTiles.first { it.value().tile.tectonicPlate == overridingPlate.key }.value().tile
-                newTileMap[tile] = nearestMovedTile.copy().apply {
-                    val goalElevation = Kriging.interpolate(
-                        nearestMovedTiles
-                            .filter { it.value().tile.tectonicPlate == overridingPlate.key }
-                            .map { it.value().newPosition to it.value().tile.elevation },
-                        tile.position,
-                        tectonicElevationVariogram
-                    )
-                    val closestElevation = nearestMovedTiles
-                        .filter { it.value().tile.tectonicPlate == overridingPlate.key }
-                        .minBy { (it.value().tile.elevation - goalElevation).absoluteValue }
-                        .value().tile.elevation
-                    this.elevation = lerp(goalElevation, closestElevation, 0.5)
-
-                    this.tile = tile
-                    this.movement += (tile.position - nearestMovedTiles.first().value().newPosition)
-
-                    // subduction
-                    if (groups.size > 1) {
-                        val subductionSpeed = groups.flatMap { (_, tiles) ->
-                            tiles.map { entry ->
-                                entry.tile.movement.dot(tile.position - entry.tile.tile.position) / searchRadius
-                            }
-                        }.average()
-
-                        convergenceZones[tile] = ConvergenceZone.make(
-                            planet,
-                            tile,
-                            subductionSpeed,
-                            ConvergenceInteraction(overridingPlate),
-                            groups.filter { it != overridingPlate }
-                                .mapNotNull { ConvergenceInteraction(it) }
-                                .associateBy { it.plate },
-                            groups
-                        )
+        val convergenceSearchDistance = searchRadius * convergenceSearchRadius
+        for (tile in planet.topology.tiles) {
+                val nearestMovedTiles = nearestMovedTiles(
+                    classificationProximityLists[tile.id],
+                    movedTilesById,
+                    tile.position,
+                    convergenceSearchDistance,
+                    searchMaxResults
+                )
+                val overlappingTiles = ArrayList<MovedTile>(nearestMovedTiles.size)
+                for (movedTile in nearestMovedTiles) {
+                    if (movedTile.newPosition.distanceTo(tile.position) < searchRadius) {
+                        overlappingTiles.add(movedTile)
                     }
                 }
-            } else {
-                possibleDivergenceZones.add(tile)
-            }
+                if (overlappingTiles.isNotEmpty()) {
+                    val groups = overlappingTiles.groupBy { it.tile.tectonicPlate!! }
+                    val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
+                    val nearestMovedTile = overridingPlate.value.first().tile
+                    val nearestMovedTilesForPlate =
+                        nearestMovedTiles.filter { it.tile.tectonicPlate == overridingPlate.key }
+                    newTileMap[tile] = nearestMovedTile.copy().apply {
+                        val goalElevation = Kriging.interpolate(
+                            nearestMovedTilesForPlate.map { it.newPosition to it.tile.elevation },
+                            tile.position,
+                            tectonicElevationVariogram
+                        )
+                        val closestElevation = nearestMovedTilesForPlate
+                            .minBy { (it.tile.elevation - goalElevation).absoluteValue }
+                            .tile.elevation
+                        this.elevation = lerp(goalElevation, closestElevation, 0.5)
+
+                        this.tile = tile
+                        this.movement += (tile.position - nearestMovedTiles.first().newPosition)
+
+                        if (groups.size > 1) {
+                            val subductionSpeed =
+                                overlappingTiles.sumOf {
+                                    it.tile.movement.dot(tile.position - it.tile.tile.position) / searchRadius
+                                } / overlappingTiles.size
+
+                            convergenceZones[tile] = ConvergenceZone.make(
+                                planet,
+                                tile,
+                                subductionSpeed,
+                                ConvergenceInteraction(overridingPlate),
+                                groups.filter { it != overridingPlate }
+                                    .mapNotNull { ConvergenceInteraction(it) }
+                                    .associateBy { it.plate },
+                                groups
+                            )
+                        }
+                    }
+                } else {
+                    possibleDivergenceZones.add(tile)
+                }
         }
 
         val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
         possibleDivergenceZones.forEach { tile ->
-            // divergence & gap filling
             val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(
                 planet, tile, newTileMap, movedTiles
             )
@@ -322,7 +396,8 @@ object Tectonics {
             newPlanetTile?.tile = tile
         }
 
-        val plateRegions = PlanetRegion(planet, newTileMap.values.filterNotNull())
+        val activeTiles = newTileMap.values.filterNotNull()
+        val plateRegions = PlanetRegion(planet, activeTiles)
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate }
             .toMutableMap()
             .mapValues { (_, value) ->
@@ -330,60 +405,55 @@ object Tectonics {
             }
 
         for ((plate, regions) in plateRegions) {
-            val regionsToRemap = regions.filter {
-                plate == null || it.tiles.size < regions.first().tiles.size || it.tiles.size < minPlateSize
-            }
-//            if (regionsToRemap.isNotEmpty()) {
-//                GD.print("remapping ${regionsToRemap.size} regions for plate $plate, total size: ${regionsToRemap.sumOf { it.tiles.size }}, max size: ${regionsToRemap.maxOfOrNull { it.tiles.size }}")
-//            }
-            for (region in regionsToRemap) {
-                val neighbors = region.calculateNeighborLengths(planetTileFn = { newTileMap[it]!! }) {
-                    val tectonicPlate = it.tectonicPlate
-                    if (tectonicPlate == null || it in plateRegions[tectonicPlate]!!.first().tiles) {
-                        tectonicPlate
-                    } else {
-                        null
-                    }
+                val regionsToRemap = regions.filter {
+                    plate == null || it.tiles.size < regions.first().tiles.size || it.tiles.size < minPlateSize
                 }
+                for (region in regionsToRemap) {
+                    val neighbors = region.calculateNeighborLengths(planetTileFn = { newTileMap[it]!! }) {
+                        val tectonicPlate = it.tectonicPlate
+                        if (tectonicPlate == null || it in plateRegions[tectonicPlate]!!.first().tiles) {
+                            tectonicPlate
+                        } else {
+                            null
+                        }
+                    }
 
-                val edgeLength = neighbors.values.sum()
-                val maxNeighbor = neighbors.maxByOrNull { it.value }
-                if (maxNeighbor == null || maxNeighbor.value >= edgeLength * plateMergeCutoff || region.tiles.size < minPlateSize) {
-                    region.tiles.forEach {
-                        it.tectonicPlate = maxNeighbor?.key
-                    }
-                } else {
-                    region.tiles.forEach {
-                        it.tectonicPlate = null
+                    val edgeLength = neighbors.values.sum()
+                    val maxNeighbor = neighbors.maxByOrNull { it.value }
+                    if (maxNeighbor == null || maxNeighbor.value >= edgeLength * plateMergeCutoff || region.tiles.size < minPlateSize) {
+                        region.tiles.forEach {
+                            it.tectonicPlate = maxNeighbor?.key
+                        }
+                    } else {
+                        region.tiles.forEach {
+                            it.tectonicPlate = null
+                        }
                     }
                 }
-            }
         }
 
-        val newPlates = PlanetRegion(planet, newTileMap.values.filterNotNull())
+        val newPlates = PlanetRegion(planet, activeTiles)
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
 
         for (plate in newPlates) {
-            val newPlate = if (plate.tiles.size >= minPlateSize) {
-                TectonicPlate(planet)
-            } else {
-                TectonicPlate(planet, name = "Complex")
-            }
-            GD.print("creating plate of size ${plate.tiles.size}")
-            planet.tectonicPlates.add(newPlate)
-            plate.tiles.forEach { it.tectonicPlate = newPlate }
+                val newPlate = if (plate.tiles.size >= minPlateSize) {
+                    TectonicPlate(planet)
+                } else {
+                    TectonicPlate(planet, name = "Complex")
+                }
+                GD.print("creating plate of size ${plate.tiles.size}")
+                planet.tectonicPlates.add(newPlate)
+                plate.tiles.forEach { it.tectonicPlate = newPlate }
         }
 
-        val subductionZonesRTree = convergenceZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
+        val subductionZonesRTree =
+            convergenceZones.entries.toRTree { (tile, zone) -> tile.position.toPoint() to zone }
 
-        // erosion elevation & subduction pulldown & hotspots
-        newTileMap.values.forEach {
-            if (it != null) {
+        activeTiles.forEach {
                 it.elevation -= oceanicSubsidence(it.elevation)
                 it.elevation += ConvergenceZone.adjustElevation(it, subductionZonesRTree)
                 it.elevation = tryHotspotEruption(it)
                 it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
-            }
         }
 
         val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
@@ -396,9 +466,15 @@ object Tectonics {
             plate.mergeInto(neighbors.keys.first())
         }
 
-        planet.convergenceZones = convergenceZones.mapKeys { it.key.id }.toMutableMap()
-        planet.divergenceZones = divergenceZones.mapKeys { it.key.id }.toMutableMap()
-        planet.planetTiles = newTileMap.mapKeys { it.key.id }.mapValues { it.value!! }.toMap()
+        planet.convergenceZones = LinkedHashMap<Int, ConvergenceZone>(convergenceZones.size).also { zones ->
+            convergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
+        }
+        planet.divergenceZones = LinkedHashMap<Int, DivergenceZone>(divergenceZones.size).also { zones ->
+            divergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
+        }
+        planet.planetTiles = LinkedHashMap<Int, PlanetTile>(newTileMap.size).also { tiles ->
+            newTileMap.forEach { (tile, planetTile) -> tiles[tile.id] = planetTile!! }
+        }
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
     }
