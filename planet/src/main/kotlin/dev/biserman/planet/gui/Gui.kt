@@ -141,7 +141,6 @@ class Gui() : Node() {
         brushTool.initialize()
         climateConfigTool.initialize()
 
-        showSettingsButton.mapLayerButtons.forEach { addChild(it.button) }
         showSettingsButton.addToggle("Show Stats", listOf("stats")) { statsGraph.visible = it }
         showSettingsButton.addToggle("Track Stats", listOf("stats")) { statsGraph.trackStats = it }
 
