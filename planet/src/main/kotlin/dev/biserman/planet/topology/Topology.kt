@@ -3,6 +3,8 @@ package dev.biserman.planet.topology
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import dev.biserman.planet.geometry.*
+import kotlin.math.ceil
+import kotlin.math.max
 
 // Adapted from Andy Gainey, original license below:
 // Copyright © 2014 Andy Gainey <andy@experilous.com>
@@ -24,6 +26,28 @@ class Topology(
 		radii.average()
 	}
 	val averageArea by lazy { tiles.sumOf { it.area } / tiles.size }
+
+	private var proximityCacheBucket = 0
+	private var proximityCache: List<IntArray> = emptyList()
+
+	/**
+	 * Static tile neighborhoods, rounded up to half-average-radius buckets so nearby
+	 * simulation steps can reuse the same lists as their movement changes.
+	 */
+	fun proximityLists(radius: Double): List<IntArray> {
+		val bucket = max(1, ceil(radius / averageRadius * 2.0).toInt())
+		if (bucket > proximityCacheBucket) {
+			proximityCacheBucket = bucket
+			val bucketRadius = proximityCacheBucket * averageRadius / 2.0
+			proximityCache = tiles.map { tile ->
+				rTree.nearest(tile.position.toPoint(), bucketRadius, tiles.size)
+					.map { it.value().id }
+					.toList()
+					.toIntArray()
+			}
+		}
+		return proximityCache
+	}
 
 	// this doesn't fully link the geometries to each other yet. also has duplicate verts & edges
 	fun makeMesh(): MutMesh {
