@@ -121,7 +121,7 @@ title = "Save World"
 initial_position = 2
 access = 2
 root_subfolder = "./save"
-filters = PackedStringArray("*.json.zip")
+filters = PackedStringArray("*.json.gz")
 
 [node name="ImportDialog" type="FileDialog" parent="GUI"]
 auto_translate_mode = 1
@@ -139,7 +139,7 @@ ok_button_text = "Open"
 file_mode = 0
 access = 2
 root_subfolder = "./save"
-filters = PackedStringArray("*.json(.zip)?")
+filters = PackedStringArray("*.json", "*.json.gz")
 
 [node name="MenuButtons" type="HBoxContainer" parent="GUI"]
 layout_mode = 1
