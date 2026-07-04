@@ -6,6 +6,7 @@ import dev.biserman.planet.planet.Stat
 import dev.biserman.planet.utils.component1
 import dev.biserman.planet.utils.component2
 import godot.api.CanvasItem
+import godot.api.Label
 import godot.api.MenuButton
 import godot.core.Vector2
 import godot.core.connect
@@ -16,6 +17,7 @@ import kotlin.time.measureTime
 class StatsGraph(val rootNode: CanvasItem) {
     val graph = rootNode.findChild("Graph2d") as StatsGraphPlot
     val menuButton = rootNode.findChild("GraphOptions") as MenuButton
+    val currentValueLabel = rootNode.findChild("GraphCurrentValue") as Label
 
     private lateinit var stats: PlanetStats
     var planet: Planet? = null
@@ -54,23 +56,30 @@ class StatsGraph(val rootNode: CanvasItem) {
                 graph.integerYLabels = value.usesIntegerValues(planet!!)
                 graph.setPoints(statValues[value.name]!!)
                 rescale(value)
+                updateCurrentValue(value, planet!!)
                 menuButton.setText(value.name + " ▽")
             } else {
                 graph.yLabel = ""
                 menuButton.setText("Select Graph")
+                currentValueLabel.text = ""
             }
         }
 
     fun update(planet: Planet) {
         if (!trackStats) {
+            shownStat?.let { updateCurrentValue(it, planet) }
             return
         }
 
+        var currentShownValue: Number? = null
         val timeTaken = measureTime {
-            stats.tectonicStats.forEach {
-                statValues[it.name]?.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet).toDouble()))
+            stats.tectonicStats.forEach { stat ->
+                val value = stat.getter(planet)
+                statValues[stat.name]?.add(Vector2(planet.tectonicAge.toDouble(), value.toDouble()))
+                if (stat == shownStat) currentShownValue = value
             }
         }
+        currentShownValue?.let(::setCurrentValue)
 
         GD.print("Updating stats graph took ${timeTaken.inWholeMilliseconds}ms")
 
@@ -78,6 +87,17 @@ class StatsGraph(val rootNode: CanvasItem) {
             val (time, value) = statValues[shownStat!!.name]!!.last()
             graph.addPoint(Vector2(time, value))
             rescale(shownStat!!)
+        }
+    }
+
+    private fun updateCurrentValue(stat: Stat<*>, planet: Planet) {
+        setCurrentValue(stat.getter(planet))
+    }
+
+    private fun setCurrentValue(value: Number) {
+        currentValueLabel.text = when (value) {
+            is Byte, is Short, is Int, is Long -> value.toLong().toString()
+            else -> String.format("%.1f", value.toDouble())
         }
     }
 
