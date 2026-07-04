@@ -620,7 +620,7 @@ object Tectonics {
                     )
                 )
             )
-            val totalDepositAvailable = (erosion + deposit - depositTaken) * depositMultiplier
+            val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * depositMultiplier)
 
             planetTile.elevation -= erosion
 
