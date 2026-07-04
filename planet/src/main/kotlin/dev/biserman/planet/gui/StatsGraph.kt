@@ -7,8 +7,6 @@ import dev.biserman.planet.utils.component1
 import dev.biserman.planet.utils.component2
 import godot.api.CanvasItem
 import godot.api.MenuButton
-import godot.api.RefCounted
-import godot.core.NativeCallable
 import godot.core.Vector2
 import godot.core.connect
 import godot.global.GD
@@ -16,13 +14,7 @@ import kotlin.math.max
 import kotlin.time.measureTime
 
 class StatsGraph(val rootNode: CanvasItem) {
-    val plot: RefCounted
-    val graph2d =
-        (rootNode.findChild("Graph2d") as CanvasItem).also {
-            it.set("x_label", "Million years")
-            plot = it.call("add_plot_item") as RefCounted
-        }
-    val addPoint = ({ point: Vector2 -> (plot.get("add_point") as NativeCallable).call(point) as Unit })
+    val graph = rootNode.findChild("Graph2d") as StatsGraphPlot
     val menuButton = rootNode.findChild("GraphOptions") as MenuButton
 
     private lateinit var stats: PlanetStats
@@ -53,19 +45,18 @@ class StatsGraph(val rootNode: CanvasItem) {
         menuButton.getPopup()!!.idPressed.connect { shownStat = stats.tectonicStats[it.toInt()] }
     }
 
-    var shownStat: Stat? = null
+    var shownStat: Stat<*>? = null
         set(value) {
             field = value
-            plot.call("remove_all")
+            graph.clear()
             if (value != null) {
-                graph2d.set("y_label", value.yLabel)
-                for ((x, y) in statValues[value.name]!!) {
-                    addPoint(Vector2(x, y))
-                }
+                graph.yLabel = value.yLabel
+                graph.integerYLabels = value.usesIntegerValues(planet!!)
+                graph.setPoints(statValues[value.name]!!)
                 rescale(value)
                 menuButton.setText(value.name + " ▽")
             } else {
-                graph2d.set("y_label", "")
+                graph.yLabel = ""
                 menuButton.setText("Select Graph")
             }
         }
@@ -77,7 +68,7 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         val timeTaken = measureTime {
             stats.tectonicStats.forEach {
-                statValues[it.name]?.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet)))
+                statValues[it.name]?.add(Vector2(planet.tectonicAge.toDouble(), it.getter(planet).toDouble()))
             }
         }
 
@@ -85,30 +76,24 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         if (shownStat != null) {
             val (time, value) = statValues[shownStat!!.name]!!.last()
-            addPoint(Vector2(time, value))
+            graph.addPoint(Vector2(time, value))
             rescale(shownStat!!)
         }
     }
 
-    fun rescale(stat: Stat) {
+    fun rescale(stat: Stat<*>) {
         val minX = 0
-        val maxX = max(10, statValues[stat.name]!!.size)
-
-        graph2d.set("x_min", minX)
-        graph2d.set("x_max", maxX)
+        val maxX = max(10.0, statValues[stat.name]!!.maxOfOrNull { it.x } ?: 10.0)
 
         val range = stat.range
-        if (range != null) {
-            graph2d.set("y_min", range.start)
-            graph2d.set("y_max", range.endInclusive)
+        val (minY, maxY) = if (range != null) {
+            range.start.toDouble() to range.endInclusive.toDouble()
         } else {
             val statMin = statValues[stat.name]!!.minOfOrNull { it.y } ?: 0.0
-            val minY = statMin - 0.1 * statMin
             val statMax = statValues[stat.name]!!.maxOfOrNull { it.y } ?: 0.0
-            val maxY = statMax + 0.1 * statMax
-
-            graph2d.set("y_min", minY)
-            graph2d.set("y_max", maxY)
+            val padding = max(1.0, (statMax - statMin) * 0.1)
+            (statMin - padding) to (statMax + padding)
         }
+        graph.setBounds(minX.toDouble(), maxX, minY, maxY)
     }
 }

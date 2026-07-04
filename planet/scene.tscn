@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
 [ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
 [ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="4_m7jmp"]
-[ext_resource type="Script" uid="uid://bp2qgsh74bun4" path="res://addons/graph_2d/graph_2d.gd" id="5_m7jmp"]
+[ext_resource type="Script" uid="uid://wubsouopi724" path="res://src/main/kotlin/dev/biserman/planet/gui/StatsGraphPlot.kt" id="5_m7jmp"]
 [ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_y2354"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
@@ -488,8 +488,6 @@ offset_top = -200.0
 grow_horizontal = 0
 grow_vertical = 0
 script = ExtResource("5_m7jmp")
-background_color = Color(0, 0, 0, 0.121569)
-grid_horizontal_visible = true
 
 [node name="ExportDialog" type="FileDialog" parent="GUI"]
 title = "Export World"
