@@ -50,8 +50,8 @@ object TectonicGlobals {
     var continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
     var overridingElevationStrengthScale = 1400.0
-    var subductingElevationStrengthScale = -1000.0
-    var convergingElevationStrengthScale = 2200.0
+    var subductingElevationStrengthScale = -1200.0
+    var convergingElevationStrengthScale = 1200.0
 
     var divergenceCutoff = 0.25
     var divergedCrustHeight = -2000.0
@@ -61,8 +61,8 @@ object TectonicGlobals {
     var depositLoss = 0.01
     var depositMultiplier = 1.66
     var prominenceErosion = 0.2
-    var elevationErosion = 7e-07
-    var waterErosion = 15.0
+    var elevationErosion = 1e-06
+    var waterErosion = 3.5
     var depositionStartHeight = 1000
 
     var accruedDepositThreshold = 400.0
