@@ -12,7 +12,7 @@ import kotlin.math.sqrt
 
 @Suppress("MayBeConstant")
 object TectonicGlobals {
-    var slabPullStrength = 0.015
+    var slabPullStrength = 0.03
     var convergencePushStrength = 0.5
     var collisionStiffness = 1.0
     var collisionDamping = 0.5
@@ -51,7 +51,7 @@ object TectonicGlobals {
 
     var overridingElevationStrengthScale = 1400.0
     var subductingElevationStrengthScale = -1000.0
-    var convergingElevationStrengthScale = 2500.0
+    var convergingElevationStrengthScale = 2200.0
 
     var divergenceCutoff = 0.25
     var divergedCrustHeight = -2000.0
