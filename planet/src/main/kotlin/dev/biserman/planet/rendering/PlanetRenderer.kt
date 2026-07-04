@@ -10,6 +10,7 @@ import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redOutsideRange
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode.Companion.redWhenNull
 import dev.biserman.planet.rendering.renderers.CellWireframeRenderer
+import dev.biserman.planet.rendering.renderers.ImpassableEdgeRenderer
 import dev.biserman.planet.rendering.renderers.TectonicPlateBoundaryRenderer
 import dev.biserman.planet.rendering.renderers.TileMovementRenderer
 import dev.biserman.planet.rendering.renderers.TileVectorRenderer
@@ -93,6 +94,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
 
     val planetDebugRenders = listOf(
         CellWireframeRenderer(parent, lift = 1.005, categories = listOf("debug", "feature")),
+        ImpassableEdgeRenderer(parent, lift = 1.006, categories = listOf("terrain", "feature")),
         SimpleDebugRenderer(
             parent,
             "tectonic_boundary_movement",
