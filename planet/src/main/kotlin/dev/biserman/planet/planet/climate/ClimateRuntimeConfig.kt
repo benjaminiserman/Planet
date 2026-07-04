@@ -1,20 +1,21 @@
 package dev.biserman.planet.planet.climate
 
-object ClimateRuntimeConfig {
-    const val DEFAULT_AXIAL_TILT_DEGREES = 23.5
-    const val DEFAULT_ORBITAL_ECCENTRICITY = 0.017
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.defaultAxialTiltDegrees
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.defaultOrbitalEccentricity
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxMoisturePropagationScale
 
+object ClimateRuntimeConfig {
     var revision = 0
         private set
 
-    var axialTiltDegrees = DEFAULT_AXIAL_TILT_DEGREES
+    var axialTiltDegrees = defaultAxialTiltDegrees
         set(value) {
             if (field != value) {
                 field = value
                 revision++
             }
         }
-    var orbitalEccentricity = DEFAULT_ORBITAL_ECCENTRICITY
+    var orbitalEccentricity = defaultOrbitalEccentricity
         set(value) {
             if (field != value) {
                 field = value
@@ -97,6 +98,8 @@ object ClimateRuntimeConfig {
     val insolationTemperatureOffset get() = -distanceToStar * 5.0
     val greenhouseTemperatureOffset get() = greenhouseEffect * 5.0
     val moistureScale get() = 1.0 + moisture / 10.0
+    val moisturePropagationScale
+        get() = 1.0 + (maxMoisturePropagationScale - 1.0) * moisture.coerceIn(0.0, 10.0) / 10.0
     val oceanCurrentScale get() = maxOf(0.0, 1.0 + oceanCurrentStrength / 5.0)
     val oceanCurrentDistanceScale get() = maxOf(0.0, 1.0 + oceanCurrentStrength / 5.0)
     val monsoonScale get() = maxOf(0.1, 1.0 + monsoonStrength / 5.0)
@@ -108,8 +111,8 @@ object ClimateRuntimeConfig {
     val maxHotspotTemperatureOffset get() = if (hotspotHeating) 120.0 else 0.0
 
     fun resetToDefaults() {
-        axialTiltDegrees = DEFAULT_AXIAL_TILT_DEGREES
-        orbitalEccentricity = DEFAULT_ORBITAL_ECCENTRICITY
+        axialTiltDegrees = defaultAxialTiltDegrees
+        orbitalEccentricity = defaultOrbitalEccentricity
         distanceToStar = 0.0
         greenhouseEffect = 0.0
         moisture = 0.0

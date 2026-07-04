@@ -171,4 +171,9 @@ object ClimateSimulationGlobals {
     var minUpslopeMoisture = 0.1 // proportional, must be ≤ 1.0
     var upslopeMoistureExp = 5.0 // higher exp -> less moisture & faster moisture loss upslope
     var saturationThreshold = 1.0 // simulator tries to push water away from tiles with moisture higher than this varue
+
+    // runtime config
+    var defaultAxialTiltDegrees = 23.5
+    var defaultOrbitalEccentricity = 0.017
+    var maxMoisturePropagationScale = 1.1 / 1.02
 }

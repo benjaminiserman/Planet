@@ -17,8 +17,11 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
-import godot.core.Vector3
-import kotlin.math.pow
+
+data class DivergenceSignal(
+    val strength: Double,
+    val divergingPlates: List<TectonicPlate>
+)
 
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
@@ -48,7 +51,7 @@ class DivergenceZone(
             planet: Planet,
             tile: Tile,
             newTileMap: MutableMap<Tile, PlanetTile?>,
-            movedTiles: Map<PlanetTile, Vector3>
+            divergenceSignal: DivergenceSignal?
         ): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
             val newPlanetTile = PlanetTile(planet, tile.id)
@@ -57,18 +60,7 @@ class DivergenceZone(
                 planet.topology.rTree.nearest(tile.position.toPoint(), searchDistance, searchMaxResults)
                     .map { planet.getTile(it.value()) }
 
-            val neighbors = tile.tiles
-                .map { planet.getTile(it) }
-            val mostOverlap =
-                if (neighbors.all { it.tectonicPlate == neighbors.first().tectonicPlate }) 1.0
-                else neighbors
-                    .filter { it.isTectonicBoundary }
-                    .maxOfOrNull { neighbor ->
-                        neighbor.movement
-                            .dot((tile.position - neighbor.tile.position).normalized()) / planet.topology.averageRadius
-                    } ?: 1.0
-
-            val divergenceStrength = (1 - mostOverlap).coerceIn(0.0, 1.0).pow(0.33)
+            val divergenceStrength = divergenceSignal?.strength ?: 0.0
 
             val krigingElevation = Kriging.interpolate(
                 nearestOldTiles.map { it.tile.position to it.elevation },
@@ -90,7 +82,12 @@ class DivergenceZone(
             return Pair(
                 newPlanetTile,
                 if (divergenceStrength >= divergenceCutoff) {
-                    DivergenceZone(planet, tile.id, divergenceStrength, nearestOldTiles.mapNotNull { it.tectonicPlate })
+                    DivergenceZone(
+                        planet,
+                        tile.id,
+                        divergenceStrength,
+                        divergenceSignal?.divergingPlates ?: emptyList()
+                    )
                 } else {
                     newPlanetTile.stoneColumn =
                         tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
