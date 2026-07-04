@@ -14,12 +14,18 @@ import kotlin.math.sqrt
 object TectonicGlobals {
     var slabPullStrength = 0.015
     var convergencePushStrength = 0.5
+    var collisionStiffness = 1.0
+    var collisionDamping = 0.5
+    var collisionRestitution = 0.1
+    var collisionDensityBypassThreshold = 0.25
+    var minCollisionResistance = 0.2
+    var plateOverrideElevationAdvantage = 500.0
     var ridgePushStrength = 0.003
     var mantleConvectionStrength = 0.0008
     var springPlateContributionStrength = 0.007
     var edgeInteractionStrength = 0.08
     var tileInertia = 0.25
-    var tectonicSimulationStop = 10000
+    var tectonicSimulationStop = 100000
 
     var plateTorqueScalar = 0.1
     var riftCutoff = 0.5
@@ -31,6 +37,11 @@ object TectonicGlobals {
 
     var convergenceSearchRadius = 1.5 // multiple of average tile radius
     var divergenceSearchRadius = 1.5 // multiple of average tile radius
+    var divergenceContinuityStrength = 0.75
+    var divergenceMinConnectedEdges = 2
+    var divergenceMinSeparationSpeed = 0.1 // tile radii per step
+    var divergenceFullSeparationSpeed = 0.5 // tile radii per step
+    var divergenceMinNormalMotion = 0.5 // reject boundaries dominated by transform motion
     var searchMaxResults = 7
     var divergencePatchUplift = -1000
 
@@ -40,7 +51,7 @@ object TectonicGlobals {
 
     var overridingElevationStrengthScale = 1400.0
     var subductingElevationStrengthScale = -1000.0
-    var convergingElevationStrengthScale = 1500.0
+    var convergingElevationStrengthScale = 2500.0
 
     var divergenceCutoff = 0.25
     var divergedCrustHeight = -2000.0
@@ -48,15 +59,16 @@ object TectonicGlobals {
 
     var depositStrength = 0.6
     var depositLoss = 0.01
-    var prominenceErosion = 0.1
-    var elevationErosion = 6e-07
-    var waterErosion = 12.5
+    var depositMultiplier = 1.66
+    var prominenceErosion = 0.2
+    var elevationErosion = 7e-07
+    var waterErosion = 15.0
     var depositionStartHeight = 1000
 
-    var accruedDepositThreshold = 500.0
+    var accruedDepositThreshold = 400.0
     var accruedErosionThreshold = -2500.0
     var orogenicMetamorphosisThreshold = 0.1
-    var tectonicVolcanismThreshold = 0.84
+    var tectonicVolcanismThreshold = 0.8
     var hotspotEruptionAccretionThreshold = 200.0
     var intrusionStrengthAccretionThreshold = 200.0
     var depositionContinentialityThreshold = -0.4
@@ -70,7 +82,7 @@ object TectonicGlobals {
     var minMeteorElevationChange = 200.0
     var maxMeteorElevationChange = 2000.0
 
-    var biotaDistributionCount = 20
+    var biotaDistributionCount = 10
     var biotaDistributionClearChance = 0.025
     var biotaDistributionTerrestrialMaxSlope = 750.0
 

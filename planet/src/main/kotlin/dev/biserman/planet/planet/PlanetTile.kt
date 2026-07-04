@@ -16,6 +16,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulation.calculatePrevailingW
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.planet.climate.Hersfeldt
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tileInertia
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.minCollisionResistance
 import dev.biserman.planet.planet.climate.Insolation
 import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
@@ -230,11 +231,11 @@ class PlanetTile(
             .filter { it.tectonicPlate != tectonicPlate }
             .map { otherTile ->
                 val delta = tile.position - otherTile.tile.position
-//                val movementDelta = otherTile.movement - movement
-                val force = max(0.0, otherTile.movement.dot(delta))
+                val movementDelta = otherTile.movement - movement
+                val force = max(0.0, movementDelta.dot(delta))
                 val densityDiff = min((otherTile.density - density).absoluteValue * 2, 1.0)
-                val thisDensityFactor = min((-(density * 2) + 1), 1.0)
-                delta.normalized() * force * (1 - densityDiff) * thisDensityFactor
+                val collisionResistance = 1 - densityDiff * (1 - minCollisionResistance)
+                delta.normalized() * force * collisionResistance
             }
 
     fun oppositeTile(border: Border) = planet.getTile(border.oppositeTile(tile))

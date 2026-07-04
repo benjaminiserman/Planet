@@ -404,6 +404,8 @@ object ClimateSimulation {
         }
 
         var steps = 0
+        val effectiveMoisturePropagationMultiplier =
+            moisturePropagationMultiplier * ClimateRuntimeConfig.moisturePropagationScale
         val propagateMoistureTime = measureTime {
             var nextMoisture = DoubleArray(currentMoisture.size)
             while (currentMoisture.any { it > 0.01 } && steps < maxMoistureSteps) {
@@ -422,7 +424,7 @@ object ClimateSimulation {
                         finalMoisture[tileId] += precipitation * (1 - upslopePrecipitationFactor)
                         finalMoisture[route.neighborId] += precipitation * upslopePrecipitationFactor
                         nextMoisture[route.neighborId] +=
-                            moistureProvided * moisturePropagationMultiplier - precipitation
+                            moistureProvided * effectiveMoisturePropagationMultiplier - precipitation
                     }
                 }
 

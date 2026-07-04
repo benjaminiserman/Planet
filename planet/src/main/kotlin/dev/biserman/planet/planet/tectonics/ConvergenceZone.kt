@@ -8,6 +8,7 @@ import com.github.davidmoten.rtreemulti.geometry.Point
 import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.scaleAndCoerceIn
+import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.weightedAverage
 import dev.biserman.planet.planet.Planet
@@ -19,6 +20,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductingElevationS
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
 import kotlin.math.absoluteValue
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -115,16 +117,41 @@ class ConvergenceZone(
                     }
                 }
 
-            val convergencePush = involvedTiles
-                .filterKeys { subductionStrengths[it]!! <= 0 }
-                .mapValues { (plate, tiles) ->
-                    tiles.map { otherTile ->
-                        PointForce(
-                            tile.position,
-                            (otherTile.tile.tile.position - tile.position).normalized() * TectonicGlobals.convergencePushStrength * tile.area * subductingMass * -subductionStrengths[plate]!!
-                        )
-                    }
-                }
+            val convergencePush = mutableMapOf<TectonicPlate, MutableList<PointForce>>()
+            val searchRadius = planet.topology.averageRadius
+            for ((plate, tiles) in involvedTiles) {
+                if (plate == overridingPlate.plate) continue
+
+                val interaction = subductingPlates[plate] ?: continue
+                val nearestTile = tiles.minBy { it.newPosition.distanceTo(tile.position) }
+                val outward = (nearestTile.tile.tile.position - tile.position).tangent(tile.position)
+                if (outward.lengthSquared() == 0.0) continue
+
+                val normal = outward.normalized()
+                val penetration = (
+                    1.0 - nearestTile.newPosition.distanceTo(tile.position) / searchRadius
+                ).coerceIn(0.0, 1.0)
+                val relativeMovement = interaction.movement - overridingPlate.movement
+                val closingSpeed = max(0.0, -relativeMovement.dot(normal) / searchRadius)
+                val densityDifference = (interaction.density - overridingPlate.density).absoluteValue
+                val subductionBypass = (
+                    (densityDifference - TectonicGlobals.collisionDensityBypassThreshold) /
+                        (1.0 - TectonicGlobals.collisionDensityBypassThreshold)
+                ).coerceIn(0.0, 1.0)
+                val collisionResistance = 1.0 -
+                    subductionBypass * (1.0 - TectonicGlobals.minCollisionResistance)
+                val response =
+                    TectonicGlobals.collisionStiffness * penetration +
+                        TectonicGlobals.collisionDamping * closingSpeed *
+                        (1.0 + TectonicGlobals.collisionRestitution)
+                val force = normal * TectonicGlobals.convergencePushStrength * tile.area *
+                    subductingMass * collisionResistance * response
+
+                convergencePush.getOrPut(plate) { mutableListOf() }
+                    .add(PointForce(tile.position, force))
+                convergencePush.getOrPut(overridingPlate.plate) { mutableListOf() }
+                    .add(PointForce(tile.position, -force))
+            }
 
             return ConvergenceZone(
                 planet,

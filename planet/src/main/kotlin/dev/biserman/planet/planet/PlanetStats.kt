@@ -23,7 +23,7 @@ class PlanetStats {
         Stat(
             "% tiles above water",
             range = 0.0..100.0
-        ) { planet -> planet.waterCoverage * 100 },
+        ) { planet -> (1 - planet.waterCoverage) * 100 },
         Stat("average tile crust age", yLabel = "Million years") { planet ->
             planet.planetTiles.values.map { planet.tectonicAge - it.formationTime }
                 .average()

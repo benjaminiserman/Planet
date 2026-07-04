@@ -14,8 +14,10 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringSearc
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.continentSpringStiffness
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.convergenceSearchRadius
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositLoss
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositMultiplier
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
@@ -29,6 +31,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPercentContinenta
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPlateSize
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateOverrideElevationAdvantage
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
@@ -37,6 +40,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVar
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicSimulationStop
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tryHotspotEruption
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.waterErosion
+import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -177,7 +181,6 @@ object Tectonics {
             )
             val convergencePush = torque(
                 planet.convergenceZones
-                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
                     .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
             )
             val ridgePush = torque(
@@ -206,6 +209,101 @@ object Tectonics {
     }
 
     data class MovedTile(val tile: PlanetTile, val newPosition: Vector3)
+
+    private data class DivergentBorder(
+        val border: Border,
+        val plateIds: Pair<Int, Int>,
+        val blockedByConvergence: Boolean,
+        val signal: DivergenceSignal
+    )
+
+    private fun detectDivergenceSignals(
+        planet: Planet,
+        convergenceTiles: Set<Tile>
+    ): Map<Tile, DivergenceSignal> {
+        val rawBorders = planet.topology.borders.mapNotNull { border ->
+            val tileA = planet.getTile(border.tiles[0])
+            val tileB = planet.getTile(border.tiles[1])
+            val plateA = tileA.tectonicPlate ?: return@mapNotNull null
+            val plateB = tileB.tectonicPlate ?: return@mapNotNull null
+            if (plateA == plateB) return@mapNotNull null
+
+            val acrossBoundary = (tileB.tile.position - tileA.tile.position)
+                .tangent(border.midpoint.normalized())
+            if (acrossBoundary.lengthSquared() == 0.0) return@mapNotNull null
+
+            val normal = acrossBoundary.normalized()
+            val contactPoint = border.midpoint.normalized()
+            val plateAMovement = plateA.eulerPole.cross(contactPoint)
+            val plateBMovement = plateB.eulerPole.cross(contactPoint)
+            val relativeMovement = plateBMovement - plateAMovement
+            val separationSpeed = max(0.0, relativeMovement.dot(normal))
+            val normalMotion = if (relativeMovement.lengthSquared() == 0.0) {
+                0.0
+            } else {
+                separationSpeed / relativeMovement.length()
+            }
+            val normalizedSeparationSpeed = separationSpeed / planet.topology.averageRadius
+            val nearConvergence = border.tiles.any { tile ->
+                tile in convergenceTiles || tile.tiles.any { it in convergenceTiles }
+            }
+            val strength = if (
+                !nearConvergence && normalMotion >= TectonicGlobals.divergenceMinNormalMotion
+            ) {
+                ((normalizedSeparationSpeed - TectonicGlobals.divergenceMinSeparationSpeed) /
+                    max(
+                        TectonicGlobals.divergenceFullSeparationSpeed -
+                            TectonicGlobals.divergenceMinSeparationSpeed,
+                        1e-9
+                    ))
+                    .coerceIn(0.0, 1.0)
+            } else {
+                0.0
+            }
+            val plateIds = minOf(plateA.id, plateB.id) to maxOf(plateA.id, plateB.id)
+            DivergentBorder(
+                border,
+                plateIds,
+                nearConvergence,
+                DivergenceSignal(strength, listOf(plateA, plateB))
+            )
+        }
+        val rawByBorderId = rawBorders.associateBy { it.border.id }
+
+        return rawBorders
+            .map { divergentBorder ->
+                val connectedDivergentStrengths = if (divergentBorder.blockedByConvergence) {
+                    emptyList()
+                } else {
+                    divergentBorder.border.borders.asSequence()
+                        .mapNotNull { rawByBorderId[it.id] }
+                        .filter { it.plateIds == divergentBorder.plateIds && !it.blockedByConvergence }
+                        .map { it.signal.strength }
+                        .filter { it >= TectonicGlobals.divergenceCutoff }
+                        .toList()
+                }
+                val hasBoundarySupport =
+                    connectedDivergentStrengths.size >= TectonicGlobals.divergenceMinConnectedEdges
+                val supportedStrength =
+                    if (hasBoundarySupport) divergentBorder.signal.strength else 0.0
+                val continuityStrength = if (hasBoundarySupport) {
+                    connectedDivergentStrengths.average() * divergenceContinuityStrength
+                } else {
+                    0.0
+                }
+                divergentBorder.copy(
+                    signal = divergentBorder.signal.copy(
+                        strength = max(supportedStrength, continuityStrength)
+                    )
+                )
+            }
+            .filter { it.signal.strength >= TectonicGlobals.divergenceCutoff }
+            .flatMap { divergentBorder ->
+                divergentBorder.border.tiles.map { tile -> tile to divergentBorder.signal }
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, signals) -> signals.maxBy { it.strength } }
+    }
 
     private fun nearestMovedTiles(
         candidates: IntArray,
@@ -340,7 +438,18 @@ object Tectonics {
                 }
                 if (overlappingTiles.isNotEmpty()) {
                     val groups = overlappingTiles.groupBy { it.tile.tectonicPlate!! }
-                    val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
+                    val highestPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
+                    val incumbentPlate = planet.getTile(tile).tectonicPlate
+                    val incumbentGroup = groups.entries.firstOrNull { it.key == incumbentPlate }
+                    val overridingPlate = if (
+                        incumbentGroup != null &&
+                        highestPlate.value.maxOf { it.tile.elevation } <
+                        incumbentGroup.value.maxOf { it.tile.elevation } + plateOverrideElevationAdvantage
+                    ) {
+                        incumbentGroup
+                    } else {
+                        highestPlate
+                    }
                     val nearestMovedTile = overridingPlate.value.first().tile
                     val nearestMovedTilesForPlate =
                         nearestMovedTiles.filter { it.tile.tectonicPlate == overridingPlate.key }
@@ -381,10 +490,15 @@ object Tectonics {
                 }
         }
 
-        val divergenceZones = mutableMapOf<Tile, DivergenceZone>()
+        val divergenceSignals = detectDivergenceSignals(planet, convergenceZones.keys)
+        val divergenceZones = divergenceSignals
+            .mapValues { (tile, signal) ->
+                DivergenceZone(planet, tile.id, signal.strength, signal.divergingPlates)
+            }
+            .toMutableMap()
         possibleDivergenceZones.forEach { tile ->
             val (newPlanetTile, divergenceZone) = DivergenceZone.divergeTileOrFillGap(
-                planet, tile, newTileMap, movedTiles
+                planet, tile, newTileMap, divergenceSignals[tile]
             )
             newTileMap[tile] = newPlanetTile
             if (divergenceZone != null) {
@@ -506,7 +620,7 @@ object Tectonics {
                     )
                 )
             )
-            val totalDepositAvailable = erosion + deposit - depositTaken
+            val totalDepositAvailable = (erosion + deposit - depositTaken) * depositMultiplier
 
             planetTile.elevation -= erosion
 
