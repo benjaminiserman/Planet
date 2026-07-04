@@ -142,6 +142,10 @@ class PlanetTile(
     @get:JsonIgnore
     val isAboveWater get() = elevation > planet.seaLevel
 
+    fun hasImpassableEdgeWith(other: PlanetTile): Boolean =
+        (isAboveWater || other.isAboveWater) &&
+            (max(elevation, planet.seaLevel) - max(other.elevation, planet.seaLevel)).absoluteValue > 500.0
+
     @get:JsonIgnore
     val contiguousSlope by memo({ planet.terrainChangeCount }) {
         sqrt(neighbors.filter { it.isAboveWater == isAboveWater }.map { (it.elevation - elevation).pow(2) }.average())
