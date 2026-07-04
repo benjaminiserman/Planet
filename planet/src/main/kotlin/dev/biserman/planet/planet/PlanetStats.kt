@@ -38,6 +38,9 @@ class PlanetStats {
             planet.planetTiles.values.filter { it.isAboveWater }.map { it.elevation }.average()
         },
         Stat("tectonic plate count") { planet -> planet.tectonicPlates.size.toDouble() },
+        Stat("number of continents") { planet ->
+            planet.landRegions.count { it.tiles.size > 150 }.toDouble()
+        },
         Stat("average tectonic plate torque") { planet -> planet.tectonicPlates.map { it.torque.length() }.average() },
         Stat("subduction zone count") { planet -> planet.convergenceZones.filter { it.value.subductionStrengths.values.average() > 0 }.size.toDouble() },
         Stat("convergent zone count") { planet -> planet.convergenceZones.filter { it.value.subductionStrengths.values.average() < 0 }.size.toDouble() },

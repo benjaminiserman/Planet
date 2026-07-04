@@ -54,6 +54,14 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     @get:JsonIgnore
+    val landRegions by memo({ terrainChangeCount }) {
+        PlanetRegion(
+            this,
+            planetTiles.values.toMutableSet()
+        ).floodFillGroupBy { it.isAboveWater }[true] ?: emptyList()
+    }
+
+    @get:JsonIgnore
     val edgeDepthMap by memo({ terrainChangeCount }) {
         PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { it.isAboveWater }
     }
