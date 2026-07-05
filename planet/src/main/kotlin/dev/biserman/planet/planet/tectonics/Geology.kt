@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIdentityReference
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.tectonics.Geology.getLayerFor
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedDepositThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedErosionThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionContinentialityThreshold
@@ -25,21 +26,13 @@ data class StonePlacement(
     data class SpecialOption(val condition: StonePlacementCondition, val stone: Stone)
 }
 
-
 data class StoneColumn(
     @field:JsonIdentityReference(alwaysAsId = true) var surface: Stone,
     @field:JsonIdentityReference(alwaysAsId = true) var middle: Stone,
     @field:JsonIdentityReference(alwaysAsId = true) var deep: Stone
 ) {
-    fun getLayer(planetTile: PlanetTile, stonePlacementType: StonePlacementType): Stone {
-        val stonePlacement = planetTile.planet.worldKinds.stonePlacements[stonePlacementType]
-            ?: return planetTile.planet.worldKinds.defaultSurfaceStone
-        val firstSpecial = stonePlacement.specialOptions.firstOrNull { it.condition.canPlace(planetTile) }
-        return firstSpecial?.stone ?: stonePlacement.defaultOption
-    }
-
     fun accreteLayer(planetTile: PlanetTile, stonePlacementType: StonePlacementType) {
-        val layer = getLayer(planetTile, stonePlacementType)
+        val layer = getLayerFor(planetTile, stonePlacementType)
         deep = middle
         middle = surface
         surface = layer
@@ -51,7 +44,7 @@ data class StoneColumn(
     }
 
     fun divergeColumn(planetTile: PlanetTile) {
-        val divergenceLayer = getLayer(planetTile, StonePlacementType.MantleVolcanic)
+        val divergenceLayer = getLayerFor(planetTile, StonePlacementType.MantleVolcanic)
         surface = divergenceLayer
         middle = divergenceLayer
         deep = divergenceLayer
@@ -59,15 +52,15 @@ data class StoneColumn(
 
     fun tryTransmuteDeep(planetTile: PlanetTile) {
         val metamorphicForm = deep.stoneComponent.placementType.metamorphicForm ?: return
-        deep = getLayer(planetTile, metamorphicForm)
+        deep = getLayerFor(planetTile, metamorphicForm)
     }
 
     fun igneousIntrude(planetTile: PlanetTile) {
         val contactMetamorphicForm = middle.stoneComponent.placementType.metamorphicForm
         if (contactMetamorphicForm != null) {
-            middle = getLayer(planetTile, contactMetamorphicForm)
+            middle = getLayerFor(planetTile, contactMetamorphicForm)
         }
-        deep = getLayer(planetTile, StonePlacementType.MantleVolcanic)
+        deep = getLayerFor(planetTile, StonePlacementType.MantleVolcanic)
     }
 
     companion object {
@@ -80,6 +73,13 @@ data class StoneColumn(
 }
 
 object Geology {
+    fun getLayerFor(planetTile: PlanetTile, stonePlacementType: StonePlacementType): Stone {
+        val stonePlacement = planetTile.planet.worldKinds.stonePlacements[stonePlacementType]
+            ?: return planetTile.planet.worldKinds.defaultSurfaceStone
+        val firstSpecial = stonePlacement.specialOptions.firstOrNull { it.condition.canPlace(planetTile) }
+        return firstSpecial?.stone ?: stonePlacement.defaultOption
+    }
+
     fun simulateGeology(planet: Planet) {
         // hotspot accretion is done in tryHotspotEruption
         // divergence volcanism is done on tile creation
