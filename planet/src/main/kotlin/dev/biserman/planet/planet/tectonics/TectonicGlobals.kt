@@ -21,7 +21,7 @@ object TectonicGlobals {
     var minCollisionResistance = 0.2
     var plateOverrideElevationAdvantage = 500.0
     var ridgePushStrength = 0.003
-    var mantleConvectionStrength = 0.0008
+    var mantleConvectionStrength = 0.0005
     var springPlateContributionStrength = 0.007
     var edgeInteractionStrength = 0.08
     var tileInertia = 0.25
@@ -59,16 +59,16 @@ object TectonicGlobals {
 
     var depositStrength = 0.6
     var depositLoss = 0.01
-    var depositMultiplier = 1.66
+    var depositMultiplier = 1.75
     var prominenceErosion = 0.2
     var elevationErosion = 1e-06
     var waterErosion = 3.5
     var depositionStartHeight = 1000
 
-    var accruedDepositThreshold = 400.0
-    var accruedErosionThreshold = -2500.0
-    var orogenicMetamorphosisThreshold = 0.1
-    var tectonicVolcanismThreshold = 0.8
+    var accruedDepositThreshold = 800.0
+    var accruedErosionThreshold = -400.0
+    var orogenicMetamorphosisThreshold = 0.05
+    var tectonicVolcanismThreshold = 0.6
     var hotspotEruptionAccretionThreshold = 200.0
     var intrusionStrengthAccretionThreshold = 200.0
     var depositionContinentialityThreshold = -0.4
@@ -78,7 +78,7 @@ object TectonicGlobals {
     var minPercentContinentalGuardrail = 0.15
     var maxPercentContinentalGuardrail = 0.55
 
-    var meteorImpactChance = 0.01
+    var meteorImpactChance = 0.2
     var minMeteorElevationChange = 200.0
     var maxMeteorElevationChange = 2000.0
 
