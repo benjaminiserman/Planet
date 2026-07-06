@@ -14,7 +14,7 @@
   "continentSpringStiffness": 1.0,
   "convergencePushStrength": 0.5,
   "convergenceSearchRadius": 1.5,
-  "convergingElevationStrengthScale": 1200.0,
+  "convergingElevationStrengthScale": 1600.0,
   "depositionStartHeight": 1000,
   "depositLoss": 0.01,
   "depositMultiplier": 1.75,
