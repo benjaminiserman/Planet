@@ -640,10 +640,10 @@ object Tectonics {
                     deposits[depositeeTile] = (deposits[depositeeTile] ?: 0.0) + depositSent
                 }
             } else {
-                planetTile.elevation += min(
+                planetTile.elevation += max(0.0, min(
                     totalDepositAvailable,
                     planetTile.neighbors.map { it.elevation }.average() - planetTile.elevation
-                )
+                ))
             }
 
             planetTile.erosionDelta = planetTile.elevation - originalElevation

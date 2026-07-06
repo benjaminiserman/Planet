@@ -51,7 +51,7 @@ object TectonicGlobals {
 
     var overridingElevationStrengthScale = 1400.0
     var subductingElevationStrengthScale = -1200.0
-    var convergingElevationStrengthScale = 1200.0
+    var convergingElevationStrengthScale = 1600.0
 
     var divergenceCutoff = 0.25
     var divergedCrustHeight = -2000.0
