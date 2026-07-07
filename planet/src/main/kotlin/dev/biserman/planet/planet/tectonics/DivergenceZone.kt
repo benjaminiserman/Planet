@@ -17,6 +17,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVariogram
 import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
+import godot.core.Vector3
 
 data class DivergenceSignal(
     val strength: Double,
@@ -40,9 +41,11 @@ class DivergenceZone(
     @get:JsonIgnore
     val ridgePush
         get() = divergingPlates.map { divergingPlate ->
+            val towardPlateCenter = divergingPlate.region.center - tile.position
             PointForce(
                 tile.position,
-                (divergingPlate.region.center - tile.position).normalized() * tile.area * TectonicGlobals.ridgePushStrength
+                if (towardPlateCenter.lengthSquared() == 0.0) Vector3.ZERO
+                else towardPlateCenter.normalized() * tile.area * TectonicGlobals.ridgePushStrength
             )
         }
 
@@ -90,9 +93,9 @@ class DivergenceZone(
                     )
                 } else {
                     newPlanetTile.stoneColumn =
-                        tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
+                        (tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
                             ?.stoneColumn
-                            ?: newPlanetTile.stoneColumn
+                            ?: newPlanetTile.stoneColumn).copy()
                     newPlanetTile.formationTime =
                         tile.tiles.map { newTileMap[it]?.formationTime }
                             .groupBy { it }

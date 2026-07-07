@@ -34,7 +34,8 @@ class PlanetRegion(
     }
 
     val center by memo({ tiles.mutationCount }) {
-        tiles.fold(Vector3.ZERO) { sum, tile -> sum + tile.tile.position }.normalized()
+        val positionSum = tiles.fold(Vector3.ZERO) { sum, tile -> sum + tile.tile.position }
+        if (positionSum.lengthSquared() == 0.0) Vector3.ZERO else positionSum.normalized()
     }
 
     val edgeTiles by memo({ tiles.mutationCount }) {

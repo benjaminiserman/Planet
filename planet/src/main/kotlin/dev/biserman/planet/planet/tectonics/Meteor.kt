@@ -13,7 +13,7 @@ import kotlin.math.min
 object Meteor {
     fun impactMeteor(planet: Planet) {
         while (planet.random.nextDouble() < meteorImpactChance) {
-            val impactTile = planet.planetTiles.values.random()
+            val impactTile = planet.planetTiles.values.random(planet.random)
 
             impactTile.stoneColumn.surface = getLayerFor(impactTile, StonePlacementType.Meteoric)
 

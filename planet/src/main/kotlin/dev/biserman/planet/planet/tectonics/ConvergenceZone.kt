@@ -24,11 +24,17 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
-data class ConvergenceInteraction(val plate: TectonicPlate, val movement: Vector3, val density: Double) {
+data class ConvergenceInteraction(
+    val plate: TectonicPlate,
+    val movement: Vector3,
+    val density: Double,
+    val continentalFraction: Double = 0.0
+) {
     constructor(plateGroup: Map.Entry<TectonicPlate, List<Tectonics.MovedTile>>) : this(
         plateGroup.key,
         plateGroup.value.map { it.newPosition - it.tile.tile.position }.average(),
-        plateGroup.value.map { it.tile.density }.average()
+        plateGroup.value.map { it.tile.density }.average(),
+        plateGroup.value.count { it.tile.isContinentalCrust }.toDouble() / plateGroup.value.size
     )
 }
 
@@ -109,10 +115,13 @@ class ConvergenceZone(
             val slabPull = involvedTiles
                 .filterKeys { subductionStrengths[it]!! > 0 }
                 .mapValues { (plate, tiles) ->
-                    tiles.map { otherTile ->
+                    tiles.mapNotNull { otherTile ->
+                        val pullDirection = tile.position - otherTile.tile.tile.position
+                        if (pullDirection.lengthSquared() == 0.0) return@mapNotNull null
                         PointForce(
                             tile.position,
-                            (tile.position - otherTile.tile.tile.position).normalized() * TectonicGlobals.slabPullStrength * tile.area * subductionStrengths[plate]!!
+                            pullDirection.normalized() * TectonicGlobals.slabPullStrength *
+                                tile.area * subductionStrengths[plate]!!
                         )
                     }
                 }
@@ -140,8 +149,12 @@ class ConvergenceZone(
                 ).coerceIn(0.0, 1.0)
                 val collisionResistance = 1.0 -
                     subductionBypass * (1.0 - TectonicGlobals.minCollisionResistance)
+                val continentalContact =
+                    interaction.continentalFraction * overridingPlate.continentalFraction
+                val stiffnessMultiplier = 1.0 + continentalContact *
+                    (TectonicGlobals.continentalCollisionStiffnessMultiplier - 1.0)
                 val response =
-                    TectonicGlobals.collisionStiffness * penetration +
+                    TectonicGlobals.collisionStiffness * stiffnessMultiplier * penetration +
                         TectonicGlobals.collisionDamping * closingSpeed *
                         (1.0 + TectonicGlobals.collisionRestitution)
                 val force = normal * TectonicGlobals.convergencePushStrength * tile.area *

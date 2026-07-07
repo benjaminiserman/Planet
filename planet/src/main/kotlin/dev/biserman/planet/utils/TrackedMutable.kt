@@ -1,61 +1,29 @@
 package dev.biserman.planet.utils
 
-open class TrackedMutable {
-    var mutationCount = 0
+import java.util.RandomAccess
+
+interface TrackedMutable {
+    var mutationCount: Int
 
     fun dirty() = mutationCount++
 }
 
-class TrackedMutableList<T>(private val list: MutableList<T> = mutableListOf()) : TrackedMutable(),
-    MutableList<T> by list {
-    override fun add(element: T): Boolean {
-        dirty()
-        return list.add(element)
-    }
-
-    override fun remove(element: T): Boolean {
-        dirty()
-        return list.remove(element)
-    }
-
-    override fun addAll(elements: Collection<T>): Boolean {
-        dirty()
-        return list.addAll(elements)
-    }
-
-    override fun addAll(index: Int, elements: Collection<T>): Boolean {
-        dirty()
-        return list.addAll(index, elements)
-    }
-
-    override fun removeAll(elements: Collection<T>): Boolean {
-        dirty()
-        return list.removeAll(elements)
-    }
-
-    override fun retainAll(elements: Collection<T>): Boolean {
-        dirty()
-        return list.retainAll(elements)
-    }
-
-    override fun clear() {
-        dirty()
-        return list.clear()
-    }
-
-    override fun set(index: Int, element: T): T {
-        dirty()
-        return list.set(index, element)
-    }
-
+class TrackedMutableList<T>(private val list: MutableList<T> = mutableListOf()) :
+    AbstractMutableList<T>(), RandomAccess, TrackedMutable {
+    override var mutationCount = 0
+    override val size get() = list.size
+    override fun get(index: Int): T = list[index]
     override fun add(index: Int, element: T) {
         dirty()
-        return list.add(index, element)
+        list.add(index, element)
     }
-
     override fun removeAt(index: Int): T {
         dirty()
         return list.removeAt(index)
+    }
+    override fun set(index: Int, element: T): T {
+        dirty()
+        return list.set(index, element)
     }
 
     companion object {
@@ -63,43 +31,55 @@ class TrackedMutableList<T>(private val list: MutableList<T> = mutableListOf()) 
     }
 }
 
-class TrackedMutableSet<T>(private val set: MutableSet<T> = mutableSetOf()) : TrackedMutable(), MutableSet<T> by set {
+class TrackedMutableSet<T>(private val set: MutableSet<T> = mutableSetOf()) :
+    MutableSet<T> by set, TrackedMutable {
+    override var mutationCount = 0
+
     override fun iterator(): MutableIterator<T> {
-        return object : MutableIterator<T> by set.iterator() {
+        val iterator = set.iterator()
+        return object : MutableIterator<T> by iterator {
             override fun remove() {
-                throw UnsupportedOperationException("Use remove(element: T) instead")
+                iterator.remove()
+                dirty()
             }
         }
     }
 
     override fun add(element: T): Boolean {
-        dirty()
-        return set.add(element)
-    }
-
-    override fun remove(element: T): Boolean {
-        dirty()
-        return set.remove(element)
+        val changed = set.add(element)
+        if (changed) dirty()
+        return changed
     }
 
     override fun addAll(elements: Collection<T>): Boolean {
-        dirty()
-        return set.addAll(elements)
+        val changed = set.addAll(elements)
+        if (changed) dirty()
+        return changed
+    }
+
+    override fun remove(element: T): Boolean {
+        val changed = set.remove(element)
+        if (changed) dirty()
+        return changed
     }
 
     override fun removeAll(elements: Collection<T>): Boolean {
-        dirty()
-        return set.removeAll(elements)
+        val changed = set.removeAll(elements)
+        if (changed) dirty()
+        return changed
     }
 
     override fun retainAll(elements: Collection<T>): Boolean {
-        dirty()
-        return set.retainAll(elements)
+        val changed = set.retainAll(elements)
+        if (changed) dirty()
+        return changed
     }
 
     override fun clear() {
-        dirty()
-        return set.clear()
+        if (set.isNotEmpty()) {
+            set.clear()
+            dirty()
+        }
     }
 
     companion object {

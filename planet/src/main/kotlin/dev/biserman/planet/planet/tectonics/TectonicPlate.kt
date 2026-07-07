@@ -9,6 +9,7 @@ import dev.biserman.planet.planet.DebugNameGenerator
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftSeparationStrength
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.utils.VectorWarpNoise
@@ -42,12 +43,19 @@ class TectonicPlate(
 
     val eulerPole by memo({ torque }) {
         try {
-            eulerPole(
+            val unconstrainedPole = eulerPole(
                 torque,
-                tiles.map { tile -> tile.tile.position to tile.tile.area })
-                .let {
-                    it.normalized() * it.length().coerceIn(0.0, planet.topology.averageRadius * 2.5)
-                }
+                tiles.map { tile -> tile.tile.position to tile.tile.area }
+            )
+            if (!unconstrainedPole.isFinite()) {
+                GD.print("Discarding non-finite Euler pole for plate $id (${tiles.size} tiles)")
+                Vector3.ZERO
+            } else if (unconstrainedPole.lengthSquared() == 0.0) {
+                Vector3.ZERO
+            } else {
+                unconstrainedPole.normalized() *
+                    unconstrainedPole.length().coerceIn(0.0, planet.topology.averageRadius * 2.5)
+            }
         } catch (e: Exception) {
             GD.print("Failed to calculate euler pole: ${tiles.size} ${torque.length()}")
             throw e
@@ -104,9 +112,24 @@ class TectonicPlate(
 
         val points = region.tiles.shuffled(planet.random).take(planet.random.nextInt(3, 5)).map { warp(it.tile.position) }
         GD.print("Rifting $debugColor in ${points.size}")
-        val newPlates = region.voronoi(points, warp).map { region ->
-            val plate = TectonicPlate(planet, region)
-            plate.torque = this.torque
+        val riftRegions = region.voronoi(points, warp)
+        val regionAreas = riftRegions.associateWith { riftRegion ->
+            riftRegion.tiles.sumOf { it.tile.area }
+        }
+        val totalArea = regionAreas.values.sum()
+        val separationAxes = riftRegions.associateWith { riftRegion ->
+            val axis = region.center.cross(riftRegion.center)
+            if (axis.lengthSquared() == 0.0) Vector3.ZERO else axis.normalized()
+        }
+        val meanSeparationAxis = separationAxes.entries.fold(Vector3.ZERO) { sum, (riftRegion, axis) ->
+            sum + axis * (regionAreas.getValue(riftRegion) / totalArea)
+        }
+
+        val newPlates = riftRegions.map { riftRegion ->
+            val plate = TectonicPlate(planet, riftRegion)
+            val separationTorque = (separationAxes.getValue(riftRegion) - meanSeparationAxis) *
+                regionAreas.getValue(riftRegion) * riftSeparationStrength
+            plate.torque = this.torque + separationTorque
             plate.tiles.forEach { it.tectonicPlate = plate }
             plate
         }

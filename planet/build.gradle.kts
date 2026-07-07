@@ -7,10 +7,27 @@ repositories {
 }
 
 dependencies {
+    val godotKotlinVersion = "0.13.1-4.4.1"
+
     implementation("com.github.davidmoten:rtree-multi:0.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.2")
+
+    // The Godot plugin adds these only to the main compile classpath, while its
+    // KSP processor also generates a registration entry for the test source set.
+    testImplementation("com.utopia-rise:common:$godotKotlinVersion")
+    testImplementation("com.utopia-rise:godot-build-props:$godotKotlinVersion")
+    testImplementation("com.utopia-rise:godot-core-library-debug:$godotKotlinVersion")
+    testImplementation("com.utopia-rise:godot-api-library-debug:$godotKotlinVersion")
+    testImplementation("com.utopia-rise:godot-extension-library-debug:$godotKotlinVersion")
+    testRuntimeOnly("com.utopia-rise:godot-internal-library-debug:$godotKotlinVersion")
+    testImplementation(kotlin("test-junit5"))
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 kotlin {
