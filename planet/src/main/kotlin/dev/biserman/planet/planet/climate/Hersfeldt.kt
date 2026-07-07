@@ -790,9 +790,9 @@ object Hersfeldt : ClimateClassifier {
                 // Dark ocean (warm but low light)
                 gddResults.totalGddl < 50 -> DARK_OCEAN
                 // Temperature-based ocean types
+                minTemp < 18 && maxTemp >= 40 -> EXTRASEASONAL_OCEAN
                 maxTemp >= 60 -> TORRID_OCEAN
                 maxTemp >= 40 -> HOT_OCEAN
-                minTemp < 18 && maxTemp >= 40 -> EXTRASEASONAL_OCEAN
                 minTemp >= 18 -> TROPICAL_OCEAN
                 else -> COOL_OCEAN
             }

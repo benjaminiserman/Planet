@@ -7,6 +7,7 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.things.StonePlacementType
 import godot.common.util.lerp
 import godot.global.GD
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -15,6 +16,7 @@ object TectonicGlobals {
     var slabPullStrength = 0.03
     var convergencePushStrength = 0.5
     var collisionStiffness = 1.0
+    var continentalCollisionStiffnessMultiplier = 3.0
     var collisionDamping = 0.5
     var collisionRestitution = 0.1
     var collisionDensityBypassThreshold = 0.25
@@ -29,6 +31,7 @@ object TectonicGlobals {
 
     var plateTorqueScalar = 0.1
     var riftCutoff = 0.5
+    var riftSeparationStrength = 0.005
     var minElevation = -12000.0
     var maxElevation = 12000.0
     var plateMergeCutoff = 0.39
@@ -64,6 +67,7 @@ object TectonicGlobals {
     var elevationErosion = 1e-06
     var waterErosion = 3.5
     var depositionStartHeight = 1000
+    var maxErosionProportion = 0.05
 
     var accruedDepositThreshold = 800.0
     var accruedErosionThreshold = -400.0
@@ -107,7 +111,7 @@ object TectonicGlobals {
                 if (elevationIncrease > hotspotEruptionAccretionThreshold) {
                     tile.stoneColumn.accreteLayer(tile, StonePlacementType.MantleVolcanic)
                 }
-                return lerp(tile.elevation, elevationIncrease, hotspotLerp)
+                return lerp(tile.elevation, max(tile.elevation, elevationIncrease), hotspotLerp)
             } else {
                 if (elevationIncrease > intrusionStrengthAccretionThreshold) {
                     tile.stoneColumn.igneousIntrude(tile)

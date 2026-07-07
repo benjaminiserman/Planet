@@ -24,6 +24,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxElevation
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxErosionProportion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxPercentContinentalGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minElevation
@@ -166,41 +167,58 @@ object Tectonics {
 
     fun stepTectonicPlateForces(planet: Planet) {
         planet.tectonicPlates.forEach { plate ->
-            val oldTorqueWithDrag = plate.torque * 0.9
-            val mantleConvectionTorque = torque(plate.tiles.map { tile ->
+            fun finiteTorque(source: String, value: Vector3): Vector3 =
+                if (value.isFinite()) {
+                    value
+                } else {
+                    GD.print("Discarding non-finite $source torque for plate ${plate.id} (${plate.tiles.size} tiles)")
+                    Vector3.ZERO
+                }
+
+            val oldTorqueWithDrag = finiteTorque("retained", plate.torque * 0.9)
+            val mantleConvectionTorque = finiteTorque("mantle convection", torque(plate.tiles.map { tile ->
                 PointForce(
                     tile.tile.position, planet.noise.mantleConvection.sample4d(
                         tile.tile.position, planet.tectonicAge.toDouble()
                     ) * mantleConvectionStrength
                 )
-            })
-            val slabPull = torque(
-                planet.convergenceZones
-                    .filter { (_, zone) -> plate.id in zone.subductingPlates }
-                    .flatMap { (_, zone) -> zone.slabPull[plate.id] ?: listOf() }
-            )
-            val convergencePush = torque(
-                planet.convergenceZones
-                    .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
-            )
-            val ridgePush = torque(
-                planet.divergenceZones
-                    .filter { (_, zone) -> plate in zone.divergingPlates }
-                    .flatMap { (_, zone) -> zone.ridgePush }
-            )
-            val springForces = torque(plate.tiles.map { tile ->
+            }))
+            val slabPull = finiteTorque(
+                "slab pull", torque(
+                    planet.convergenceZones
+                        .filter { (_, zone) -> plate.id in zone.subductingPlates }
+                        .flatMap { (_, zone) -> zone.slabPull[plate.id] ?: listOf() }
+                ))
+            val convergencePush = finiteTorque(
+                "convergence push", torque(
+                    planet.convergenceZones
+                        .flatMap { (_, zone) -> zone.convergencePush[plate.id] ?: listOf() }
+                ))
+            val ridgePush = finiteTorque(
+                "ridge push", torque(
+                    planet.divergenceZones
+                        .filter { (_, zone) -> plate in zone.divergingPlates }
+                        .flatMap { (_, zone) -> zone.ridgePush }
+                ))
+            val springForces = finiteTorque("spring", torque(plate.tiles.map { tile ->
                 PointForce(
                     tile.tile.position, tile.springDisplacement * springPlateContributionStrength
                 )
-            })
-            val edgeInteractionForces = torque(plate.tiles.map { tile ->
+            }))
+            val edgeInteractionForces = finiteTorque("edge interaction", torque(plate.tiles.map { tile ->
                 PointForce(
                     tile.tile.position, tile.getEdgeForces().sum() * edgeInteractionStrength
                 )
-            })
+            }))
 
-            plate.torque =
+            val nextTorque =
                 oldTorqueWithDrag + (mantleConvectionTorque + slabPull + convergencePush + ridgePush + springForces + edgeInteractionForces) * plateTorqueScalar
+            plate.torque = if (nextTorque.isFinite()) {
+                nextTorque
+            } else {
+                GD.print("Discarding non-finite torque for plate ${plate.id} (${plate.tiles.size} tiles)")
+                Vector3.ZERO
+            }
         }
 
         planet.planetTiles.values.forEach {
@@ -318,7 +336,7 @@ object Tectonics {
         for (tileId in candidates) {
             val candidate = movedTilesById[tileId] ?: continue
             val distance = candidate.newPosition.distanceTo(position)
-            if (distance > searchRadius) continue
+            if (!distance.isFinite() || distance > searchRadius) continue
 
             var insertionIndex = nearest.size
             while (insertionIndex > 0 && distance < distances[insertionIndex - 1]) {
@@ -375,7 +393,7 @@ object Tectonics {
                 )
                 for (movedTile in nearbyTiles) {
                     val otherTile = movedTile.tile
-                    if (otherTile != planetTile) {
+                    if (otherTile != planetTile && otherTile.tectonicPlate == planetTile.tectonicPlate) {
                         val restLength = (otherTile.tile.position - planetTile.tile.position).length()
                         val currentDelta = newPosition - movedTile.newPosition
                         displacement += currentDelta * (currentDelta.length() - restLength) * -continentSpringStiffness
@@ -397,6 +415,11 @@ object Tectonics {
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
     fun movePlanetTiles(planet: Planet) {
+        val nonFiniteMovements = planet.planetTiles.values.filter { !it.movement.isFinite() }
+        if (nonFiniteMovements.isNotEmpty()) {
+            GD.print("Resetting ${nonFiniteMovements.size} non-finite tile movements")
+            nonFiniteMovements.forEach { it.movement = Vector3.ZERO }
+        }
         val searchRadius = planet.topology.averageRadius
         val originalMovedTiles = planet.planetTiles.values.filter { it.tectonicPlate != null }
             .sortedByDescending { it.elevation }
@@ -450,10 +473,10 @@ object Tectonics {
                 } else {
                     highestPlate
                 }
-                val nearestMovedTile = overridingPlate.value.first().tile
+                val nearestMovedTile = overridingPlate.value.first()
                 val nearestMovedTilesForPlate =
                     nearestMovedTiles.filter { it.tile.tectonicPlate == overridingPlate.key }
-                newTileMap[tile] = nearestMovedTile.copy().apply {
+                newTileMap[tile] = nearestMovedTile.tile.copy().apply {
                     val goalElevation = Kriging.interpolate(
                         nearestMovedTilesForPlate.map { it.newPosition to it.tile.elevation },
                         tile.position,
@@ -465,7 +488,7 @@ object Tectonics {
                     this.elevation = lerp(goalElevation, closestElevation, 0.5)
 
                     this.tile = tile
-                    this.movement += (tile.position - nearestMovedTiles.first().newPosition)
+                    this.movement += (tile.position - nearestMovedTile.newPosition)
 
                     if (groups.size > 1) {
                         val subductionSpeed =
@@ -570,15 +593,26 @@ object Tectonics {
             it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
         }
 
+        planet.planetTiles = LinkedHashMap<Int, PlanetTile>(newTileMap.size).also { tiles ->
+            newTileMap.forEach { (tile, planetTile) -> tiles[tile.id] = planetTile!! }
+        }
+        planet.tectonicPlates.forEach { it.clean() }
+        planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
+
         val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
         oversizedPlate?.rift()
 
         val internalPlates = planet.tectonicPlates.associateWith { it.calculateNeighborLengths() }
             .filter { (_, neighbors) -> neighbors.size == 1 }
 
-        internalPlates.forEach { (plate, neighbors) ->
-            plate.mergeInto(neighbors.keys.first())
-        }
+        internalPlates.entries
+            .sortedBy { (plate) -> plate.tiles.size }
+            .forEach { (plate, neighbors) ->
+                val neighbor = neighbors.keys.first()
+                if (plate in planet.tectonicPlates && neighbor in planet.tectonicPlates) {
+                    plate.mergeInto(neighbor)
+                }
+            }
 
         planet.convergenceZones = LinkedHashMap<Int, ConvergenceZone>(convergenceZones.size).also { zones ->
             convergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
@@ -586,11 +620,6 @@ object Tectonics {
         planet.divergenceZones = LinkedHashMap<Int, DivergenceZone>(divergenceZones.size).also { zones ->
             divergenceZones.forEach { (tile, zone) -> zones[tile.id] = zone }
         }
-        planet.planetTiles = LinkedHashMap<Int, PlanetTile>(newTileMap.size).also { tiles ->
-            newTileMap.forEach { (tile, planetTile) -> tiles[tile.id] = planetTile!! }
-        }
-        planet.tectonicPlates.forEach { it.clean() }
-        planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
     }
 
     fun performErosion(planet: Planet) {
@@ -598,6 +627,7 @@ object Tectonics {
         val waterFlow = planet.planetTiles.values.associateWith { 1.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
             val originalElevation = planetTile.elevation
+            val surroundingAverage = planetTile.neighbors.map { it.elevation }.average()
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
             val water = waterFlow[planetTile]!!
@@ -605,15 +635,23 @@ object Tectonics {
                 if (planetTile.elevation <= depositionStartHeight)
                     deposit * depositStrength * (1 - prominenceScale).pow(3)
                 else 0.0
-            planetTile.elevation += depositTaken * (1 - depositLoss)
+            planetTile.elevation += (depositTaken * (1 - depositLoss))
+                .coerceIn(
+                    0.0..max(
+                        0.0,
+                        (planetTile.neighbors.maxOf { it.elevation } - planetTile.elevation)
+                    )
+                )
 
-            val depositeeTiles = planetTile.neighbors
-                .filter { it.elevation < planetTile.elevation }
-            val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
+            val downhillTiles = planetTile.neighbors.mapNotNull { neighbor ->
+                val decline = planetTile.elevation - neighbor.elevation
+                if (decline.isFinite() && decline > 0.0) neighbor to decline else null
+            }
+            val sumDecline = downhillTiles.sumOf { (_, decline) -> decline }
             val erosion = max(
                 0.0, min(
                     planetTile.prominence, min(
-                        planetTile.elevation + 1.0,
+                        planetTile.elevation * maxErosionProportion,
                         planetTile.prominence.pow(0.5) * prominenceErosion +
                                 planetTile.elevation.pow(2) * elevationErosion +
                                 water * waterErosion
@@ -625,25 +663,26 @@ object Tectonics {
             planetTile.elevation -= erosion
 
             // deposit water
-            if (depositeeTiles.isNotEmpty() && planetTile.isAboveWater) {
-                depositeeTiles.forEach { depositeeTile ->
-                    val waterSent = water * (planetTile.elevation - depositeeTile.elevation) / sumDecline
+            if (sumDecline > 0.0 && planetTile.isAboveWater && water.isFinite()) {
+                downhillTiles.forEach { (depositeeTile, decline) ->
+                    val waterSent = water * decline / sumDecline
                     waterFlow[depositeeTile] = (waterFlow[depositeeTile] ?: 0.0) + waterSent
                 }
             }
 
             // deposit sediment
-            if (depositeeTiles.isNotEmpty() && totalDepositAvailable >= 0.1) {
-                depositeeTiles.forEach { depositeeTile ->
-                    val depositSent = totalDepositAvailable *
-                            (planetTile.elevation - depositeeTile.elevation) / sumDecline
+            if (sumDecline > 0.0 && totalDepositAvailable >= 0.1 && totalDepositAvailable.isFinite()) {
+                downhillTiles.forEach { (depositeeTile, decline) ->
+                    val depositSent = totalDepositAvailable * decline / sumDecline
                     deposits[depositeeTile] = (deposits[depositeeTile] ?: 0.0) + depositSent
                 }
             } else {
-                planetTile.elevation += max(0.0, min(
-                    totalDepositAvailable,
-                    planetTile.neighbors.map { it.elevation }.average() - planetTile.elevation
-                ))
+                planetTile.elevation += max(
+                    0.0, min(
+                        totalDepositAvailable,
+                        surroundingAverage - planetTile.elevation
+                    )
+                )
             }
 
             planetTile.erosionDelta = planetTile.elevation - originalElevation

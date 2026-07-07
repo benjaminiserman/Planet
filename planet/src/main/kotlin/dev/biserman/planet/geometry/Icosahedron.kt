@@ -134,7 +134,7 @@ fun (MutMesh).relaxRepeatedly(maxIterations: Int) {
             priorShift = currentShift
             currentShift = relaxMesh(0.5)
             val shiftDelta = abs(currentShift - priorShift)
-            if (shiftDelta >= minShiftDelta) {
+            if (shiftDelta <= minShiftDelta) {
                 GD.print("Finished relaxing at $it")
                 return@loop
             }
@@ -218,7 +218,7 @@ fun (MutMesh).relaxMesh(multiplier: Double): Double {
         pointShifts[tri.vertIndexes[2]] += v2 * (multiplier * (v2.length() - idealDistanceToCentroid) / v2.length())
     }
 
-    pointShifts.zip(this.verts).mapTo(pointShifts) {
+    val targetPositions = pointShifts.zip(this.verts).map {
         val (pointShift, vert) = it
         val plane = Plane(vert.position, Vector3.ZERO)
         (vert.position + plane.project(pointShift)).normalized()
@@ -228,8 +228,8 @@ fun (MutMesh).relaxMesh(multiplier: Double): Double {
     for (edge in this.edges) {
         val oldPoint0 = this.verts[edge.vertIndexes[0]].position
         val oldPoint1 = this.verts[edge.vertIndexes[1]].position
-        val newPoint0 = pointShifts[edge.vertIndexes[0]]
-        val newPoint1 = pointShifts[edge.vertIndexes[1]]
+        val newPoint0 = targetPositions[edge.vertIndexes[0]]
+        val newPoint1 = targetPositions[edge.vertIndexes[1]]
         val oldVector = (oldPoint1 - oldPoint0).normalized()
         val newVector = (newPoint1 - newPoint0).normalized()
         val suppression = (1 - oldVector.dot(newVector)) * 0.5
@@ -240,7 +240,7 @@ fun (MutMesh).relaxMesh(multiplier: Double): Double {
     var totalShift = 0.0
     for (i in 0..<this.verts.size) {
         val original = Vector3(verts[i].position)
-        verts[i].position = original.lerp(pointShifts[i], 1 - sqrt((rotationSuppressions[i]))).normalized()
+        verts[i].position = original.lerp(targetPositions[i], 1 - sqrt(rotationSuppressions[i])).normalized()
         totalShift += (verts[i].position - original).length()
     }
 

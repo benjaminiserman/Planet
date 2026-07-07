@@ -62,6 +62,8 @@ class Path {
         }
 
         fun (List<Border>).toPaths(): List<Path> {
+            if (isEmpty()) return emptyList()
+
             val pointsToEdges = mutableMapOf<Corner, MutableList<Border>>()
             for (border in this) {
                 for (corner in border.corners) {
@@ -70,34 +72,47 @@ class Path {
             }
 
             if (pointsToEdges.values.any { it.size > 2 }) {
-                return listOf()
                 throw IllegalStateException("List of borders contains an invalid path")
             }
 
-            val visitedEdges = mutableSetOf<Border>()
-            val visitedCorners = mutableSetOf<Corner>()
+            val remainingEdges = toMutableSet()
             val paths = mutableListOf<Path>()
 
-            while (visitedEdges.size < pointsToEdges.size) {
-                val start =
-                    pointsToEdges.keys.firstOrNull { pointsToEdges[it]!!.size == 1 && it !in visitedCorners }
-                        ?: pointsToEdges.keys.first { it !in visitedCorners }
-                val path = mutableListOf(start)
-                val theseVisitedEdges = mutableSetOf<Border>()
-                var current = start
-                while (true) {
-                    val newEdge = pointsToEdges[current]!!.firstOrNull { it !in theseVisitedEdges } ?: break
-                    current = newEdge.oppositeCorner(current)
-                    path.add(current)
-                    visitedCorners.add(current)
-                    theseVisitedEdges.add(newEdge)
+            while (remainingEdges.isNotEmpty()) {
+                val componentEdges = mutableSetOf<Border>()
+                val pendingEdges = ArrayDeque<Border>().apply { add(remainingEdges.first()) }
+                while (pendingEdges.isNotEmpty()) {
+                    val edge = pendingEdges.removeFirst()
+                    if (!componentEdges.add(edge)) continue
+                    edge.corners.flatMap { pointsToEdges.getValue(it) }
+                        .filter { it in remainingEdges && it !in componentEdges }
+                        .forEach(pendingEdges::addLast)
                 }
-                visitedEdges.addAll(theseVisitedEdges)
-                val isLoop = theseVisitedEdges.all { it.corners.size == 2 }
-                paths.add(Path(path, isLoop))
+
+                val start = componentEdges.flatMap { it.corners }
+                    .firstOrNull { corner -> pointsToEdges.getValue(corner).count { it in componentEdges } == 1 }
+                    ?: componentEdges.first().corners.first()
+                val points = mutableListOf(start)
+                var current = start
+                var isLoop = false
+
+                while (true) {
+                    val edge = pointsToEdges.getValue(current).firstOrNull { it in componentEdges && it in remainingEdges }
+                        ?: break
+                    remainingEdges.remove(edge)
+                    val next = edge.oppositeCorner(current)
+                    if (next == start) {
+                        isLoop = true
+                        break
+                    }
+                    points.add(next)
+                    current = next
+                }
+
+                paths.add(Path(points, isLoop))
             }
 
-            return paths.toList()
+            return paths
         }
     }
 }

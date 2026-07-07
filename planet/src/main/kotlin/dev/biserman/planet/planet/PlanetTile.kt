@@ -178,7 +178,7 @@ class PlanetTile(
     val edgeDepth get() = planet.edgeDepthMap[this]!!
 
     @get:JsonIgnore
-    val continentiality get() = planet.continentialityMap[this.tileId]!!
+    val continentiality get() = planet.continentialityMap[this.tileId] ?: -100
 
     constructor(other: PlanetTile) : this(
         other.planet, other.tile.id
@@ -227,15 +227,20 @@ class PlanetTile(
         val idealMovement = // plateBoundaryForces * 0.1 +
             tectonicPlate!!.eulerPole.cross(tile.position)
 
-        movement = (movement * tileInertia + idealMovement).tangent(tile.position)
+        val retainedMovement = if (movement.isFinite()) movement else Vector3.ZERO
+        movement = (retainedMovement * tileInertia + idealMovement).tangent(tile.position)
     }
 
     fun getEdgeForces() =
         neighbors
             .filter { it.tectonicPlate != tectonicPlate }
-            .map { otherTile ->
+            .mapNotNull { otherTile ->
                 val delta = tile.position - otherTile.tile.position
                 val movementDelta = otherTile.movement - movement
+                if (!delta.isFinite() || delta.lengthSquared() == 0.0 ||
+                    !movementDelta.isFinite() || !density.isFinite() || !otherTile.density.isFinite()
+                ) return@mapNotNull null
+
                 val force = max(0.0, movementDelta.dot(delta))
                 val densityDiff = min((otherTile.density - density).absoluteValue * 2, 1.0)
                 val collisionResistance = 1 - densityDiff * (1 - minCollisionResistance)
@@ -252,7 +257,6 @@ class PlanetTile(
         planetRegion: PlanetRegion? = null,
         filterFn: (PlanetTile, Set<PlanetTile>) -> Boolean,
     ): Set<PlanetTile> {
-        val visited = mutableSetOf<PlanetTile>()
         val found = mutableSetOf<PlanetTile>()
         val queue = ArrayDeque<PlanetTile>()
         queue.add(this)
@@ -289,12 +293,12 @@ class PlanetTile(
     }
 
     @get:JsonIgnore
-    val koppen by memo<Optional<ClimateClassification>>({ planet.climateMap }) {
+    val koppen by memo({ planet.climateMap }) {
         Optional.of(UnproxiedKoppen.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
     }
 
     @get:JsonIgnore
-    val hersfeldt by memo<Optional<ClimateClassification>>({ planet.climateMap }) {
+    val hersfeldt by memo({ planet.climateMap }) {
         Optional.of(Hersfeldt.classify(planet, planet.climateMap[tileId] ?: return@memo Optional.empty()))
     }
 

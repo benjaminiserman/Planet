@@ -66,6 +66,9 @@ class PlanetStats {
             planet.planetTiles.values.count { it.stoneColumn.surface.stoneComponent.placementType.stoneType == StoneType.Sedimentary }
                 .toDouble() * 100 / planet.planetTiles.size
         },
+        Stat("deposition-erosion balance") { planet ->
+            planet.planetTiles.values.sumOf { it.erosionDelta }
+        }
     )
 
     val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }.toMutableMap()

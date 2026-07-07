@@ -73,7 +73,6 @@ object AStar {
 
                     val neighborPriority = openSet[neighbor]
                     if (neighborPriority == null || neighborPriority > distanceEstimate) {
-                        println("$neighbor: $distanceFromStart, ${distanceFromGoalEstimate[neighbor]}")
                         openSet[neighbor] = distanceEstimate
                         openQueue.add(QueueNode(neighbor, distanceEstimate))
                     }

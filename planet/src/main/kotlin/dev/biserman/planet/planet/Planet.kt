@@ -114,8 +114,12 @@ class Planet(val seed: Int, val size: Int) {
             PlanetRegion(this, planetTiles.values.toMutableSet()).calculateEdgeDepthMap { isContinental[it]!! }
 
         planetTiles.values.associate { tile ->
-            val edgeDepth = continentEdgeDepth[tile]!!
-            tile.tileId to if (isContinental[tile]!!) edgeDepth else -edgeDepth - 1
+            val edgeDepth = continentEdgeDepth[tile]
+            tile.tileId to when {
+                edgeDepth == null -> null
+                isContinental[tile]!! -> edgeDepth
+                else -> -edgeDepth - 1
+            }
         }
     }
 
@@ -141,7 +145,7 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val pointNemo by memo({ terrainChangeCount }) {
-        planetTiles.values.minBy { it.continentiality }
+        planetTiles.values.minBy{ it.continentiality }
     }
 
     val internationalDateLine by memo({ terrainChangeCount }) {

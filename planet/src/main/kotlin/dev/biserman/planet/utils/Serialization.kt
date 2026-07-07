@@ -166,13 +166,13 @@ object Serialization {
             it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
         }
 
-    fun save(filename: String, planet: Planet) {
+    fun save(filename: String, value: Any) {
         GZIPOutputStream(File(filename).outputStream()).use { gzipOut ->
-            objectMapper.writeValue(gzipOut, planet)
+            objectMapper.writeValue(gzipOut, value)
         }
     }
 
-    fun load(filename: String): Planet {
+    fun <T> load(filename: String, valueType: Class<T>): T {
         val file = File(filename)
         val isGzipped = file.inputStream().use { stream ->
             val header = ByteArray(2)
@@ -181,9 +181,11 @@ object Serialization {
         }
 
         return if (isGzipped) {
-            GZIPInputStream(file.inputStream()).use { objectMapper.readValue(it, Planet::class.java) }
+            GZIPInputStream(file.inputStream()).use { objectMapper.readValue(it, valueType) }
         } else {
-            objectMapper.readValue(file, Planet::class.java)
+            objectMapper.readValue(file, valueType)
         }
     }
+
+    fun load(filename: String): Planet = load(filename, Planet::class.java)
 }

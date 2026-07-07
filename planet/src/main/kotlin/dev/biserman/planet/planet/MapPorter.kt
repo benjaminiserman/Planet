@@ -11,6 +11,8 @@ import kotlin.reflect.full.memberProperties
 // channels: name, fetch, apply, type — (Color) <-> T
 
 object MapPorter {
+    data class HslColor(val h: Double, val s: Double, val l: Double, val a: Double)
+
     data class Variable<T>(
         val name: String,
         val fetch: (PlanetTile) -> T,
@@ -92,14 +94,14 @@ object MapPorter {
         )
     }
 
-    fun hsvToHsl(h: RealT, s: RealT, v: RealT, a: Double = 1.0): Color {
-        val l = 2 * v - min(v, 1 - v)
-        return Color.fromHsv(
-            h,
-            if (l == 0.0 || l == 1.0) 0.0 else (v - l) / min(l, 1 - l),
-            v * (1 - s / 2),
-            a
-        )
+    fun hsvToHsl(h: RealT, s: RealT, v: RealT, a: Double = 1.0): HslColor {
+        val lightness = v * (1 - s / 2)
+        val saturation = if (lightness == 0.0 || lightness == 1.0) {
+            0.0
+        } else {
+            (v - lightness) / min(lightness, 1 - lightness)
+        }
+        return HslColor(h, saturation, lightness, a)
     }
 
     var (Color).l: Double
