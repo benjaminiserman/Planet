@@ -3,6 +3,7 @@ package dev.biserman.planet.topology
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -21,10 +22,11 @@ class Topology(
 	val corners: List<Corner>
 ) {
 	val rTree = tiles.toRTree { it.position.toPoint() to it }
-	val averageRadius by lazy {
-		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
-		radii.average()
-	}
+//	val averageRadius by lazy {
+//		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
+//		radii.average()
+//	}
+	val averageRadius = TectonicGlobals.estimatedAverageRadius
 	val averageArea by lazy { tiles.sumOf { it.area } / tiles.size }
 
 	private var proximityCacheBucket = 0
