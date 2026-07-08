@@ -4,3 +4,7 @@
 # These are explicitly windows files and should use crlf
 *.bat           text eol=crlf
 
+# Planet saves are large binary-like snapshots and should not inflate Git history.
+planet/save/*.json filter=lfs diff=lfs merge=lfs -text
+planet/save/*.json.gz filter=lfs diff=lfs merge=lfs -text
+

@@ -64,7 +64,7 @@ interface StonePlacementCondition {
 
     class EssenceAbove(val threshold: Double) : StonePlacementCondition {
         override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.essence.sample3d(planetTile.tile.position) < threshold
+            planetTile.planet.noise.essence.sample3d(planetTile.tile.position) > threshold
     }
 
     class LocalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {

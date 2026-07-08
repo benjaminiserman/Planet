@@ -21,10 +21,11 @@ class Topology(
 	val corners: List<Corner>
 ) {
 	val rTree = tiles.toRTree { it.position.toPoint() to it }
-	val averageRadius by lazy {
-		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
-		radii.average()
-	}
+	val averageRadius = 0.020775855876950022
+//	val averageRadius by lazy {
+//		val radii = tiles.flatMap { it.corners.map { corner -> corner.position.distanceTo(it.position) } }
+//		radii.average()
+//	}
 	val averageArea by lazy { tiles.sumOf { it.area } / tiles.size }
 
 	private var proximityCacheBucket = 0
