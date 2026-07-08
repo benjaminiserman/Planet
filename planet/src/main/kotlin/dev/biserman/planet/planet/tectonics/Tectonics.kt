@@ -461,18 +461,7 @@ object Tectonics {
             }
             if (overlappingTiles.isNotEmpty()) {
                 val groups = overlappingTiles.groupBy { it.tile.tectonicPlate!! }
-                val highestPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
-                val incumbentPlate = planet.getTile(tile).tectonicPlate
-                val incumbentGroup = groups.entries.firstOrNull { it.key == incumbentPlate }
-                val overridingPlate = if (
-                    incumbentGroup != null &&
-                    highestPlate.value.maxOf { it.tile.elevation } <
-                    incumbentGroup.value.maxOf { it.tile.elevation } + plateOverrideElevationAdvantage
-                ) {
-                    incumbentGroup
-                } else {
-                    highestPlate
-                }
+                val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
                 val nearestMovedTile = overridingPlate.value.first()
                 val nearestMovedTilesForPlate =
                     nearestMovedTiles.filter { it.tile.tectonicPlate == overridingPlate.key }
@@ -622,12 +611,12 @@ object Tectonics {
         }
     }
 
+
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         val waterFlow = planet.planetTiles.values.associateWith { 1.0 }.toMutableMap()
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
             val originalElevation = planetTile.elevation
-            val surroundingAverage = planetTile.neighbors.map { it.elevation }.average()
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
             val deposit = deposits[planetTile]!!
             val water = waterFlow[planetTile]!!
@@ -635,27 +624,19 @@ object Tectonics {
                 if (planetTile.elevation <= depositionStartHeight)
                     deposit * depositStrength * (1 - prominenceScale).pow(3)
                 else 0.0
-            planetTile.elevation += (depositTaken * (1 - depositLoss))
-                .coerceIn(
-                    0.0..max(
-                        0.0,
-                        (planetTile.neighbors.maxOf { it.elevation } - planetTile.elevation)
-                    )
-                )
+            planetTile.elevation += depositTaken * (1 - depositLoss)
 
-            val downhillTiles = planetTile.neighbors.mapNotNull { neighbor ->
-                val decline = planetTile.elevation - neighbor.elevation
-                if (decline.isFinite() && decline > 0.0) neighbor to decline else null
-            }
-            val sumDecline = downhillTiles.sumOf { (_, decline) -> decline }
+            val depositeeTiles = planetTile.neighbors
+                .filter { it.elevation < planetTile.elevation }
+            val sumDecline = depositeeTiles.sumOf { planetTile.elevation - it.elevation }
             val erosion = max(
                 0.0, min(
                     planetTile.prominence, min(
-                        planetTile.elevation * maxErosionProportion,
+                        planetTile.elevation + 1.0,
                         planetTile.prominence.pow(0.5) * prominenceErosion +
                                 planetTile.elevation.pow(2) * elevationErosion +
                                 water * waterErosion
-                    )
+                        )
                 )
             )
             val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * depositMultiplier)
@@ -663,26 +644,25 @@ object Tectonics {
             planetTile.elevation -= erosion
 
             // deposit water
-            if (sumDecline > 0.0 && planetTile.isAboveWater && water.isFinite()) {
-                downhillTiles.forEach { (depositeeTile, decline) ->
-                    val waterSent = water * decline / sumDecline
+            if (depositeeTiles.isNotEmpty() && planetTile.isAboveWater) {
+                depositeeTiles.forEach { depositeeTile ->
+                    val waterSent = water * (planetTile.elevation - depositeeTile.elevation) / sumDecline
                     waterFlow[depositeeTile] = (waterFlow[depositeeTile] ?: 0.0) + waterSent
                 }
             }
 
             // deposit sediment
-            if (sumDecline > 0.0 && totalDepositAvailable >= 0.1 && totalDepositAvailable.isFinite()) {
-                downhillTiles.forEach { (depositeeTile, decline) ->
-                    val depositSent = totalDepositAvailable * decline / sumDecline
+            if (depositeeTiles.isNotEmpty() && totalDepositAvailable >= 0.1) {
+                depositeeTiles.forEach { depositeeTile ->
+                    val depositSent = totalDepositAvailable *
+                            (planetTile.elevation - depositeeTile.elevation) / sumDecline
                     deposits[depositeeTile] = (deposits[depositeeTile] ?: 0.0) + depositSent
                 }
             } else {
-                planetTile.elevation += max(
-                    0.0, min(
-                        totalDepositAvailable,
-                        surroundingAverage - planetTile.elevation
-                    )
-                )
+                planetTile.elevation += max(0.0, min(
+                    totalDepositAvailable,
+                    planetTile.neighbors.map { it.elevation }.average() - planetTile.elevation
+                ))
             }
 
             planetTile.erosionDelta = planetTile.elevation - originalElevation

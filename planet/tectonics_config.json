@@ -40,13 +40,13 @@
   "hotspotStrength": 5.625E7,
   "intrusionStrengthAccretionThreshold": 200,
   "mantleConvectionStrength": 5.0E-4,
-  "maxAverageContinentalHeightGuardrail": 1000.0,
+  "maxAverageContinentalHeightGuardrail": 1250.0,
   "maxElevation": 12000.0,
-  "maxErosionProportion": 1.0,
+  "maxErosionProportion": 0.05,
   "maxMeteorElevationChange": 2000.0,
-  "maxPercentContinentalGuardrail": 0.6,
+  "maxPercentContinentalGuardrail": 0.55,
   "meteorImpactChance": 0.2,
-  "minAverageContinentalHeightGuardrail": 500.0,
+  "minAverageContinentalHeightGuardrail": 750.0,
   "minElevation": -12000.0,
   "minMeteorElevationChange": 200.0,
   "minPercentContinentalGuardrail": 0.15,
@@ -68,5 +68,5 @@
   "tectonicSimulationStop": 100000,
   "tectonicVolcanismThreshold": 0.6,
   "tileInertia": 0.25,
-  "waterErosion": 3.5
+  "waterErosion": 0.5
 }

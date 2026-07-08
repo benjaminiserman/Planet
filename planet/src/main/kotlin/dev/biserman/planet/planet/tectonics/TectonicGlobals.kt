@@ -36,7 +36,7 @@ object TectonicGlobals {
     var maxElevation = 12000.0
     var plateMergeCutoff = 0.39
     var minPlateSize = 10
-    var continentElevationCutoff = -250.0
+    var continentElevationCutoff = 10.0
 
     var convergenceSearchRadius = 1.5 // multiple of average tile radius
     var divergenceSearchRadius = 1.5 // multiple of average tile radius
