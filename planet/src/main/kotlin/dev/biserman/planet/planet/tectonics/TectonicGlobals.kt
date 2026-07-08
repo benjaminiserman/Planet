@@ -63,6 +63,7 @@ object TectonicGlobals {
     var depositStrength = 0.6
     var depositLoss = 0.01
     var depositMultiplier = 1.75
+    var desiredLandPercent = 0.33
     var prominenceErosion = 0.2
     var elevationErosion = 1e-06
     var waterErosion = 3.5

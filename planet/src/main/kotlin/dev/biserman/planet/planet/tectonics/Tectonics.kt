@@ -17,6 +17,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositLoss
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositMultiplier
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.desiredLandPercent
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
@@ -614,6 +615,13 @@ object Tectonics {
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         val waterFlow = planet.planetTiles.values.associateWith { 1.0 }.toMutableMap()
+        val currentLandPercent =
+            planet.planetTiles.values.count { it.isAboveWater }.toDouble() / planet.planetTiles.size
+        val landPercentDepositScale =
+            (desiredLandPercent.coerceIn(0.0, 1.0) / currentLandPercent.coerceIn(0.01, 1.0))
+                .coerceIn(0.25, 4.0)
+        val effectiveDepositMultiplier = depositMultiplier * landPercentDepositScale
+
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
             val originalElevation = planetTile.elevation
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
@@ -647,7 +655,7 @@ object Tectonics {
                         )
                 )
             )
-            val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * depositMultiplier)
+            val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * effectiveDepositMultiplier)
 
             planetTile.elevation -= erosion
 
