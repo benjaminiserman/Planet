@@ -37,6 +37,8 @@ object TectonicGlobals {
     var plateMergeCutoff = 0.39
     var minPlateSize = 10
     var continentElevationCutoff = 10.0
+    var boundarySmoothingPasses = 2
+    var boundarySmoothingMinSamePlateNeighbors = 2
 
     var convergenceSearchRadius = 1.5 // multiple of average tile radius
     var divergenceSearchRadius = 1.5 // multiple of average tile radius

@@ -18,6 +18,8 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositMultiplier
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.desiredLandPercent
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.boundarySmoothingMinSamePlateNeighbors
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.boundarySmoothingPasses
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
@@ -414,6 +416,46 @@ object Tectonics {
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
+    private fun smoothPlateBoundaries(
+        newTileMap: Map<Tile, PlanetTile?>,
+        protectedTiles: Set<Tile>
+    ) {
+        val passCount = boundarySmoothingPasses.coerceIn(0, 3)
+        if (passCount == 0) return
+
+        repeat(passCount) {
+            val reassignments = mutableListOf<Pair<PlanetTile, TectonicPlate>>()
+            for ((tile, planetTile) in newTileMap) {
+                if (tile in protectedTiles) continue
+
+                val currentPlate = planetTile?.tectonicPlate ?: continue
+                val samePlateNeighbors =
+                    tile.tiles.count { neighbor -> newTileMap[neighbor]?.tectonicPlate == currentPlate }
+                if (samePlateNeighbors > boundarySmoothingMinSamePlateNeighbors) continue
+
+                var samePlateBorderLength = 0.0
+                val neighborBorderLengths = mutableMapOf<TectonicPlate, Double>()
+                for (border in tile.borders) {
+                    val neighborPlate = newTileMap[border.oppositeTile(tile)]?.tectonicPlate ?: continue
+                    if (neighborPlate == currentPlate) {
+                        samePlateBorderLength += border.length
+                    } else {
+                        neighborBorderLengths[neighborPlate] =
+                            (neighborBorderLengths[neighborPlate] ?: 0.0) + border.length
+                    }
+                }
+
+                val strongestNeighbor = neighborBorderLengths.maxByOrNull { it.value } ?: continue
+                if (strongestNeighbor.value > samePlateBorderLength) {
+                    reassignments.add(planetTile to strongestNeighbor.key)
+                }
+            }
+
+            if (reassignments.isEmpty()) return
+            reassignments.forEach { (tile, plate) -> tile.tectonicPlate = plate }
+        }
+    }
+
     fun movePlanetTiles(planet: Planet) {
         val nonFiniteMovements = planet.planetTiles.values.filter { !it.movement.isFinite() }
         if (nonFiniteMovements.isNotEmpty()) {
@@ -557,6 +599,8 @@ object Tectonics {
                 }
             }
         }
+
+        smoothPlateBoundaries(newTileMap, convergenceZones.keys + divergenceZones.keys)
 
         val newPlates = PlanetRegion(planet, activeTiles)
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
