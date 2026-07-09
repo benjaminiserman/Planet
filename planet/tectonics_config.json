@@ -18,7 +18,7 @@
   "convergingElevationStrengthScale": 1600.0,
   "depositionStartHeight": 1000,
   "depositLoss": 0.01,
-  "depositMultiplier": 1.25,
+  "depositMultiplier": 1.0,
   "depositStrength": 0.6,
   "desiredLandPercent": 0.33,
   "depositionContinentialityThreshold": -0.4,
@@ -33,7 +33,7 @@
   "divergencePatchUplift": -1000,
   "divergenceSearchRadius": 1.5,
   "edgeInteractionStrength": 0.08,
-  "elevationErosion": 1.0E-6,
+  "elevationErosion": 0.0,
   "estimatedAverageRadius": 0.020775855876950022,
   "hotspotEruptionAccretionThreshold": 200.0,
   "hotspotEruptionChance": 0.45,
@@ -61,7 +61,7 @@
   "prominenceErosion": 0.2,
   "ridgePushStrength": 0.003,
   "riftCutoff": 0.4,
-  "riftSeparationStrength": 0.05,
+  "riftSeparationStrength": 0.1,
   "searchMaxResults": 7,
   "slabPullStrength": 0.03,
   "springPlateContributionStrength": 0.007,
@@ -69,5 +69,5 @@
   "tectonicSimulationStop": 100000,
   "tectonicVolcanismThreshold": 0.6,
   "tileInertia": 0.25,
-  "waterErosion": 2.5
+  "waterErosion": 1.5
 }
