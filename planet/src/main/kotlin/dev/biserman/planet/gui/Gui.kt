@@ -23,8 +23,10 @@ import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.*
 import godot.core.Color
+import godot.core.PackedByteArray
 import godot.core.connect
 import godot.global.GD
+import java.awt.image.BufferedImage
 import java.io.File
 import java.util.Locale.getDefault
 import kotlin.math.min
@@ -47,6 +49,9 @@ class Gui() : Node() {
     val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
     val calculateClimateButton by lazy { findChild("CalculateClimateButton") as Button }
     val playButton by lazy { findChild("PlayButton") as Button }
+    val mapPreviewContainer by lazy { findChild("MapPreviewContainer") as PanelContainer }
+    val mapPreview by lazy { findChild("MapPreview") as TextureRect }
+    val recenterMapPreviewButton by lazy { findChild("RecenterMapPreviewButton") as Button }
 
     val simulationOptionButton by lazy { findChild("SimulationOptionButton") as OptionButton }
     val selectedSimulation get() = simulationOptions[simulationOptionButton.selected]
@@ -138,6 +143,56 @@ class Gui() : Node() {
         seedSelection.visible = false
     }
 
+    private var mapPreviewDateLine: Double? = null
+    private var mapPreviewTexture: ImageTexture? = null
+
+    fun resetMapPreviewCenter() {
+        mapPreviewDateLine = null
+    }
+
+    private fun BufferedImage.toGodotImage(): Image? {
+        val pixels = getRGB(0, 0, width, height, null, 0, width)
+        val rgba = ByteArray(pixels.size * 4)
+        pixels.forEachIndexed { index, argb ->
+            val outputIndex = index * 4
+            rgba[outputIndex] = (argb shr 16).toByte()
+            rgba[outputIndex + 1] = (argb shr 8).toByte()
+            rgba[outputIndex + 2] = argb.toByte()
+            rgba[outputIndex + 3] = (argb shr 24).toByte()
+        }
+        return Image.createFromData(
+            MAP_PREVIEW_WIDTH,
+            MAP_PREVIEW_HEIGHT,
+            false,
+            Image.Format.RGBA8,
+            PackedByteArray(rgba)
+        )
+    }
+
+    fun updateMapPreview() {
+        if (!mapPreviewContainer.visible || !Main.instance.hasPlanet) return
+
+        val planet = Main.instance.planet
+        val dateLine = mapPreviewDateLine ?: planet.internationalDateLine.also { mapPreviewDateLine = it }
+        val projectedMap = MapProjections.EQUIRECTANGULAR.projectTiles(
+            planet,
+            null,
+            MAP_PREVIEW_WIDTH,
+            MAP_PREVIEW_HEIGHT,
+            useKriging = false,
+            sampleRadius = planet.topology.averageRadius * 1.5,
+            dateLine = dateLine
+        ) { tile -> Main.instance.planetRenderer.getColor(tile) }
+        val image = projectedMap.toGodotImage() ?: return
+
+        val texture = mapPreviewTexture
+        if (texture == null) {
+            mapPreviewTexture = ImageTexture.createFromImage(image)?.also { mapPreview.texture = it }
+        } else {
+            texture.update(image)
+        }
+    }
+
     @RegisterFunction
     override fun _ready() {
         instance = this
@@ -151,8 +206,18 @@ class Gui() : Node() {
         brushTool.initialize()
         climateConfigTool.initialize()
 
-        showSettingsButton.addToggle("Show Stats", listOf("stats", "default")) { statsGraph.visible = it }
-        showSettingsButton.addToggle("Track Stats", listOf("stats", "default")) { statsGraph.trackStats = it }
+        showSettingsButton.addToggle("Show Stats", listOf("debug", "default")) { statsGraph.visible = it }
+        showSettingsButton.addToggle("Track Stats", listOf("debug", "default")) { statsGraph.trackStats = it }
+        showSettingsButton.addToggle("Show Map Preview", listOf("debug", "default")) {
+            mapPreviewContainer.visible = it
+            if (it) updateMapPreview()
+        }
+        recenterMapPreviewButton.pressed.connect {
+            if (Main.instance.hasPlanet) {
+                mapPreviewDateLine = Main.instance.planet.internationalDateLine
+                updateMapPreview()
+            }
+        }
 
         clearMapButton.pressed.connect { showSettingsButton.resetToggles() }
 
@@ -215,7 +280,7 @@ class Gui() : Node() {
         }
 
         projectButton.pressed.connect {
-            MapProjections.EQUIDISTANT.projectTiles(
+            MapProjections.EQUIRECTANGULAR.projectTiles(
                 Main.instance.planet,
                 "map.png",
                 450,
@@ -247,6 +312,8 @@ class Gui() : Node() {
     class MapLayerCheckButton(val button: ToggleButton, val categories: List<String>)
 
     companion object {
+        const val MAP_PREVIEW_WIDTH = 256
+        const val MAP_PREVIEW_HEIGHT = 128
         lateinit var instance: Gui private set
         val simulationOptions = mutableMapOf<Int, String>()
     }

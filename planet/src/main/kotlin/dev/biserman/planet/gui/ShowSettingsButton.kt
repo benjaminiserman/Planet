@@ -77,7 +77,6 @@ class ShowSettingsButton() : OptionButton() {
             "terrain",
             "biome",
             "climate",
-            "stats",
             "tectonics",
             "debug"
         ).forEachIndexed { index, category ->

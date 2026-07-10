@@ -151,7 +151,7 @@ class Planet(val seed: Int, val size: Int) {
     val internationalDateLine by memo({ terrainChangeCount }) {
         (0..359).minBy { longitude ->
             planetTiles.values
-                .filter { (it.tile.position.toGeoPoint().longitudeDegrees - longitude).absoluteValue <= 2.5 }
+                .filter { longitudeDistanceDegrees(it.tile.position.toGeoPoint().longitudeDegrees, longitude) <= 2.5 }
                 .count { it.isAboveWater }
         } * PI / 180.0
     }

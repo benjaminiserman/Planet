@@ -11,7 +11,6 @@ import dev.biserman.planet.geometry.weightedAverageInverse
 import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
-import godot.global.GD
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
@@ -27,22 +26,22 @@ import kotlin.math.sin
 class MapProjection(val forward: (GeoPoint) -> Vector2, val backward: (Vector2) -> GeoPoint)
 
 object MapProjections {
-    val EQUIDISTANT = MapProjection({ geoPoint -> geoPoint.toVector2() }, { vector2 -> GeoPoint(vector2) })
+    val EQUIRECTANGULAR = MapProjection({ geoPoint -> geoPoint.toVector2() }, { vector2 -> GeoPoint(vector2) })
+    val EQUIDISTANT = EQUIRECTANGULAR
 
     fun (MapProjection).projectPoints(
         planet: Planet,
-        imageName: String,
+        imageName: String?,
         imageX: Int,
         imageY: Int,
+        dateLine: Double = planet.internationalDateLine,
         colorFn: (Planet).(Vector3) -> Color
     ): BufferedImage {
         val image = BufferedImage(imageX, imageY, BufferedImage.TYPE_INT_ARGB)
 //        val edgeX = forward(planet.pointNemo.tile.position.toGeoPoint()).x
         val edgeX = forward(
-            GeoPoint(0.0, planet.internationalDateLine)
+            GeoPoint(0.0, dateLine)
         ).x
-
-        GD.print(edgeX)
 
         for (x in 0..<imageX) {
             for (y in 0..<imageY) {
@@ -64,25 +63,29 @@ object MapProjections {
             }
         }
 
-        ImageIO.write(image, "png", File(imageName))
+        if (imageName != null) {
+            ImageIO.write(image, "png", File(imageName))
+        }
         return image
     }
 
     fun (MapProjection).projectTiles(
         planet: Planet,
-        imageName: String,
+        imageName: String?,
         imageX: Int,
         imageY: Int,
         useKriging: Boolean = true,
         sampleRadius: Double = planet.topology.averageRadius,
         variogram: (Double) -> Double = Kriging.variogram(sampleRadius, 1.0, 0.0),
+        dateLine: Double = planet.internationalDateLine,
         colorFn: (PlanetTile) -> Color,
     ): BufferedImage =
         this.projectPoints(
             planet,
             imageName,
             imageX,
-            imageY
+            imageY,
+            dateLine
         ) { point ->
             val nearest = this.topology.rTree.nearest(point.toPoint(), sampleRadius, 10)
                 .map { it.value().position to colorFn(planet.getTile(it.value())) }
