@@ -54,7 +54,7 @@ class StatsGraph(val rootNode: CanvasItem) {
             if (value != null) {
                 graph.yLabel = value.yLabel
                 graph.integerYLabels = value.usesIntegerValues(planet!!)
-                graph.setPoints(statValues[value.name]!!)
+                graph.setPoints(statValues[value.name] ?: emptyList())
                 rescale(value)
                 updateCurrentValue(value, planet!!)
                 menuButton.setText(value.name + " ▽")

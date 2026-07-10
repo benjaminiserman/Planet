@@ -11,8 +11,22 @@ class GeometryTest {
     }
 
     @Test
-    fun `best date line centers land after avoiding the edge`() {
-        assertEquals(180, bestDateLineDegrees(listOf(0.0 to 1.0)))
-        assertEquals(170, bestDateLineDegrees(listOf(-10.0 to 1.0)))
+    fun `best date line chooses the center of the widest ocean corridor`() {
+        val coverage = intArrayOf(1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1)
+
+        assertEquals(
+            120.0,
+            bestOceanCorridorDateLineDegrees(coverage, listOf(-60.0 to 1.0))
+        )
+    }
+
+    @Test
+    fun `best date line centers land when ocean corridors are equally wide`() {
+        val coverage = intArrayOf(0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1)
+
+        assertEquals(
+            180.0,
+            bestOceanCorridorDateLineDegrees(coverage, listOf(0.0 to 1.0))
+        )
     }
 }
