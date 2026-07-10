@@ -20,6 +20,7 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevati
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcMaxContinentalFraction
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcWidth
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.overridingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductionDensityThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
@@ -40,6 +41,13 @@ data class ConvergenceInteraction(
         plateGroup.value.map { it.tile.density }.average(),
         plateGroup.value.count { it.tile.isContinentalCrust }.toDouble() / plateGroup.value.size
     )
+}
+
+data class ConvergenceElevationAdjustment(
+    val convergence: Double,
+    val oceanArc: Double
+) {
+    val total get() = convergence + oceanArc
 }
 
 @JsonIdentityInfo(
@@ -64,26 +72,39 @@ class ConvergenceZone(
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
-    fun unscaledElevationAdjustment(planetTile: PlanetTile): Double {
-        val subductionStrength = subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
+    @get:JsonIgnore
+    val subductionStrength
+        get() = subductingPlates.values.maxOfOrNull { interaction ->
+            interaction.density - overridingDensity - subductionDensityThreshold
+        } ?: -subductionDensityThreshold
+
+    @get:JsonIgnore
+    val isSubduction get() = subductionStrength > 0.0
+
+    fun unscaledElevationAdjustment(planetTile: PlanetTile) =
+        unscaledConvergenceAdjustment(planetTile) + oceanOceanArcAdjustment(planetTile)
+
+    private fun unscaledConvergenceAdjustment(planetTile: PlanetTile): Double {
+        val plateSubductionStrength =
+            subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
         val convergenceAdjustment = when (planetTile.tectonicPlate?.id) {
             overridingPlate.plate.id -> {
-                speed * if (subductionStrength >= 0) {
+                speed * if (isSubduction) {
                     overridingElevationStrengthScale * subductingMass
                 } else {
                     convergingElevationStrengthScale * subductingMass
                 }
             }
             in subductingPlates -> {
-                speed * if (subductionStrength >= 0) {
-                    subductingElevationStrengthScale * subductionStrength * (2 - subductingMass)
+                speed * if (plateSubductionStrength >= 0) {
+                    subductingElevationStrengthScale * plateSubductionStrength * (2 - subductingMass)
                 } else {
-                    convergingElevationStrengthScale * -subductionStrength * subductingMass
+                    convergingElevationStrengthScale * -plateSubductionStrength * subductingMass
                 }
             }
             else -> 0.0
         }
-        return convergenceAdjustment + oceanOceanArcAdjustment(planetTile)
+        return convergenceAdjustment
     }
 
     private fun oceanOceanArcAdjustment(planetTile: PlanetTile): Double {
@@ -113,17 +134,29 @@ class ConvergenceZone(
             get() = Main.instance.planet.topology.averageRadius *
                     max(1.25, oceanOceanArcDistance + oceanOceanArcWidth)
 
-        fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<ConvergenceZone, Point>) =
-            zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
-                .map { it.value() to it.value().unscaledElevationAdjustment(planetTile) }
-                .weightedAverage(planetTile.tile.position) { zone ->
-                    (1 - min(
-                        1.0,
-                        zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
-                    )).pow(
-                        planetTile.movement.length()
-                    )
-                }
+        fun adjustElevation(
+            planetTile: PlanetTile,
+            zoneRTree: RTree<ConvergenceZone, Point>
+        ): ConvergenceElevationAdjustment {
+            val nearbyZones =
+                zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
+                    .map { it.value() }
+
+            fun weightedAdjustment(adjustment: (ConvergenceZone) -> Double) =
+                nearbyZones.map { zone -> zone to adjustment(zone) }
+                    .weightedAverage(planetTile.tile.position) { zone ->
+                        (1 - min(
+                            1.0,
+                            zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
+                        )).pow(
+                            planetTile.movement.length()
+                        )
+                    }
+
+            val oceanArc = weightedAdjustment { zone -> zone.oceanOceanArcAdjustment(planetTile) }
+            val convergence = weightedAdjustment { zone -> zone.unscaledConvergenceAdjustment(planetTile) }
+            return ConvergenceElevationAdjustment(convergence, oceanArc)
+        }
 
         fun make(
             planet: Planet,
@@ -134,10 +167,11 @@ class ConvergenceZone(
             involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
         ): ConvergenceZone {
             val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
-            val averageDensity = involvedTiles.values.flatten().map { it.tile.density }.average()
+            val minAverageDensity = involvedTiles.values.minOf { plate -> plate.map { it.tile.density }.average() }
             val subductionStrengths =
                 involvedTiles.mapValues { tiles ->
-                    (tiles.value.map { it.tile.density }.average() - averageDensity).absoluteValue - 0.5
+                    (tiles.value.map { it.tile.density }.average() - minAverageDensity).absoluteValue -
+                        subductionDensityThreshold
                 }
 
             val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()

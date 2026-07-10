@@ -621,7 +621,9 @@ object Tectonics {
 
         activeTiles.forEach {
             it.elevation -= oceanicSubsidence(it.elevation)
-            it.elevation += ConvergenceZone.adjustElevation(it, subductionZonesRTree)
+            val convergenceAdjustment = ConvergenceZone.adjustElevation(it, subductionZonesRTree)
+            it.oceanArcUplift = convergenceAdjustment.oceanArc
+            it.elevation += convergenceAdjustment.total
             it.elevation = tryHotspotEruption(it)
             it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
         }

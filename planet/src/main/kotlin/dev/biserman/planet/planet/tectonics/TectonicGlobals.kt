@@ -57,6 +57,7 @@ object TectonicGlobals {
     var overridingElevationStrengthScale = 1400.0
     var subductingElevationStrengthScale = -1200.0
     var convergingElevationStrengthScale = 1600.0
+    var subductionDensityThreshold = 0.5
     var oceanOceanArcElevationStrength = 1800.0
     var oceanOceanArcDistance = 1.5
     var oceanOceanArcWidth = 0.75
