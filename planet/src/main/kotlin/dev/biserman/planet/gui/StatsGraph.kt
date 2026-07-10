@@ -35,7 +35,7 @@ class StatsGraph(val rootNode: CanvasItem) {
 
     val statValues get() = planet!!.planetStats.tectonicStatValues
 
-    var visible = false
+    var visible = true
         set(value) {
             rootNode.visible = value
             field = value

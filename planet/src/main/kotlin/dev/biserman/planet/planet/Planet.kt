@@ -149,11 +149,11 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val internationalDateLine by memo({ terrainChangeCount }) {
-        (0..359).minBy { longitude ->
+        bestDateLineDegrees(
             planetTiles.values
-                .filter { longitudeDistanceDegrees(it.tile.position.toGeoPoint().longitudeDegrees, longitude) <= 2.5 }
-                .count { it.isAboveWater }
-        } * PI / 180.0
+                .filter { it.isAboveWater }
+                .map { it.tile.position.toGeoPoint().longitudeDegrees to it.tile.area }
+        ) * PI / 180.0
     }
 
     val waterCoverage by memo({ terrainChangeCount }) {

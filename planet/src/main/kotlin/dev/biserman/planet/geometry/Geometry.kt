@@ -253,3 +253,20 @@ fun (Double).scaleAndCoerceUnit(expectedRange: ClosedRange<Double>) = this.scale
 
 fun longitudeDistanceDegrees(first: Double, second: Number): Double =
     ((first - second.toDouble() + 540.0) % 360.0 - 180.0).absoluteValue
+
+fun bestDateLineDegrees(
+    landMasses: Iterable<Pair<Double, Double>>,
+    edgeThresholdDegrees: Double = 2.5
+): Int {
+    val land = landMasses.toList()
+    return (0..359).minWith(
+        compareBy<Int> { dateLine ->
+            land.count { (longitude, _) -> longitudeDistanceDegrees(longitude, dateLine) <= edgeThresholdDegrees }
+        }.thenBy { dateLine ->
+            val mapCenter = dateLine + 180
+            land.sumOf { (longitude, area) ->
+                area * (longitudeDistanceDegrees(longitude, mapCenter) / 180.0).pow(2)
+            }
+        }
+    )
+}
