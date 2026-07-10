@@ -1,6 +1,7 @@
 package dev.biserman.planet.rendering
 
 import dev.biserman.planet.geometry.*
+import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
@@ -374,7 +375,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         SimpleColorMode(
             this, "date_line", categories = listOf("debug", "overlay"),
         ) { planetTile ->
-            if ((planetTile.tile.position.toGeoPoint().longitudeDegrees - (planet.internationalDateLine * 180 / PI)).absoluteValue <= 2.5) Color.white else Color.black
+            if (
+                longitudeDistanceDegrees(
+                    planetTile.tile.position.toGeoPoint().longitudeDegrees,
+                    planet.internationalDateLine * 180 / PI
+                ) <= 2.5
+            ) Color.white else Color.black
         },
         SimpleColorMode(this, "air_pressure", categories = listOf("climate", "base_layer")) { planetTile ->
             colorAirPressure(planetTile.airPressure)
@@ -464,5 +470,6 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this.colors.addAll(colors)
         }.toArrayMesh())
         meshInstance.setSurfaceOverrideMaterial(0, GD.load<StandardMaterial3D>("res://planet_mat.tres"))
+        Gui.instance.updateMapPreview()
     }
 }

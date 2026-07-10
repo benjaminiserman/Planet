@@ -250,3 +250,6 @@ fun (Double).scaleAndCoerceIn(expectedRange: ClosedRange<Double>, newRange: Clos
 
 fun (Double).scaleAndCoerce01(expectedRange: ClosedRange<Double>) = this.scaleAndCoerceIn(expectedRange, 0.0..1.0)
 fun (Double).scaleAndCoerceUnit(expectedRange: ClosedRange<Double>) = this.scaleAndCoerceIn(expectedRange, -1.0..1.0)
+
+fun longitudeDistanceDegrees(first: Double, second: Number): Double =
+    ((first - second.toDouble() + 540.0) % 360.0 - 180.0).absoluteValue

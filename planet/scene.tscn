@@ -446,6 +446,42 @@ offset_right = -7.0
 offset_bottom = 90.0
 grow_horizontal = 0
 
+[node name="MapPreviewContainer" type="PanelContainer" parent="GUI"]
+z_index = 5
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = -148.0
+offset_right = 334.0
+offset_bottom = -8.0
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="GUI/MapPreviewContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 6
+
+[node name="Content" type="HBoxContainer" parent="GUI/MapPreviewContainer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="MapPreview" type="TextureRect" parent="GUI/MapPreviewContainer/Margin/Content"]
+custom_minimum_size = Vector2(256, 128)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RecenterMapPreviewButton" type="Button" parent="GUI/MapPreviewContainer/Margin/Content"]
+custom_minimum_size = Vector2(52, 0)
+layout_mode = 2
+tooltip_text = "Recenter using the current continental layout"
+focus_mode = 0
+text = "Center"
+
 [node name="DebugGraph" type="Control" parent="GUI"]
 layout_mode = 1
 anchors_preset = 3

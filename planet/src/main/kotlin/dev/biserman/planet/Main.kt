@@ -103,6 +103,7 @@ class Main : Node() {
 	fun updatePlanet(newPlanet: Planet) {
 		GD.print("updating planet: $newPlanet")
 		planet = newPlanet
+		Gui.instance.resetMapPreviewCenter()
 		planetRenderer.update(newPlanet)
 		Gui.instance.statsGraph.planet = newPlanet
 		Gui.instance.brushTool.refreshOptions()
