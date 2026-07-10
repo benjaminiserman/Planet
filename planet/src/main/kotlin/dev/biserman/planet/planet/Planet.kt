@@ -149,11 +149,28 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val internationalDateLine by memo({ terrainChangeCount }) {
-        bestDateLineDegrees(
+        bestOceanCorridorDateLineDegrees(
+            projectedMeridianLandCoverage(),
             planetTiles.values
                 .filter { it.isAboveWater }
                 .map { it.tile.position.toGeoPoint().longitudeDegrees to it.tile.area }
         ) * PI / 180.0
+    }
+
+    private fun projectedMeridianLandCoverage(): IntArray {
+        val sampleRadius = topology.averageRadius * 1.5
+        return IntArray(DATE_LINE_SAMPLE_WIDTH) { column ->
+            val longitude = column.toDouble() * 360.0 / DATE_LINE_SAMPLE_WIDTH
+            (0..<DATE_LINE_SAMPLE_HEIGHT).count { row ->
+                val latitude = (0.5 - (row + 0.5) / DATE_LINE_SAMPLE_HEIGHT) * 180.0
+                val samplePoint = GeoPoint.fromDegrees(latitude, longitude).toVector3()
+                val nearestTile = topology.rTree
+                    .nearest(samplePoint.toPoint(), sampleRadius, 1)
+                    .firstOrNull()
+                    ?.value()
+                nearestTile != null && getTile(nearestTile).isAboveWater
+            }
+        }
     }
 
     val waterCoverage by memo({ terrainChangeCount }) {
@@ -163,6 +180,11 @@ class Planet(val seed: Int, val size: Int) {
     val rotationRate = 1.0
 
     fun getTile(tile: Tile) = planetTiles[tile.id]!!
+
+    companion object {
+        private const val DATE_LINE_SAMPLE_WIDTH = 720
+        private const val DATE_LINE_SAMPLE_HEIGHT = 360
+    }
 
     var planetStats = PlanetStats()
 

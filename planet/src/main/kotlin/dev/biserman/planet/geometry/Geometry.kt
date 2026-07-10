@@ -254,19 +254,34 @@ fun (Double).scaleAndCoerceUnit(expectedRange: ClosedRange<Double>) = this.scale
 fun longitudeDistanceDegrees(first: Double, second: Number): Double =
     ((first - second.toDouble() + 540.0) % 360.0 - 180.0).absoluteValue
 
-fun bestDateLineDegrees(
-    landMasses: Iterable<Pair<Double, Double>>,
-    edgeThresholdDegrees: Double = 2.5
-): Int {
+fun bestOceanCorridorDateLineDegrees(
+    meridianLandCoverage: IntArray,
+    landMasses: Iterable<Pair<Double, Double>>
+): Double {
+    require(meridianLandCoverage.isNotEmpty())
+
     val land = landMasses.toList()
-    return (0..359).minWith(
-        compareBy<Int> { dateLine ->
-            land.count { (longitude, _) -> longitudeDistanceDegrees(longitude, dateLine) <= edgeThresholdDegrees }
-        }.thenBy { dateLine ->
-            val mapCenter = dateLine + 180
-            land.sumOf { (longitude, area) ->
-                area * (longitudeDistanceDegrees(longitude, mapCenter) / 180.0).pow(2)
-            }
+    val columnCount = meridianLandCoverage.size
+    val oceanClearance = IntArray(columnCount) { column ->
+        if (meridianLandCoverage[column] > 0) {
+            0
+        } else {
+            (1..columnCount / 2).firstOrNull { distance ->
+                meridianLandCoverage[(column - distance + columnCount) % columnCount] > 0 ||
+                    meridianLandCoverage[(column + distance) % columnCount] > 0
+            } ?: columnCount / 2
         }
+    }
+
+    val bestColumn = (0..<columnCount).minWith(
+        compareBy<Int> { column -> meridianLandCoverage[column] }
+            .thenByDescending { column -> oceanClearance[column] }
+            .thenBy { column ->
+                val mapCenter = column.toDouble() * 360.0 / columnCount + 180.0
+                land.sumOf { (longitude, area) ->
+                    area * (longitudeDistanceDegrees(longitude, mapCenter) / 180.0).pow(2)
+                }
+            }
     )
+    return bestColumn.toDouble() * 360.0 / columnCount
 }
