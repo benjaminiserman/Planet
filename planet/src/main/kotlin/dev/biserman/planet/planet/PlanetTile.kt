@@ -88,6 +88,7 @@ class PlanetTile(
 
     var erosionDelta: Double = 0.0
     var springDisplacement: Vector3 = Vector3.ZERO
+    var oceanArcUplift: Double = 0.0
 
     var depositFlow: Double = 0.0
     var waterFlow: Double = 0.0
@@ -193,6 +194,7 @@ class PlanetTile(
         this.edgePush = other.edgePush
         this.formationTime = other.formationTime
         this.erosionDelta = other.erosionDelta
+        this.oceanArcUplift = other.oceanArcUplift
         this.depositFlow = other.depositFlow
         this.waterFlow = other.waterFlow
         this.accruedDeposit = other.accruedDeposit
@@ -373,7 +375,8 @@ class PlanetTile(
             spring displacement: ${springDisplacement.formatDigits()}
             edge resistance: ${edgeResistance.formatDigits()}
             divergence: ${planet.divergenceZones[tile.id]?.strength?.formatDigits() ?: 0.0}
-            subduction: ${(planet.convergenceZones[tile.id]?.subductionStrengths[tectonicPlate?.id] ?: 0.0).formatDigits()}
+            subduction: ${(planet.convergenceZones[tile.id]?.subductionStrength ?: 0.0).formatDigits()}
+            ocean arc uplift: ${oceanArcUplift.formatDigits()}m
             hotspot: ${hotspot.formatDigits()}
             deposit flow: ${depositFlow.formatDigits()}
             water flow: ${waterFlow.formatDigits()}
@@ -387,7 +390,7 @@ class PlanetTile(
             "\n" + """
             CONVERGENCE
             speed: ${convergenceZone.speed.formatDigits()}
-            strength: ${convergenceZone.subductionStrengths[tectonicPlate?.id ?: -1]?.formatDigits() ?: "not found"}
+            strength: ${convergenceZone.subductionStrength.formatDigits()}
             subducting plates: ${convergenceZone.subductingPlates.size}
             subducting mass: ${convergenceZone.subductingMass.formatDigits()}
         """.trimIndent()

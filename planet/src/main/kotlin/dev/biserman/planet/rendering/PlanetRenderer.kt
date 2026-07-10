@@ -4,6 +4,7 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevationStrength
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleDoubleColorMode
@@ -283,11 +284,25 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             this, "convergence_zones", categories = listOf("tectonics", "overlay"),
         ) {
             val convergenceZone = planet.convergenceZones[it.tile.id] ?: return@SimpleColorMode null
-            val subductionStrength =
-                convergenceZone.subductionStrengths[it.tectonicPlate?.id ?: return@SimpleColorMode null]
-                    ?: return@SimpleColorMode null
+            val subductionStrength = convergenceZone.subductionStrength
             val strengthFactor = (convergenceZone.speed * subductionStrength.absoluteValue).pow(0.5)
-            (if (subductionStrength > 0) Color.blue * 3.0 else Color.green * 2.0) * strengthFactor
+            (if (convergenceZone.isSubduction) Color.blue * 3.0 else Color.green * 2.0) * strengthFactor
+        },
+        SimpleColorMode(
+            this, "ocean_arcs", categories = listOf("tectonics", "overlay"),
+        ) {
+            val sourceZone = planet.convergenceZones[it.tile.id]
+            if ((sourceZone?.oceanOceanArcStrength ?: 0.0) > 0.0) {
+                return@SimpleColorMode Color.yellow
+            }
+
+            val adjustment = it.oceanArcUplift
+            if (adjustment <= 0.0) return@SimpleColorMode null
+
+            val intensity = (adjustment / oceanOceanArcElevationStrength)
+                .coerceIn(0.0, 1.0)
+                .pow(0.5)
+            Color(1.0, 0.0, 1.0, 1.0) * max(0.2, intensity)
         },
         SimpleColorMode(
             this, "divergence_zones", categories = listOf("tectonics", "overlay"),

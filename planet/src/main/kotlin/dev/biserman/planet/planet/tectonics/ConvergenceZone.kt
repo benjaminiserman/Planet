@@ -15,7 +15,12 @@ import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.PointForce
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.convergingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcDistance
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevationStrength
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcMaxContinentalFraction
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcWidth
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.overridingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductionDensityThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductingElevationStrengthScale
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
@@ -38,6 +43,13 @@ data class ConvergenceInteraction(
     )
 }
 
+data class ConvergenceElevationAdjustment(
+    val convergence: Double,
+    val oceanArc: Double
+) {
+    val total get() = convergence + oceanArc
+}
+
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
     scope = ConvergenceZone::class,
@@ -53,45 +65,98 @@ class ConvergenceZone(
     val subductionStrengths: Map<Int, Double>,
     val slabPull: Map<Int, List<PointForce>>,
     val convergencePush: Map<Int, List<PointForce>>,
-    val subductingMass: Double
+    val subductingMass: Double,
+    val oceanOceanArcDirection: Vector3 = Vector3.ZERO,
+    val oceanOceanArcStrength: Double = 0.0
 ) {
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
-    fun unscaledElevationAdjustment(planetTile: PlanetTile): Double {
-        val subductionStrength = subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
-        return when (planetTile.tectonicPlate?.id) {
+    @get:JsonIgnore
+    val subductionStrength
+        get() = subductingPlates.values.maxOfOrNull { interaction ->
+            interaction.density - overridingDensity - subductionDensityThreshold
+        } ?: -subductionDensityThreshold
+
+    @get:JsonIgnore
+    val isSubduction get() = subductionStrength > 0.0
+
+    fun unscaledElevationAdjustment(planetTile: PlanetTile) =
+        unscaledConvergenceAdjustment(planetTile) + oceanOceanArcAdjustment(planetTile)
+
+    private fun unscaledConvergenceAdjustment(planetTile: PlanetTile): Double {
+        val plateSubductionStrength =
+            subductionStrengths[planetTile.tectonicPlate?.id ?: return 0.0] ?: 0.0
+        val convergenceAdjustment = when (planetTile.tectonicPlate?.id) {
             overridingPlate.plate.id -> {
-                speed * if (subductionStrength >= 0) {
+                speed * if (isSubduction) {
                     overridingElevationStrengthScale * subductingMass
                 } else {
                     convergingElevationStrengthScale * subductingMass
                 }
             }
             in subductingPlates -> {
-                speed * if (subductionStrength >= 0) {
-                    subductingElevationStrengthScale * subductionStrength * (2 - subductingMass)
+                speed * if (plateSubductionStrength >= 0) {
+                    subductingElevationStrengthScale * plateSubductionStrength * (2 - subductingMass)
                 } else {
-                    convergingElevationStrengthScale * -subductionStrength * subductingMass
+                    convergingElevationStrengthScale * -plateSubductionStrength * subductingMass
                 }
             }
             else -> 0.0
         }
+        return convergenceAdjustment
+    }
+
+    private fun oceanOceanArcAdjustment(planetTile: PlanetTile): Double {
+        if (oceanOceanArcStrength <= 0.0 || planetTile.tectonicPlate?.id != overridingPlate.plate.id) {
+            return 0.0
+        }
+
+        val arcDirection = oceanOceanArcDirection
+        if (arcDirection.lengthSquared() == 0.0) return 0.0
+
+        val offset = (planetTile.tile.position - tile.position).tangent(tile.position)
+        val alongArcDirection = offset.dot(arcDirection)
+        if (alongArcDirection <= 0.0) return 0.0
+
+        val targetDistance = planet.topology.averageRadius * oceanOceanArcDistance
+        val arcWidth = planet.topology.averageRadius * oceanOceanArcWidth
+        if (arcWidth <= 0.0) return 0.0
+
+        val alongFalloff = 1.0 - ((alongArcDirection - targetDistance).absoluteValue / arcWidth).coerceIn(0.0, 1.0)
+        val crossDistance = (offset - arcDirection * alongArcDirection).length()
+        val crossFalloff = 1.0 - (crossDistance / (arcWidth * 1.5)).coerceIn(0.0, 1.0)
+        return oceanOceanArcStrength * alongFalloff * crossFalloff
     }
 
     companion object {
-        val subductionZoneSearchRadius = Main.instance.planet.topology.averageRadius * 1.25
-        fun adjustElevation(planetTile: PlanetTile, zoneRTree: RTree<ConvergenceZone, Point>) =
-            zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
-                .map { it.value() to it.value().unscaledElevationAdjustment(planetTile) }
-                .weightedAverage(planetTile.tile.position) { zone ->
-                    (1 - min(
-                        1.0,
-                        zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
-                    )).pow(
-                        planetTile.movement.length()
-                    )
-                }
+        val subductionZoneSearchRadius
+            get() = Main.instance.planet.topology.averageRadius *
+                    max(1.25, oceanOceanArcDistance + oceanOceanArcWidth)
+
+        fun adjustElevation(
+            planetTile: PlanetTile,
+            zoneRTree: RTree<ConvergenceZone, Point>
+        ): ConvergenceElevationAdjustment {
+            val nearbyZones =
+                zoneRTree.nearest(planetTile.tile.position.toPoint(), subductionZoneSearchRadius, 25)
+                    .map { it.value() }
+
+            fun weightedAdjustment(adjustment: (ConvergenceZone) -> Double) =
+                nearbyZones.map { zone -> zone to adjustment(zone) }
+                    .weightedAverage(planetTile.tile.position) { zone ->
+                        (1 - min(
+                            1.0,
+                            zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
+                        )).pow(
+                            planetTile.movement.length()
+                        )
+                    }
+
+            val oceanArc = weightedAdjustment { zone -> zone.oceanOceanArcAdjustment(planetTile) }
+            val convergence = weightedAdjustment { zone -> zone.unscaledConvergenceAdjustment(planetTile) }
+            return ConvergenceElevationAdjustment(convergence, oceanArc)
+        }
 
         fun make(
             planet: Planet,
@@ -102,15 +167,38 @@ class ConvergenceZone(
             involvedTiles: Map<TectonicPlate, List<Tectonics.MovedTile>>
         ): ConvergenceZone {
             val overridingDensity = involvedTiles[overridingPlate.plate]!!.map { it.tile.density }.average()
-            val averageDensity = involvedTiles.values.flatten().map { it.tile.density }.average()
+            val minAverageDensity = involvedTiles.values.minOf { plate -> plate.map { it.tile.density }.average() }
             val subductionStrengths =
                 involvedTiles.mapValues { tiles ->
-                    (tiles.value.map { it.tile.density }.average() - averageDensity).absoluteValue - 0.5
+                    (tiles.value.map { it.tile.density }.average() - minAverageDensity).absoluteValue -
+                        subductionDensityThreshold
                 }
 
             val subductingMass = involvedTiles.filter { it.key != overridingPlate.plate }.values.flatten()
                 .map { 2 - it.tile.density.scaleAndCoerceIn(-1.0..1.0, 0.75..1.25) }
                 .average()
+            val oceanOceanSubductingPlate = subductingPlates.values
+                .filter { it.continentalFraction <= oceanOceanArcMaxContinentalFraction }
+                .maxByOrNull { it.density }
+            val oceanOceanArcDirection =
+                if (
+                    overridingPlate.continentalFraction <= oceanOceanArcMaxContinentalFraction &&
+                    oceanOceanSubductingPlate != null
+                ) {
+                    val nearestSubductingTile = involvedTiles[oceanOceanSubductingPlate.plate]!!
+                        .minBy { it.newPosition.distanceTo(tile.position) }
+                    val arcDirection = (tile.position - nearestSubductingTile.tile.tile.position)
+                        .tangent(tile.position)
+                    if (arcDirection.lengthSquared() == 0.0) Vector3.ZERO else arcDirection.normalized()
+                } else {
+                    Vector3.ZERO
+                }
+            val oceanOceanArcStrength =
+                if (oceanOceanArcDirection.lengthSquared() > 0.0) {
+                    speed.absoluteValue * oceanOceanArcElevationStrength * subductingMass
+                } else {
+                    0.0
+                }
 
             val slabPull = involvedTiles
                 .filterKeys { subductionStrengths[it]!! > 0 }
@@ -176,7 +264,9 @@ class ConvergenceZone(
                 subductionStrengths.mapKeys { it.key.id },
                 slabPull.mapKeys { it.key.id },
                 convergencePush.mapKeys { it.key.id },
-                subductingMass
+                subductingMass,
+                oceanOceanArcDirection,
+                oceanOceanArcStrength
             )
         }
     }

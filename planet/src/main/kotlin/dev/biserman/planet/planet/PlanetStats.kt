@@ -47,8 +47,8 @@ class PlanetStats {
             planet.landRegions.count { it.tiles.size > 150 }
         },
         Stat("average tectonic plate torque") { planet -> planet.tectonicPlates.map { it.torque.length() }.average() },
-        Stat("subduction zone count") { planet -> planet.convergenceZones.count { it.value.subductionStrengths.values.average() > 0 } },
-        Stat("convergent zone count") { planet -> planet.convergenceZones.count { it.value.subductionStrengths.values.average() < 0 } },
+        Stat("subduction zone count") { planet -> planet.convergenceZones.count { it.value.isSubduction } },
+        Stat("convergent zone count") { planet -> planet.convergenceZones.count { !it.value.isSubduction } },
         Stat("divergent zone count") { planet -> planet.divergenceZones.size },
         Stat("average slope") { planet -> planet.planetTiles.values.map { it.slope }.average() },
         Stat("max elevation") { planet -> planet.planetTiles.values.maxOf { it.elevation } },
