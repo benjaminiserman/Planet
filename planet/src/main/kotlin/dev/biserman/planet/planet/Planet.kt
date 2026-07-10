@@ -145,7 +145,7 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     val pointNemo by memo({ terrainChangeCount }) {
-        planetTiles.values.minBy{ it.continentiality }
+        planetTiles.values.minBy { it.continentiality }
     }
 
     val internationalDateLine by memo({ terrainChangeCount }) {

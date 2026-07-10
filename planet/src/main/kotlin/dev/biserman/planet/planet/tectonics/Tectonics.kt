@@ -17,6 +17,9 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositLoss
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositMultiplier
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.desiredLandPercent
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.boundarySmoothingMinSamePlateNeighbors
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.boundarySmoothingPasses
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
@@ -32,7 +35,6 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPercentContinenta
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPlateSize
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateOverrideElevationAdvantage
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
@@ -414,6 +416,46 @@ object Tectonics {
     fun springAndDamp(tiles: Map<PlanetTile, Vector3>, steps: Int) =
         (1..steps).fold(tiles) { acc, _ -> springAndDamp(acc) }
 
+    private fun smoothPlateBoundaries(
+        newTileMap: Map<Tile, PlanetTile?>,
+        protectedTiles: Set<Tile>
+    ) {
+        val passCount = boundarySmoothingPasses.coerceIn(0, 3)
+        if (passCount == 0) return
+
+        repeat(passCount) {
+            val reassignments = mutableListOf<Pair<PlanetTile, TectonicPlate>>()
+            for ((tile, planetTile) in newTileMap) {
+                if (tile in protectedTiles) continue
+
+                val currentPlate = planetTile?.tectonicPlate ?: continue
+                val samePlateNeighbors =
+                    tile.tiles.count { neighbor -> newTileMap[neighbor]?.tectonicPlate == currentPlate }
+                if (samePlateNeighbors > boundarySmoothingMinSamePlateNeighbors) continue
+
+                var samePlateBorderLength = 0.0
+                val neighborBorderLengths = mutableMapOf<TectonicPlate, Double>()
+                for (border in tile.borders) {
+                    val neighborPlate = newTileMap[border.oppositeTile(tile)]?.tectonicPlate ?: continue
+                    if (neighborPlate == currentPlate) {
+                        samePlateBorderLength += border.length
+                    } else {
+                        neighborBorderLengths[neighborPlate] =
+                            (neighborBorderLengths[neighborPlate] ?: 0.0) + border.length
+                    }
+                }
+
+                val strongestNeighbor = neighborBorderLengths.maxByOrNull { it.value } ?: continue
+                if (strongestNeighbor.value > samePlateBorderLength) {
+                    reassignments.add(planetTile to strongestNeighbor.key)
+                }
+            }
+
+            if (reassignments.isEmpty()) return
+            reassignments.forEach { (tile, plate) -> tile.tectonicPlate = plate }
+        }
+    }
+
     fun movePlanetTiles(planet: Planet) {
         val nonFiniteMovements = planet.planetTiles.values.filter { !it.movement.isFinite() }
         if (nonFiniteMovements.isNotEmpty()) {
@@ -461,18 +503,7 @@ object Tectonics {
             }
             if (overlappingTiles.isNotEmpty()) {
                 val groups = overlappingTiles.groupBy { it.tile.tectonicPlate!! }
-                val highestPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
-                val incumbentPlate = planet.getTile(tile).tectonicPlate
-                val incumbentGroup = groups.entries.firstOrNull { it.key == incumbentPlate }
-                val overridingPlate = if (
-                    incumbentGroup != null &&
-                    highestPlate.value.maxOf { it.tile.elevation } <
-                    incumbentGroup.value.maxOf { it.tile.elevation } + plateOverrideElevationAdvantage
-                ) {
-                    incumbentGroup
-                } else {
-                    highestPlate
-                }
+                val overridingPlate = groups.maxBy { (_, plateTiles) -> plateTiles.maxOf { it.tile.elevation } }
                 val nearestMovedTile = overridingPlate.value.first()
                 val nearestMovedTilesForPlate =
                     nearestMovedTiles.filter { it.tile.tectonicPlate == overridingPlate.key }
@@ -569,6 +600,8 @@ object Tectonics {
             }
         }
 
+        smoothPlateBoundaries(newTileMap, convergenceZones.keys + divergenceZones.keys)
+
         val newPlates = PlanetRegion(planet, activeTiles)
             .floodFillGroupBy(planetTileFn = { newTileMap[it]!! }) { it.tectonicPlate == null }[true] ?: listOf()
 
@@ -588,7 +621,9 @@ object Tectonics {
 
         activeTiles.forEach {
             it.elevation -= oceanicSubsidence(it.elevation)
-            it.elevation += ConvergenceZone.adjustElevation(it, subductionZonesRTree)
+            val convergenceAdjustment = ConvergenceZone.adjustElevation(it, subductionZonesRTree)
+            it.oceanArcUplift = convergenceAdjustment.oceanArc
+            it.elevation += convergenceAdjustment.total
             it.elevation = tryHotspotEruption(it)
             it.elevation = it.elevation.coerceIn(minElevation..maxElevation)
         }
@@ -622,13 +657,21 @@ object Tectonics {
         }
     }
 
+
     fun performErosion(planet: Planet) {
         val deposits = planet.planetTiles.values.associateWith { 0.0 }.toMutableMap()
         val waterFlow = planet.planetTiles.values.associateWith { 1.0 }.toMutableMap()
+        val currentLandPercent =
+            planet.planetTiles.values.count { it.isAboveWater }.toDouble() / planet.planetTiles.size
+        val landPercentDepositScale =
+            (desiredLandPercent.coerceIn(0.0, 1.0) / currentLandPercent.coerceIn(0.01, 1.0))
+                .coerceIn(0.25, 4.0)
+        val effectiveDepositMultiplier = depositMultiplier * landPercentDepositScale
+
         for (planetTile in planet.planetTiles.values.sortedByDescending { it.elevation }) {
             val originalElevation = planetTile.elevation
-            val surroundingAverage = planetTile.neighbors.map { it.elevation }.average()
             val prominenceScale = planetTile.prominence.scaleAndCoerceIn(0.0..1000.0, 0.0..1.0)
+            val surroundingAverageElevation = planetTile.neighbors.map { it.elevation }.average()
             val deposit = deposits[planetTile]!!
             val water = waterFlow[planetTile]!!
             val depositTaken =
@@ -639,7 +682,7 @@ object Tectonics {
                 .coerceIn(
                     0.0..max(
                         0.0,
-                        (planetTile.neighbors.maxOf { it.elevation } - planetTile.elevation)
+                        (surroundingAverageElevation - planetTile.elevation)
                     )
                 )
 
@@ -655,10 +698,10 @@ object Tectonics {
                         planetTile.prominence.pow(0.5) * prominenceErosion +
                                 planetTile.elevation.pow(2) * elevationErosion +
                                 water * waterErosion
-                    )
+                        )
                 )
             )
-            val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * depositMultiplier)
+            val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * effectiveDepositMultiplier)
 
             planetTile.elevation -= erosion
 
@@ -680,7 +723,7 @@ object Tectonics {
                 planetTile.elevation += max(
                     0.0, min(
                         totalDepositAvailable,
-                        surroundingAverage - planetTile.elevation
+                        surroundingAverageElevation - planetTile.elevation
                     )
                 )
             }

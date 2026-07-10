@@ -109,7 +109,7 @@ object Geology {
 
             // tectonic volcanism
             if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrengths[tile.tectonicPlate?.id] ?: 0.0) > tectonicVolcanismThreshold
+                    ?.subductionStrength ?: 0.0) > tectonicVolcanismThreshold
             ) {
                 tile.stoneColumn.accreteLayer(tile, StonePlacementType.SubductionVolcanic)
             }

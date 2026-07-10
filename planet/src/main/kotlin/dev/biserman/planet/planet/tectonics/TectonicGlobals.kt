@@ -15,7 +15,7 @@ import kotlin.math.sqrt
 object TectonicGlobals {
     var slabPullStrength = 0.03
     var convergencePushStrength = 0.5
-    var collisionStiffness = 1.0
+    var collisionStiffness = 0.5
     var continentalCollisionStiffnessMultiplier = 3.0
     var collisionDamping = 0.5
     var collisionRestitution = 0.1
@@ -30,13 +30,15 @@ object TectonicGlobals {
     var tectonicSimulationStop = 100000
 
     var plateTorqueScalar = 0.1
-    var riftCutoff = 0.5
-    var riftSeparationStrength = 0.005
+    var riftCutoff = 0.4
+    var riftSeparationStrength = 0.1
     var minElevation = -12000.0
     var maxElevation = 12000.0
     var plateMergeCutoff = 0.39
     var minPlateSize = 10
     var continentElevationCutoff = -250.0
+    var boundarySmoothingPasses = 1
+    var boundarySmoothingMinSamePlateNeighbors = 2
 
     var convergenceSearchRadius = 1.5 // multiple of average tile radius
     var divergenceSearchRadius = 1.5 // multiple of average tile radius
@@ -52,9 +54,14 @@ object TectonicGlobals {
     var continentSpringDamping = 0.1
     var continentSpringSearchRadius = 2.0 // multiple of average tile radius
 
-    var overridingElevationStrengthScale = 1400.0
+    var overridingElevationStrengthScale = 1600.0
     var subductingElevationStrengthScale = -1200.0
-    var convergingElevationStrengthScale = 1600.0
+    var convergingElevationStrengthScale = 1800.0
+    var subductionDensityThreshold = 0.5
+    var oceanOceanArcElevationStrength = 30000.0
+    var oceanOceanArcDistance = 1.5
+    var oceanOceanArcWidth = 0.75
+    var oceanOceanArcMaxContinentalFraction = 0.2
 
     var divergenceCutoff = 0.25
     var divergedCrustHeight = -2000.0
@@ -62,12 +69,13 @@ object TectonicGlobals {
 
     var depositStrength = 0.6
     var depositLoss = 0.01
-    var depositMultiplier = 1.75
-    var prominenceErosion = 0.2
+    var depositMultiplier = 1.4
+    var desiredLandPercent = 0.3
+    var prominenceErosion = 0.15
     var elevationErosion = 1e-06
-    var waterErosion = 3.5
+    var waterErosion = 2.0
     var depositionStartHeight = 1000
-    var maxErosionProportion = 0.05
+    var maxErosionProportion = 1.0
 
     var accruedDepositThreshold = 800.0
     var accruedErosionThreshold = -400.0
