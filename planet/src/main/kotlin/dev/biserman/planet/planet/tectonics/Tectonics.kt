@@ -23,15 +23,14 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.boundarySmoothingPas
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.guardrailStrictness
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.mantleConvectionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxElevation
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxErosionProportion
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxPercentContinentalGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minAverageContinentalHeightGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minElevation
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPercentContinentalGuardrail
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minPlateSize
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
@@ -698,7 +697,7 @@ object Tectonics {
                         planetTile.prominence.pow(0.5) * prominenceErosion +
                                 planetTile.elevation.pow(2) * elevationErosion +
                                 water * waterErosion
-                        )
+                    )
                 )
             )
             val totalDepositAvailable = max(0.0, (erosion + deposit - depositTaken) * effectiveDepositMultiplier)
@@ -786,12 +785,16 @@ object Tectonics {
         val percentContinental =
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
 
-        if (averageContinentalHeight <= minAverageContinentalHeightGuardrail && percentContinental <= minPercentContinentalGuardrail) {
+        if (averageContinentalHeight <= minAverageContinentalHeightGuardrail &&
+            percentContinental <= max(0.03, desiredLandPercent - guardrailStrictness)
+        ) {
             GD.print("raising elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation += 100 }
         }
 
-        if (averageContinentalHeight >= maxAverageContinentalHeightGuardrail && percentContinental >= maxPercentContinentalGuardrail) {
+        if (averageContinentalHeight >= maxAverageContinentalHeightGuardrail &&
+            percentContinental >= min(0.97, desiredLandPercent + guardrailStrictness)
+        ) {
             GD.print("lowering elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation -= 100 }
         }

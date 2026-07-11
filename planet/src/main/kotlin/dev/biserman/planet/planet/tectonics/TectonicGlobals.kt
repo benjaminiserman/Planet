@@ -86,9 +86,8 @@ object TectonicGlobals {
     var depositionContinentialityThreshold = -0.4
 
     var minAverageContinentalHeightGuardrail = 750.0
-    var maxAverageContinentalHeightGuardrail = 1250.0
-    var minPercentContinentalGuardrail = 0.15
-    var maxPercentContinentalGuardrail = 0.55
+    var maxAverageContinentalHeightGuardrail = 1000.0
+    var guardrailStrictness = 0.15
 
     var meteorImpactChance = 0.2
     var minMeteorElevationChange = 200.0
