@@ -96,6 +96,11 @@ class Planet(val seed: Int, val size: Int) {
     }
 
     @get:JsonIgnore
+    val riverUpstreamSegmentCounts by memo({ terrainChangeCount }) {
+        upstreamSegmentCounts(riverBasinMap.values.flatten().toSet())
+    }
+
+    @get:JsonIgnore
     val continentialityMap by memo({ terrainChangeCount }) {
         val tilesToFlip = contiguousRegions
             .filter { region -> region.tiles.maxOf { it.edgeDepth } < 1 }
@@ -237,4 +242,24 @@ class Planet(val seed: Int, val size: Int) {
         sub.reorderVerts()
         return sub.toTopology()
     }
+}
+
+fun <T> upstreamSegmentCounts(segments: Collection<Pair<T, T>>): Map<Pair<T, T>, Int> {
+    val upstreamByPoint = segments.groupBy { it.second }
+    val counts = mutableMapOf<Pair<T, T>, Int>()
+
+    fun countUpstream(segment: Pair<T, T>, active: MutableSet<Pair<T, T>>): Int {
+        counts[segment]?.let { return it }
+        if (!active.add(segment)) return 0
+
+        val count = upstreamByPoint[segment.first].orEmpty()
+            .filter { it != segment }
+            .sumOf { upstream -> 1 + countUpstream(upstream, active) }
+        active.remove(segment)
+        counts[segment] = count
+        return count
+    }
+
+    segments.forEach { countUpstream(it, mutableSetOf()) }
+    return counts
 }
