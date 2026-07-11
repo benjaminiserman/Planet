@@ -38,6 +38,8 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.measureTime
 
+private const val MAJOR_RIVER_MIN_UPSTREAM_SEGMENTS = 25
+
 class PlanetRenderer(parent: Node, var planet: Planet) {
     fun colorTemperature(temperature: Double): Color = when {
         temperature >= 30 -> Color.html("D31FB4")
@@ -150,6 +152,29 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             listOf(
                 MeshData(
                     MutMesh(verts, edges).toWireframe(), StandardMaterial3D().apply { this.albedoColor = Color.blue })
+            )
+        },
+        SimpleDebugRenderer(parent, "major_rivers", categories = listOf("terrain", "feature")) { planet ->
+            val riverSegments = planet.riverUpstreamSegmentCounts
+                .filterValues { it >= MAJOR_RIVER_MIN_UPSTREAM_SEGMENTS }
+                .keys
+
+            val verts = mutableListOf<MutVertex>()
+            val edges = mutableListOf<MutEdge>()
+
+            val lift = 1.002
+            for (segment in riverSegments) {
+                val length = verts.size
+                verts.add(MutVertex(segment.first.position * lift))
+                verts.add(MutVertex(segment.second.position * lift))
+                edges.add(MutEdge(mutableListOf(length, length + 1)))
+            }
+
+            listOf(
+                MeshData(
+                    MutMesh(verts, edges).toWireframe(),
+                    StandardMaterial3D().apply { albedoColor = Color.cyan }
+                )
             )
         },
         SimpleDebugRenderer(parent, "river_basins", categories = listOf("terrain", "feature")) { planet ->
