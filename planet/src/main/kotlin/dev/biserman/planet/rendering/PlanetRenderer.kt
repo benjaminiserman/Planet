@@ -38,7 +38,7 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.measureTime
 
-private const val MAJOR_RIVER_MIN_UPSTREAM_SEGMENTS = 25
+private const val MAJOR_RIVER_MIN_UPSTREAM_SEGMENTS = 20
 
 class PlanetRenderer(parent: Node, var planet: Planet) {
     fun colorTemperature(temperature: Double): Color = when {
