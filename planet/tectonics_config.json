@@ -73,7 +73,7 @@
   "subductionDensityThreshold": 0.5,
   "subductingElevationStrengthScale": -1200.0,
   "tectonicSimulationStop": 100000,
-  "tectonicVolcanismThreshold": 0.6,
+  "tectonicVolcanismThreshold": 0.9,
   "tileInertia": 0.25,
   "waterErosion": 2.0
 }
