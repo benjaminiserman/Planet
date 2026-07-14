@@ -474,7 +474,6 @@ object ClimateSimulation {
 
     val (PlanetTile).averageTemperature: Double
         get() {
-            val geoPoint = tile.position.toGeoPoint()
             val greenhouseOffset = ClimateRuntimeConfig.greenhouseTemperatureOffset
             val insolationTemperatureSign = ClimateRuntimeConfig.insolationTemperatureSign
             val landInsolationScale =
