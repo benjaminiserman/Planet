@@ -7,6 +7,17 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
+import kotlin.math.max
+
+private enum class ClimateTunerObjective(val cliName: String) {
+    GLOBAL("global"),
+    MEDITERRANEAN_F1("mediterranean-f1");
+
+    companion object {
+        fun parse(value: String?) = entries.firstOrNull { it.cliName == (value ?: GLOBAL.cliName) }
+            ?: error("Unknown objective '$value'; expected ${entries.joinToString { it.cliName }}")
+    }
+}
 
 private data class ClimateTunerOptions(
     val planetFile: File,
@@ -18,6 +29,8 @@ private data class ClimateTunerOptions(
     val maxEvaluations: Int,
     val selectedParameters: Set<String>?,
     val interactionPairs: List<Pair<String, String>>,
+    val objective: ClimateTunerObjective,
+    val maxMeanConditionDistanceRegression: Double,
     val apply: Boolean,
     val resume: Boolean,
 )
@@ -49,6 +62,8 @@ private data class ClimateTunerReport(
     val maxEvaluations: Int,
     val selectedParameters: List<String>,
     val interactionPairs: List<String>,
+    val objective: String,
+    val maxMeanConditionDistanceRegression: Double,
     val initialLoss: Double?,
     val bestLoss: Double?,
     val improved: Boolean?,
@@ -74,6 +89,9 @@ fun runClimateTuner(args: Array<String>) {
 
     val options = parseClimateTunerOptions(args)
     require(options.maxEvaluations > 0) { "--max-evaluations must be positive" }
+    require(options.maxMeanConditionDistanceRegression >= 0.0) {
+        "--max-mean-distance-regression must be non-negative"
+    }
     listOf(
         options.planetFile,
         options.referenceFile,
@@ -114,6 +132,7 @@ fun runClimateTuner(args: Array<String>) {
     var bestLoss = Double.POSITIVE_INFINITY
     var bestConfig = baseConfig.deepCopy()
     var baselineScore: HersfeldtReference.Score? = null
+    var objectiveBaselineMeanConditionDistance: Double? = null
     var bestScore: HersfeldtReference.Score? = null
     var bestPlanet: Planet? = null
     var artifacts = ClimateTunerArtifacts()
@@ -136,6 +155,8 @@ fun runClimateTuner(args: Array<String>) {
                 maxEvaluations = options.maxEvaluations,
                 selectedParameters = parameters.map { it.name },
                 interactionPairs = options.interactionPairs.map { "${it.first}+${it.second}" },
+                objective = options.objective.cliName,
+                maxMeanConditionDistanceRegression = options.maxMeanConditionDistanceRegression,
                 initialLoss = initialLoss,
                 bestLoss = bestLoss.takeIf { it.isFinite() },
                 improved = initialLoss?.let { bestLoss < it - IMPROVEMENT_EPSILON },
@@ -154,6 +175,10 @@ fun runClimateTuner(args: Array<String>) {
     if (options.interactionPairs.isNotEmpty()) {
         println("  interactions: ${options.interactionPairs.joinToString { "${it.first}+${it.second}" }}")
     }
+    println("  objective: ${options.objective.cliName}")
+    if (options.objective == ClimateTunerObjective.MEDITERRANEAN_F1) {
+        println("  maximum mean condition-distance regression: ${options.maxMeanConditionDistanceRegression}")
+    }
     println("  evaluation budget: ${options.maxEvaluations}")
 
     val search = ClimateTuningSearch(
@@ -169,7 +194,14 @@ fun runClimateTuner(args: Array<String>) {
                 planet.climateMap = ClimateSimulation.calculateClimate(planet).mapKeys { it.key.tileId }
                 val score = HersfeldtReference.score(planet, options.referenceFile.absolutePath)
                     ?: error("Reference scoring produced no land samples")
-                EvaluationOutcome(score.loss, score, planet, null)
+                val baselineDistance = objectiveBaselineMeanConditionDistance
+                    ?: score.meanConditionDistance.also { objectiveBaselineMeanConditionDistance = it }
+                EvaluationOutcome(
+                    climateTuningObjectiveLoss(score, options, baselineDistance),
+                    score,
+                    planet,
+                    null,
+                )
             } catch (error: Throwable) {
                 EvaluationOutcome(
                     loss = FAILED_EVALUATION_LOSS,
@@ -213,7 +245,15 @@ fun runClimateTuner(args: Array<String>) {
             )
 
             val status = score?.let {
-                "loss %.5f, match %.2f%%".format(it.loss, it.matchPercent)
+                val mediterranean = it.mediterraneanFamily
+                "objective %.5f, global loss %.5f, distance %.4f, med P/R/F1 %.1f/%.1f/%.1f%%".format(
+                    evaluation.loss,
+                    it.loss,
+                    it.meanConditionDistance,
+                    mediterranean.precision * 100.0,
+                    mediterranean.recall * 100.0,
+                    mediterranean.f1 * 100.0,
+                )
             } ?: "FAILED: ${outcome.error}"
             val change = evaluation.changedParameter?.let { changed ->
                 changed.split('+').joinToString(prefix = ", ") { name ->
@@ -354,6 +394,8 @@ private fun parseClimateTunerOptions(args: Array<String>): ClimateTunerOptions {
             ?.filter { it.isNotEmpty() }
             ?.toSet(),
         interactionPairs = parseInteractionPairs(values["interactions"]),
+        objective = ClimateTunerObjective.parse(values["objective"]),
+        maxMeanConditionDistanceRegression = values["max-mean-distance-regression"]?.toDouble() ?: 0.0,
         apply = apply,
         resume = resume,
     )
@@ -385,6 +427,9 @@ private fun printClimateTunerHelp() {
           --space FILE           Parameter bounds and step sizes
           --parameters A,B       Tune only the named parameters
           --interactions A+B,C+D Test paired +/- moves after coordinate trials
+          --objective NAME       global or mediterranean-f1 (default: global)
+          --max-mean-distance-regression N
+                                Allowed graph-distance increase for Mediterranean objective
           --max-evaluations N    Total simulation budget (default: $DEFAULT_MAX_EVALUATIONS)
           --output FILE          Best candidate config
           --report FILE          Machine-readable evaluation report
@@ -398,3 +443,24 @@ private fun printClimateTunerHelp() {
 private const val DEFAULT_MAX_EVALUATIONS = 9
 private const val FAILED_EVALUATION_LOSS = 10.0
 private const val IMPROVEMENT_EPSILON = 1e-12
+
+private fun climateTuningObjectiveLoss(
+    score: HersfeldtReference.Score,
+    options: ClimateTunerOptions,
+    baselineMeanConditionDistance: Double,
+): Double = when (options.objective) {
+    ClimateTunerObjective.GLOBAL -> score.loss
+    ClimateTunerObjective.MEDITERRANEAN_F1 -> {
+        val maximumDistance = baselineMeanConditionDistance + options.maxMeanConditionDistanceRegression
+        val regression = max(0.0, score.meanConditionDistance - maximumDistance)
+        if (regression > IMPROVEMENT_EPSILON) {
+            MEDITERRANEAN_CONSTRAINT_PENALTY + regression
+        } else {
+            1.0 - score.mediterraneanFamily.f1 +
+                score.meanConditionDistance * MEDITERRANEAN_DISTANCE_TIE_BREAK_WEIGHT
+        }
+    }
+}
+
+private const val MEDITERRANEAN_CONSTRAINT_PENALTY = 2.0
+private const val MEDITERRANEAN_DISTANCE_TIE_BREAK_WEIGHT = 1e-6

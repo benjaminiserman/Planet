@@ -60,22 +60,22 @@
       "name": "oceanMoistureInsolationNowVsAnnualLerp",
       "min": 0.5,
       "max": 2.0,
-      "step": 0.15,
-      "minStep": 0.01875
+      "step": 0.05,
+      "minStep": 0.00625
     },
     {
       "name": "oceanMoistureInsolationExp",
       "min": 0.5,
       "max": 5.0,
-      "step": 0.5,
-      "minStep": 0.0625
+      "step": 0.25,
+      "minStep": 0.03125
     },
     {
       "name": "coolCurrentMoistureStrength",
       "min": -80.0,
       "max": -20.0,
-      "step": 10.0,
-      "minStep": 1.25
+      "step": 5.0,
+      "minStep": 0.625
     },
     {
       "name": "landPrecipitationScalar",
@@ -153,6 +153,83 @@
       "max": 1.0,
       "step": 0.08,
       "minStep": 0.01
+    },
+    {
+      "name": "backwardsWind",
+      "min": 0.0,
+      "max": 0.1,
+      "step": 0.005,
+      "minStep": 0.000625
+    },
+    {
+      "name": "oceanNowVsAnnualInsolationLerpPow",
+      "min": 0.25,
+      "max": 1.5,
+      "step": 0.15,
+      "minStep": 0.01875
+    },
+    {
+      "name": "coolCurrentTemperatureStrength",
+      "min": -3.0,
+      "max": 0.0,
+      "step": 0.125,
+      "minStep": 0.015625
+    },
+    {
+      "name": "coolCurrentAirPressureStrength",
+      "min": 0.0,
+      "max": 30.0,
+      "step": 1.25,
+      "minStep": 0.15625
+    },
+    {
+      "name": "warmCurrentAirPressureStrength",
+      "min": -10.0,
+      "max": 5.0,
+      "step": 0.5,
+      "minStep": 0.0625
+    },
+    {
+      "name": "coolCurrentAirPressureMaxDistance",
+      "min": 1.0,
+      "max": 12.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "warmCurrentAirPressureMaxDistance",
+      "min": 1.0,
+      "max": 12.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "coolCurrentAirPressureMaxContinentiality",
+      "min": 1.0,
+      "max": 12.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "warmCurrentAirPressureMaxContinentiality",
+      "min": 1.0,
+      "max": 12.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "coolCurrentAirPressureContinentialityCenter",
+      "min": -5.0,
+      "max": 5.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "warmCurrentAirPressureContinentialityCenter",
+      "min": -5.0,
+      "max": 5.0,
+      "step": 1.0,
+      "minStep": 0.125
     }
   ]
 }

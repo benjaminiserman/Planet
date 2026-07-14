@@ -47,6 +47,16 @@ object HersfeldtReference {
         val meanConditionDistance: Double,
     )
 
+    data class FamilyScore(
+        val family: String,
+        val referenceCount: Int,
+        val simulatedCount: Int,
+        val truePositives: Int,
+        val precision: Double,
+        val recall: Double,
+        val f1: Double,
+    )
+
     data class DiagnosticAverages(
         val winterTemperature: Double?,
         val summerTemperature: Double?,
@@ -113,6 +123,7 @@ object HersfeldtReference {
         val latitudeBands: List<BandScore>,
         val elevationBands: List<BandScore>,
         val priorityRegions: List<BandScore>,
+        val mediterraneanFamily: FamilyScore,
         val largestMismatches: List<MismatchSummary>,
         @get:JsonIgnore val tileComparisons: Map<Int, TileComparison>,
     ) {
@@ -221,6 +232,10 @@ object HersfeldtReference {
                 comparisons.filter(region::contains).takeIf { it.isNotEmpty() }
                     ?.toBandScore(region.name)
             },
+            mediterraneanFamily = comparisons.familyScore(
+                family = "Mediterranean",
+                isMember = { it.name.contains("mediterranean", ignoreCase = true) },
+            ),
             largestMismatches = comparisons.mismatchSummaries(),
             tileComparisons = comparisons.associateBy { it.tileId },
         )
@@ -435,6 +450,27 @@ object HersfeldtReference {
         matchPercent = count { it.exact } * 100.0 / size,
         meanConditionDistance = map { it.conditionDistance }.average(),
     )
+
+    private fun List<TileComparison>.familyScore(
+        family: String,
+        isMember: (ClimateLabel) -> Boolean,
+    ): FamilyScore {
+        val referenceCount = count { isMember(it.reference) }
+        val simulatedCount = count { isMember(it.simulated) }
+        val truePositives = count { isMember(it.reference) && isMember(it.simulated) }
+        val precision = truePositives.toDouble() / simulatedCount.coerceAtLeast(1)
+        val recall = truePositives.toDouble() / referenceCount.coerceAtLeast(1)
+        val f1 = if (precision + recall == 0.0) 0.0 else 2.0 * precision * recall / (precision + recall)
+        return FamilyScore(
+            family = family,
+            referenceCount = referenceCount,
+            simulatedCount = simulatedCount,
+            truePositives = truePositives,
+            precision = precision,
+            recall = recall,
+            f1 = f1,
+        )
+    }
 
     private fun elevationBand(elevation: Double) = when {
         elevation < 500.0 -> "0000..0499 m"

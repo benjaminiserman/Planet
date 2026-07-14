@@ -13,6 +13,13 @@ From the `planet` directory:
 .\tune_climate.ps1 --max-evaluations 9
 ```
 
+After `classes copyJars` has already completed, `--skip-build` runs the existing
+compiled tuner offline without invoking Gradle again.
+`--runtime-project PATH` can point Godot at an isolated copy of the compiled
+scene/JVM metadata, which is useful when the editor project is waiting for a
+debugger or otherwise must remain untouched.
+`--godot-bin FILE` selects a specific Godot executable for that runtime.
+
 The default run:
 
 - reloads the imported Earth fixture at `save/earth.json` before every candidate,
@@ -93,6 +100,12 @@ the secondary term is the shortest-path distance through a classification graph.
 Graph edges represent one Hersfeldt decision-boundary change (for example,
 desert to semidesert, Mediterranean to dry savanna, temperate to boreal, or a
 monsoon/pluvial variant). Distances are capped at five conditions for scoring.
+
+For Mediterranean-focused batches, pass `--objective mediterranean-f1`. This
+maximizes precision/recall F1 across every Hersfeldt classification whose name
+contains `mediterranean`. Candidates whose global mean condition distance rises
+above the batch baseline are rejected by default; use
+`--max-mean-distance-regression` only to explicitly allow a tolerance.
 
 Difference maps use green for an exact match, lime for one condition away,
 yellow for two, orange for three, red for four, and purple for five or more.
