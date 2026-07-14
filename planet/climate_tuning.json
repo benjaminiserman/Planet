@@ -1,0 +1,158 @@
+{
+  "parameters": [
+    {
+      "name": "baseTemperature",
+      "min": 225.0,
+      "max": 265.0,
+      "step": 2.0,
+      "minStep": 0.25
+    },
+    {
+      "name": "baseTemperatureInsolationScalar",
+      "min": 50.0,
+      "max": 100.0,
+      "step": 3.0,
+      "minStep": 0.375
+    },
+    {
+      "name": "oceanBaseTemp",
+      "min": 235.0,
+      "max": 270.0,
+      "step": 2.0,
+      "minStep": 0.25
+    },
+    {
+      "name": "oceanInsolationScale",
+      "min": 35.0,
+      "max": 80.0,
+      "step": 3.0,
+      "minStep": 0.375
+    },
+    {
+      "name": "oceanNowVsAnnualInsolationLerp",
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1,
+      "minStep": 0.0125
+    },
+    {
+      "name": "moistureToMm",
+      "min": 60.0,
+      "max": 240.0,
+      "step": 12.0,
+      "minStep": 1.5
+    },
+    {
+      "name": "startingMoistureMultiplier",
+      "min": 2.0,
+      "max": 20.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "moisturePropagationMultiplier",
+      "min": 0.99,
+      "max": 1.04,
+      "step": 0.002,
+      "minStep": 0.00025
+    },
+    {
+      "name": "oceanMoistureInsolationNowVsAnnualLerp",
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.15,
+      "minStep": 0.01875
+    },
+    {
+      "name": "oceanMoistureInsolationExp",
+      "min": 0.5,
+      "max": 5.0,
+      "step": 0.5,
+      "minStep": 0.0625
+    },
+    {
+      "name": "coolCurrentMoistureStrength",
+      "min": -80.0,
+      "max": -20.0,
+      "step": 10.0,
+      "minStep": 1.25
+    },
+    {
+      "name": "landPrecipitationScalar",
+      "min": 0.4,
+      "max": 2.0,
+      "step": 0.1,
+      "minStep": 0.0125
+    },
+    {
+      "name": "hadleyMoistureEffectScalar",
+      "min": -6.0,
+      "max": -1.0,
+      "step": 0.5,
+      "minStep": 0.0625
+    },
+    {
+      "name": "itczMoistureScalar",
+      "min": 1.0,
+      "max": 1.5,
+      "step": 0.05,
+      "minStep": 0.00625
+    },
+    {
+      "name": "itczMoistureExp",
+      "min": 0.5,
+      "max": 3.0,
+      "step": 0.25,
+      "minStep": 0.03125
+    },
+    {
+      "name": "itczPathfindingNowVsAnnualInsolationLerp",
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1,
+      "minStep": 0.0125
+    },
+    {
+      "name": "ferrelMoistureEffectScalar",
+      "min": 0.05,
+      "max": 0.5,
+      "step": 0.05,
+      "minStep": 0.00625
+    },
+    {
+      "name": "upslopeOfMinMoisture",
+      "min": 200.0,
+      "max": 1000.0,
+      "step": 100.0,
+      "minStep": 12.5
+    },
+    {
+      "name": "upslopePrecipitationFactor",
+      "min": 0.1,
+      "max": 0.9,
+      "step": 0.1,
+      "minStep": 0.0125
+    },
+    {
+      "name": "minUpslopeMoisture",
+      "min": 0.025,
+      "max": 0.5,
+      "step": 0.05,
+      "minStep": 0.00625
+    },
+    {
+      "name": "upslopeMoistureExp",
+      "min": 1.0,
+      "max": 10.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "dryLapseRateScalar",
+      "min": 0.35,
+      "max": 1.0,
+      "step": 0.08,
+      "minStep": 0.01
+    }
+  ]
+}

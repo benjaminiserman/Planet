@@ -13,6 +13,7 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.climate.HersfeldtReference
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
@@ -66,7 +67,6 @@ class Gui() : Node() {
     val randomizeSeedButton by lazy { findChild("RandomizeSeedButton") as Button }
     val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
     val brushTool by lazy { BrushTool(this) }
-    val climateConfigTool by lazy { ClimateConfigTool(this) }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -204,7 +204,6 @@ class Gui() : Node() {
         generatePlanetButton.pressed.connect { submitSeed() }
         seedInput.textSubmitted.connect { submitSeed() }
         brushTool.initialize()
-        climateConfigTool.initialize()
 
         showSettingsButton.addToggle("Show Stats", listOf("debug", "default")) { statsGraph.visible = it }
         showSettingsButton.addToggle("Track Stats", listOf("debug", "default")) { statsGraph.trackStats = it }
@@ -253,7 +252,7 @@ class Gui() : Node() {
         }
         saveButton.pressed.connect { saveDialog.popup() }
         loadButton.pressed.connect { loadDialog.popup() }
-        refreshConfigButton.pressed.connect {
+        fun reloadConfigFiles() {
             val tectonicsConfig = File("tectonics_config.json")
             if (tectonicsConfig.exists()) {
                 Serialization.configMapper.readValue<TectonicGlobals>(tectonicsConfig)
@@ -272,6 +271,7 @@ class Gui() : Node() {
                 GD.print("No climate_config.json file found, created one with default values.")
             }
         }
+        refreshConfigButton.pressed.connect { reloadConfigFiles() }
         calculateClimateButton.pressed.connect {
             Main.instance.planet.climateMap =
                 ClimateSimulation.calculateClimate(Main.instance.planet).mapKeys { it.key.tileId }
@@ -291,9 +291,12 @@ class Gui() : Node() {
             GD.print("Image created")
         }
         importButton.pressed.connect {
+            importDialog.popup()
+        }
+        importDialog.fileSelected.connect { filename ->
             MapProjections.EQUIDISTANT.applyValueTo(
                 Main.instance.planet,
-                "import_elevation.png",
+                filename,
             ) { value ->
                 val threshold = 61.0
                 this.elevation = if (value.r8 <= threshold) {
@@ -306,6 +309,7 @@ class Gui() : Node() {
             Main.instance.planet.terrainChangeCount++
             OceanCurrents.viaEarthlikeHeuristic(Main.instance.planet, 7)
             Main.instance.planetRenderer.update(Main.instance.planet)
+            GD.print("Elevation map imported. Tune climate controls, then choose Simulate & Score.")
         }
     }
 

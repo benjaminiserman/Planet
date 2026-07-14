@@ -218,7 +218,7 @@ layout_mode = 0
 offset_left = 4.0
 offset_top = 90.0
 offset_right = 454.0
-offset_bottom = 650.0
+offset_bottom = 720.0
 
 [node name="Margin" type="MarginContainer" parent="GUI/ClimateConfigPanel"]
 layout_mode = 2
@@ -234,7 +234,7 @@ theme_override_constants/separation = 8
 [node name="Title" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Runtime Climate"
+text = "Climate Overrides"
 
 [node name="AxialTiltRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
@@ -424,6 +424,19 @@ layout_mode = 2
 focus_mode = 0
 text = "Reset to Defaults"
 
+[node name="CalibrationSeparator" type="HSeparator" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="CalibrationHelp" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+text = "Earth calibration reloads climate_config.json on every run. Runtime overrides are cleared."
+autowrap_mode = 2
+
+[node name="ClimateReferenceScore" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+text = "Earth config: awaiting simulation"
+autowrap_mode = 2
+
 [node name="TectonicAge" type="Label" parent="GUI"]
 layout_mode = 1
 anchors_preset = 1
@@ -560,6 +573,7 @@ initial_position = 2
 ok_button_text = "Open"
 file_mode = 0
 access = 2
+filters = PackedStringArray("*.png")
 
 [node name="LoadDialog" type="FileDialog" parent="GUI"]
 auto_translate_mode = 1
@@ -610,7 +624,7 @@ text = "▶"
 
 [node name="CalculateClimateButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
-text = "Calculate Climate"
+text = "Simulate Climate"
 
 [node name="RefreshConfigButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
@@ -618,7 +632,8 @@ text = "Refresh Config"
 
 [node name="ImportButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
-text = "Import"
+tooltip_text = "Import an equirectangular elevation map"
+text = "Import Elevation"
 
 [node name="ProjectButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2

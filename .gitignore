@@ -8,6 +8,7 @@ jvm
 planet/addons/
 planet/examples/
 planet/hs_err_pid*.log
+planet/earth_hersfeldt_reference.*
 
 # save folder and ignored contents
 planet/save/*
