@@ -88,6 +88,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanInsolati
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMinBaseTemp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationNowVsAnnualLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerpPow
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanPrecipitationScalar
@@ -326,7 +327,7 @@ object ClimateSimulation {
                     val oceanMoistureInsolation =
                         lerp(tile.insolation, tile.averageInsolation, oceanMoistureInsolationNowVsAnnualLerp).pow(
                             oceanMoistureInsolationExp
-                        )
+                        ) * oceanMoistureInsolationScalar
                     val warmCurrentEffect =
                         warmCurrentMoistureStrength * ClimateRuntimeConfig.oceanCurrentScale *
                                 oceanMoistureInsolation * tile.averageInsolation.pow(
