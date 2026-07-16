@@ -218,7 +218,7 @@ layout_mode = 0
 offset_left = 4.0
 offset_top = 90.0
 offset_right = 454.0
-offset_bottom = 720.0
+offset_bottom = 650.0
 
 [node name="Margin" type="MarginContainer" parent="GUI/ClimateConfigPanel"]
 layout_mode = 2
@@ -423,19 +423,6 @@ text = "Hotspot Heating"
 layout_mode = 2
 focus_mode = 0
 text = "Reset to Defaults"
-
-[node name="CalibrationSeparator" type="HSeparator" parent="GUI/ClimateConfigPanel/Margin/Content"]
-layout_mode = 2
-
-[node name="CalibrationHelp" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
-layout_mode = 2
-text = "Earth calibration reloads climate_config.json on every run. Runtime overrides are cleared."
-autowrap_mode = 2
-
-[node name="ClimateReferenceScore" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
-layout_mode = 2
-text = "Earth config: awaiting simulation"
-autowrap_mode = 2
 
 [node name="TectonicAge" type="Label" parent="GUI"]
 layout_mode = 1

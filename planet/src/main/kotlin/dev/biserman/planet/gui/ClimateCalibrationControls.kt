@@ -1,7 +1,6 @@
 package dev.biserman.planet.gui
 
 import dev.biserman.planet.planet.climate.ClimateRuntimeConfig
-import dev.biserman.planet.planet.climate.HersfeldtReference
 import godot.api.Button
 import godot.api.CheckButton
 import godot.api.Control
@@ -10,12 +9,11 @@ import godot.api.Label
 import godot.core.connect
 import kotlin.math.roundToInt
 
-/** Runtime climate controls and Earth-calibration status used by [Gui]. */
+/** Runtime climate controls used by [Gui]. */
 class ClimateConfigTool(private val gui: Gui) {
     private val showButton by lazy { gui.findChild("ShowClimateConfigButton") as Button }
     private val panel by lazy { gui.findChild("ClimateConfigPanel") as Control }
     private val resetButton by lazy { gui.findChild("ResetClimateConfigButton") as Button }
-    private val referenceScore by lazy { gui.findChild("ClimateReferenceScore") as Label }
 
     private fun slider(name: String) = gui.findChild(name) as HSlider
     private fun label(name: String) = gui.findChild(name) as Label
@@ -61,15 +59,6 @@ class ClimateConfigTool(private val gui: Gui) {
             ClimateRuntimeConfig.resetToDefaults()
             syncControlsToConfig()
         }
-    }
-
-    fun useConfigOnly() {
-        ClimateRuntimeConfig.resetToDefaults()
-        syncControlsToConfig()
-    }
-
-    fun showReferenceScore(score: HersfeldtReference.Score?) {
-        referenceScore.text = score?.summary() ?: "Earth config: reference score unavailable"
     }
 
     private fun bindSlider(

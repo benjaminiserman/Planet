@@ -13,7 +13,6 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
-import dev.biserman.planet.planet.climate.HersfeldtReference
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
@@ -311,7 +310,7 @@ class Gui() : Node() {
             Main.instance.planet.terrainChangeCount++
             OceanCurrents.viaEarthlikeHeuristic(Main.instance.planet, 7)
             Main.instance.planetRenderer.update(Main.instance.planet)
-            GD.print("Elevation map imported. Tune climate controls, then choose Simulate & Score.")
+            GD.print("Elevation map imported.")
         }
     }
 

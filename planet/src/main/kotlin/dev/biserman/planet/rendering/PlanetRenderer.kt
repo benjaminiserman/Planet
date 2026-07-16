@@ -474,12 +474,6 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         return colors.alphaAverage()
     }
 
-    fun selectHersfeldtColorMode() {
-        planetColorModes
-            .filter { "base_layer" in it.categories }
-            .forEach { it.visible = it.name == "hersfeldt" }
-    }
-
     fun updateMesh() {
         val colorModeResults = planetColorModes.filter { it.visible }.map { mode ->
             planet.topology.tiles.flatMap { tile -> mode.colorsFor(planet.getTile(tile)) }

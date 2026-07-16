@@ -7,6 +7,16 @@ a bounded coordinate search to improve selected values from
 
 ## Quick start
 
+The Earth inputs are intentionally not included in the repository yet. Before
+running the tuner, provide both of these local files:
+
+- `save/earth.json`: an imported Earth planet save; and
+- `earth_hersfeldt_reference.png`: the aligned Hersfeldt reference image.
+
+Those locations are the command defaults and are ignored by Git. Files stored
+elsewhere can be selected explicitly with `--planet FILE` and
+`--reference FILE`.
+
 From the `planet` directory:
 
 ```powershell

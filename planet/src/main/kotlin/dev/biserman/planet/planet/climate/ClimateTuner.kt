@@ -373,8 +373,10 @@ private fun parseClimateTunerOptions(args: Array<String>): ClimateTunerOptions {
             continue
         }
         require(argument.startsWith("--")) { "Unexpected argument: $argument" }
+        val optionName = argument.removePrefix("--")
+        require(optionName in CLIMATE_TUNER_VALUE_OPTIONS) { "Unknown option: $argument" }
         require(index + 1 < args.size) { "Missing value after $argument" }
-        values[argument.removePrefix("--")] = args[index + 1]
+        values[optionName] = args[index + 1]
         index += 2
     }
 
@@ -443,6 +445,19 @@ private fun printClimateTunerHelp() {
 private const val DEFAULT_MAX_EVALUATIONS = 9
 private const val FAILED_EVALUATION_LOSS = 10.0
 private const val IMPROVEMENT_EPSILON = 1e-12
+private val CLIMATE_TUNER_VALUE_OPTIONS = setOf(
+    "planet",
+    "reference",
+    "config",
+    "space",
+    "parameters",
+    "interactions",
+    "objective",
+    "max-mean-distance-regression",
+    "max-evaluations",
+    "output",
+    "report",
+)
 
 private fun climateTuningObjectiveLoss(
     score: HersfeldtReference.Score,

@@ -94,7 +94,7 @@
     {
       "name": "itczMoistureScalar",
       "min": 1.0,
-      "max": 1.5,
+      "max": 2.0,
       "step": 0.05,
       "minStep": 0.00625
     },
