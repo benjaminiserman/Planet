@@ -234,7 +234,7 @@ theme_override_constants/separation = 8
 [node name="Title" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Runtime Climate"
+text = "Climate Overrides"
 
 [node name="AxialTiltRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
@@ -560,6 +560,7 @@ initial_position = 2
 ok_button_text = "Open"
 file_mode = 0
 access = 2
+filters = PackedStringArray("*.png")
 
 [node name="LoadDialog" type="FileDialog" parent="GUI"]
 auto_translate_mode = 1
@@ -618,7 +619,8 @@ text = "Refresh Config"
 
 [node name="ImportButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
-text = "Import"
+tooltip_text = "Import an equirectangular elevation map"
+text = "Import Elevation"
 
 [node name="ProjectButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2

@@ -86,7 +86,7 @@ object ClimateSimulationGlobals {
     var oceanBaseTemp = 250.0 // °K, increasing by 1°K ≈ 1°K increase in global ocean temperatures
     var oceanNowVsAnnualInsolationLerp = 0.6 // ∈[0,1], higher values -> less seasonality
     var oceanNowVsAnnualInsolationLerpPow = 0.75 // higher exp -> less insolation & more seasonality
-    var oceanInsolationScale = 56.5 // °K, increasing by 1°K ≈ 1°K increase in tropical ocean temperatures
+    var oceanInsolationScale = 57.5 // °K, increasing by 1°K ≈ 1°K increase in tropical ocean temperatures
 
     var oceanWaterVsLandTemperatureLerp = 0.9 // higher values = more oceanic, lower values = more landlike temperature
     var oceanWaterVsLandTemperatureLerpScalar = 0.025
@@ -126,6 +126,7 @@ object ClimateSimulationGlobals {
     var oceanMoistureInsolationExp = 3.0 // higher exp -> less ocean moisture & most seasonality
     var oceanMoistureInsolationNowVsAnnualLerp = 1.35
     var averageInsolationMoistureCutoff = 0.6
+    var oceanMoistureInsolationScalar = 1.0
 
     // awful hack to help moisture propagate into continental interiors
     var moisturePropagationMultiplier = 1.02 // VERY sensitive. can cause exponential turbo-rain
