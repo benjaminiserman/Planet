@@ -88,6 +88,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanInsolati
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMinBaseTemp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationNowVsAnnualLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationExp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanMoistureInsolationScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanNowVsAnnualInsolationLerpPow
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanPrecipitationScalar
@@ -118,6 +119,7 @@ import dev.biserman.planet.utils.UtilityExtensions.formatGeo
 import dev.biserman.planet.utils.UtilityExtensions.radToDeg
 import dev.biserman.planet.utils.UtilityExtensions.signPow
 import dev.biserman.planet.utils.sum
+import godot.common.util.UNIT_EPSILON
 import godot.common.util.lerp
 import godot.core.Vector3
 import godot.global.GD
@@ -326,7 +328,7 @@ object ClimateSimulation {
                     val oceanMoistureInsolation =
                         lerp(tile.insolation, tile.averageInsolation, oceanMoistureInsolationNowVsAnnualLerp).pow(
                             oceanMoistureInsolationExp
-                        )
+                        ) * oceanMoistureInsolationScalar
                     val warmCurrentEffect =
                         warmCurrentMoistureStrength * ClimateRuntimeConfig.oceanCurrentScale *
                                 oceanMoistureInsolation * tile.averageInsolation.pow(
@@ -353,7 +355,7 @@ object ClimateSimulation {
                 currentMoisture[tile.tileId] =
                     ((equatorEffect + ferrelEffect + hadleyEffect + oceanEffect) *
                             startingMoistureMultiplier * ClimateRuntimeConfig.moistureScale)
-                    .coerceIn((minStartingMoisture * ClimateRuntimeConfig.moistureScale)..(maxStartingMoisture * ClimateRuntimeConfig.moistureScale))
+                        .coerceIn((minStartingMoisture * ClimateRuntimeConfig.moistureScale)..(maxStartingMoisture * ClimateRuntimeConfig.moistureScale))
             }
         }
         val startingMoistureSum = currentMoisture.sum()
@@ -517,8 +519,8 @@ object ClimateSimulation {
                 oceanMinBaseTemp + greenhouseOffset,
                 oceanBaseTemp + greenhouseOffset +
                         lerp(insolation, annualInsolation.average(), oceanNowVsAnnualInsolationLerp).pow(
-                    oceanNowVsAnnualInsolationLerpPow
-                ) * effectiveOceanInsolationScale
+                            oceanNowVsAnnualInsolationLerpPow
+                        ) * effectiveOceanInsolationScale
             ) + warmCurrentAdjustment + coolCurrentAdjustment + elevationAdjustment
 
             val moistureAdjustedTemperature =
@@ -691,8 +693,11 @@ object ClimateSimulation {
     // inter-tropical convergence zone
     fun (Planet).calculateItcz(): Path<PlanetTile> {
         fun costFn(_1: PlanetTile, tile: PlanetTile): Double =
-            1 - lerp(tile.insolation, tile.averageInsolation, itczPathfindingNowVsAnnualInsolationLerp) -
-                    max(0.0, tile.continentiality * itczPathfindingContinentialityWeight)
+            max(
+                0.0001,
+                1 - lerp(tile.insolation, tile.averageInsolation, itczPathfindingNowVsAnnualInsolationLerp) -
+                        max(0.0, tile.continentiality * itczPathfindingContinentialityWeight)
+            )
 
         fun neighborFn(tile: PlanetTile): List<PlanetTile> = tile.neighbors.filter {
             val tileToNeighbor = (it.tile.position - tile.tile.position).normalized()
@@ -709,7 +714,7 @@ object ClimateSimulation {
         fun heuristic(tile: PlanetTile) = costFn(tile, tile)
 
         val path = AStar.path(startTile, ::goalFn, ::heuristic, ::costFn, ::neighborFn)
-        if (path.nodes.size == 0) {
+        if (path.nodes.isEmpty()) {
             throw Exception("No path found!")
         }
         return path

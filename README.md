@@ -37,6 +37,10 @@ Run the JVM tests from the `planet` directory:
 
 Use the in-game refresh button after editing a configuration file.
 
+To calibrate `climate_config.json` against the bundled Earth Hersfeldt reference,
+use the headless, resumable tuner described in
+[`planet/CLIMATE_TUNING.md`](planet/CLIMATE_TUNING.md).
+
 ## Project Layout
 
 - `planet/src/main/kotlin/dev/biserman/planet/planet` contains the world model and simulations.

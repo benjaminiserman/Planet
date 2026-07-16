@@ -751,26 +751,81 @@ object Hersfeldt : ClimateClassifier {
         return if (datum.months.minOf { it.averageTemperature } <= threshold) 1.0 else 0.0
     }
 
+    /** Inputs that explain why a datum crossed Hersfeldt classification thresholds. */
+    data class Diagnostics(
+        val winterTemperature: Double,
+        val summerTemperature: Double,
+        val averageTemperature: Double,
+        val annualPrecipitation: Double,
+        val temperatureRange: Double,
+        val precipitationRange: Double,
+        val potentialEvapotranspiration: Double,
+        val actualEvapotranspiration: Double,
+        val aridityFactor: Double,
+        val growthAridityFactor: Double,
+        val growthSupply: Double,
+        val evaporationRatio: Double,
+        val totalGdd: Double,
+        val totalGddz: Double,
+        val totalGint: Double,
+        val winterType: WinterType,
+        val summerType: SummerType,
+        val pet: List<Double>,
+        val aet: List<Double>,
+        val gddResults: GddResults,
+    )
+
+    fun diagnostics(datum: ClimateDatum): Diagnostics {
+        val pet = datum.months.map { koppenlikePet(it.averageTemperature) }
+        val aet = estimateAet(datum, pet)
+        val gddResults = gdd(datum)
+        val winterTemperature = datum.months.minOf { it.averageTemperature }
+        val summerTemperature = datum.months.maxOf { it.averageTemperature }
+        return Diagnostics(
+            winterTemperature = winterTemperature,
+            summerTemperature = summerTemperature,
+            averageTemperature = datum.averageTemperature,
+            annualPrecipitation = datum.annualPrecipitation,
+            temperatureRange = datum.temperatureRange,
+            precipitationRange = datum.precipitationRange,
+            potentialEvapotranspiration = pet.sum(),
+            actualEvapotranspiration = aet.sum(),
+            aridityFactor = aridityFactor(pet, aet),
+            growthAridityFactor = growthAridityFactor(pet, gddResults.monthlyGdd, aet),
+            growthSupply = growthSupply(datum, gddResults.monthlyGdd, aet),
+            evaporationRatio = evaporationRatio(datum, aet),
+            totalGdd = gddResults.totalGdd,
+            totalGddz = gddResults.totalGddz,
+            totalGint = gddResults.totalGint,
+            winterType = winterType(winterTemperature),
+            summerType = summerType(summerTemperature),
+            pet = pet,
+            aet = aet,
+            gddResults = gddResults,
+        )
+    }
+
     override fun classify(
         planet: Planet,
         datum: ClimateDatum
     ): ClimateClassification {
         // climate parameters
-        val pet = datum.months.map { koppenlikePet(it.averageTemperature) }
-        val aet = estimateAet(datum, pet)
-        val aridityFactor = aridityFactor(pet, aet)
-        val evaporationRatio = evaporationRatio(datum, aet)
+        val diagnostics = diagnostics(datum)
+        val pet = diagnostics.pet
+        val aet = diagnostics.aet
+        val aridityFactor = diagnostics.aridityFactor
+        val evaporationRatio = diagnostics.evaporationRatio
         val minIce = minIce(planet, datum)
         val maxIce = maxIce(planet, datum)
 
-        val gddResults = gdd(datum)
+        val gddResults = diagnostics.gddResults
 
-        val growthSupply = growthSupply(datum, gddResults.monthlyGdd, aet)
-        val growthAridityFactor = growthAridityFactor(pet, gddResults.monthlyGdd, aet)
+        val growthSupply = diagnostics.growthSupply
+        val growthAridityFactor = diagnostics.growthAridityFactor
 
         // tuned thresholds
-        val winterType = winterType(datum.months.minOf { it.averageTemperature })
-        val summerType = summerType(datum.months.maxOf { it.averageTemperature })
+        val winterType = diagnostics.winterType
+        val summerType = diagnostics.summerType
 
         // classification
         val tile = planet.planetTiles[datum.tileId]!!
