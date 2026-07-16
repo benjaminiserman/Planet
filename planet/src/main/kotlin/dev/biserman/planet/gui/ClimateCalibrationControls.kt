@@ -10,7 +10,7 @@ import godot.core.connect
 import kotlin.math.roundToInt
 
 /** Runtime climate controls used by [Gui]. */
-class ClimateConfigTool(private val gui: Gui) {
+class ClimateCalibrationControls(private val gui: Gui) {
     private val showButton by lazy { gui.findChild("ShowClimateConfigButton") as Button }
     private val panel by lazy { gui.findChild("ClimateConfigPanel") as Control }
     private val resetButton by lazy { gui.findChild("ResetClimateConfigButton") as Button }

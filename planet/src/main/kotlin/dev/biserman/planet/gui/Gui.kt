@@ -13,7 +13,6 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
-import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
@@ -29,7 +28,6 @@ import godot.global.GD
 import java.awt.image.BufferedImage
 import java.io.File
 import java.util.Locale.getDefault
-import kotlin.math.min
 import kotlin.random.Random
 
 @RegisterClass
@@ -66,7 +64,7 @@ class Gui() : Node() {
     val randomizeSeedButton by lazy { findChild("RandomizeSeedButton") as Button }
     val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
     val brushTool by lazy { BrushTool(this) }
-    val climateConfigTool by lazy { ClimateConfigTool(this) }
+    val climateConfigTool by lazy { ClimateCalibrationControls(this) }
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
