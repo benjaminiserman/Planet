@@ -611,7 +611,7 @@ text = "▶"
 
 [node name="CalculateClimateButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
-text = "Simulate Climate"
+text = "Calculate Climate"
 
 [node name="RefreshConfigButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
