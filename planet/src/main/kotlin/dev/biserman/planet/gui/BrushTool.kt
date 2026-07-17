@@ -71,6 +71,15 @@ class BrushTool(private val gui: Gui) {
         updateValueVisibility()
     }
 
+    fun setEditModeEnabled(enabled: Boolean) {
+        showToolbarButton.visible = enabled
+        if (!enabled) {
+            showToolbarButton.buttonPressed = false
+            toolbar.visible = false
+            setMode(Mode.SELECT)
+        }
+    }
+
     private fun setMode(newMode: Mode) {
         mode = newMode
         paintButton.buttonPressed = newMode == Mode.PAINT

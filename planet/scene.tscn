@@ -584,6 +584,33 @@ offset_bottom = 41.0
 grow_horizontal = 0
 alignment = 2
 
+[node name="HistoryYearLabel" type="Label" parent="GUI/MenuButtons"]
+visible = false
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 2
+text = "Year 0"
+horizontal_alignment = 2
+
+[node name="HistorySeasonLabel" type="Label" parent="GUI/MenuButtons"]
+visible = false
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Spring"
+horizontal_alignment = 2
+
+[node name="NextTurnButton" type="Button" parent="GUI/MenuButtons"]
+visible = false
+layout_mode = 2
+tooltip_text = "Advance the history simulation by one season"
+text = "Next Turn"
+
+[node name="AutoTurnsButton" type="Button" parent="GUI/MenuButtons"]
+visible = false
+layout_mode = 2
+tooltip_text = "Automatically advance history one season at a time"
+toggle_mode = true
+text = "Auto Turns"
+
 [node name="ShowBrushToolbarButton" type="Button" parent="GUI/MenuButtons"]
 layout_mode = 2
 tooltip_text = "Show or hide the paint toolbar"
@@ -652,6 +679,12 @@ metadata/_custom_type_script = "uid://b2x4bkf12pd11"
 [node name="ClearMapButton" type="Button" parent="GUI/SettingsButtons"]
 layout_mode = 2
 text = "⌫"
+
+[node name="ModeToggleButton" type="Button" parent="GUI/SettingsButtons"]
+layout_mode = 2
+tooltip_text = "Switch between planet editing and history simulation"
+toggle_mode = true
+text = "Edit Mode"
 
 [node name="SettingsOptionsPanel" type="PanelContainer" parent="GUI"]
 visible = false

@@ -5,6 +5,8 @@ import dev.biserman.planet.Main
 import dev.biserman.planet.geometry.Path.Companion.toMesh
 import dev.biserman.planet.geometry.Path.Companion.toPaths
 import dev.biserman.planet.geometry.adjustRange
+import dev.biserman.planet.history.Hemisphere
+import dev.biserman.planet.history.HistoryCalendar
 import dev.biserman.planet.planet.MapProjections
 import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
@@ -32,6 +34,8 @@ import kotlin.random.Random
 
 @RegisterClass
 class Gui() : Node() {
+    enum class Mode { EDIT, PLAY }
+
     val infoboxContainer by lazy { findChild("InfoboxContainer") as TabContainer }
     val daysPassedLabel by lazy { findChild("DaysPassed") as Label }
     val tectonicAgeLabel by lazy { findChild("TectonicAge") as Label }
@@ -46,7 +50,14 @@ class Gui() : Node() {
     val importButton by lazy { findChild("ImportButton") as Button }
     val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
     val calculateClimateButton by lazy { findChild("CalculateClimateButton") as Button }
+    val showClimateConfigButton by lazy { findChild("ShowClimateConfigButton") as Button }
     val playButton by lazy { findChild("PlayButton") as Button }
+    val modeToggleButton by lazy { findChild("ModeToggleButton") as Button }
+    val nextTurnButton by lazy { findChild("NextTurnButton") as Button }
+    val autoTurnsButton by lazy { findChild("AutoTurnsButton") as Button }
+    val historyYearLabel by lazy { findChild("HistoryYearLabel") as Label }
+    val historySeasonLabel by lazy { findChild("HistorySeasonLabel") as Label }
+    val climateConfigPanel by lazy { findChild("ClimateConfigPanel") as Control }
     val mapPreviewContainer by lazy { findChild("MapPreviewContainer") as PanelContainer }
     val mapPreview by lazy { findChild("MapPreview") as TextureRect }
     val recenterMapPreviewButton by lazy { findChild("RecenterMapPreviewButton") as Button }
@@ -65,6 +76,9 @@ class Gui() : Node() {
     val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
     val brushTool by lazy { BrushTool(this) }
     val climateConfigTool by lazy { ClimateCalibrationControls(this) }
+
+    var mode = Mode.EDIT
+        private set
 
     val selectedTileMaterial = StandardMaterial3D().apply {
         this.setAlbedo(Color.white)
@@ -107,6 +121,7 @@ class Gui() : Node() {
                 statsGraph.visible = statsGraphVisibleBeforeTileInspection
             }
             field = value
+            updateHistoryDisplay()
             selectedTileRenderer.update(value)
             if (value == null) {
                 infoboxContainer.visible = false
@@ -118,10 +133,69 @@ class Gui() : Node() {
             }
         }
 
-    val isPlayToggled get() = playButton.text == "■"
+    private var editSimulationRunning = false
+    val isPlayToggled get() = editSimulationRunning
     fun togglePlayButton(shouldToggleOn: Boolean = !isPlayToggled) {
-        playButton.text = if (shouldToggleOn) "■" else "▶"
-        Main.instance.timerActive = shouldToggleOn
+        editSimulationRunning = shouldToggleOn && mode == Mode.EDIT
+        playButton.text = if (editSimulationRunning) "⏹" else "▶"
+        Main.instance.timerActive = editSimulationRunning
+    }
+
+    private fun toggleAutoTurns(shouldToggleOn: Boolean = !autoTurnsButton.buttonPressed) {
+        val enabled = shouldToggleOn && mode == Mode.PLAY
+        autoTurnsButton.buttonPressed = enabled
+        Main.instance.historyTimerActive = enabled
+    }
+
+    private fun setMode(newMode: Mode) {
+        togglePlayButton(false)
+        toggleAutoTurns(false)
+        mode = newMode
+        applyModeVisibility()
+    }
+
+    private fun applyModeVisibility() {
+        val isEditMode = mode == Mode.EDIT
+
+        listOf<Control>(
+            showClimateConfigButton,
+            simulationOptionButton,
+            playButton,
+            calculateClimateButton,
+            refreshConfigButton,
+            importButton,
+            tectonicAgeLabel,
+            daysPassedLabel,
+        ).forEach { it.visible = isEditMode }
+
+        listOf<Control>(
+            nextTurnButton,
+            autoTurnsButton,
+            historyYearLabel,
+            historySeasonLabel,
+        ).forEach { it.visible = !isEditMode }
+
+        modeToggleButton.buttonPressed = !isEditMode
+        modeToggleButton.text = if (isEditMode) "Edit Mode" else "Play Mode"
+        brushTool.setEditModeEnabled(isEditMode)
+
+        if (!isEditMode) {
+            showClimateConfigButton.buttonPressed = false
+            climateConfigPanel.visible = false
+        }
+        updateHistoryDisplay()
+    }
+
+    fun updateHistoryDisplay() {
+        val turn = if (Main.instance.hasPlanet) Main.instance.planet.historyTurn else 0L
+        val hemisphere = if ((selectedTile?.position?.y ?: 1.0) >= 0.0) {
+            Hemisphere.NORTHERN
+        } else {
+            Hemisphere.SOUTHERN
+        }
+
+        historyYearLabel.text = "Year ${HistoryCalendar.year(turn)}"
+        historySeasonLabel.text = HistoryCalendar.season(turn, hemisphere).displayName
     }
 
     fun showSeedSelection() {
@@ -203,6 +277,12 @@ class Gui() : Node() {
         seedInput.textSubmitted.connect { submitSeed() }
         brushTool.initialize()
         climateConfigTool.initialize()
+
+        modeToggleButton.pressed.connect {
+            setMode(if (modeToggleButton.buttonPressed) Mode.PLAY else Mode.EDIT)
+        }
+        nextTurnButton.pressed.connect { Main.instance.advanceHistoryTurn() }
+        autoTurnsButton.pressed.connect { toggleAutoTurns(autoTurnsButton.buttonPressed) }
 
         showSettingsButton.addToggle("Show Stats", listOf("debug", "default")) { statsGraph.visible = it }
         showSettingsButton.addToggle("Track Stats", listOf("debug", "default")) { statsGraph.trackStats = it }
