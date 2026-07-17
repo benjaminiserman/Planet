@@ -1,6 +1,7 @@
 package dev.biserman.planet
 
 import dev.biserman.planet.gui.Gui
+import dev.biserman.planet.gui.Gui.Mode
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.tectonics.Tectonics
@@ -45,11 +46,14 @@ class Main : Node() {
 		}
 
 		if (Input.isActionJustPressed("next")) {
-			Tectonics.stepTectonicsSimulation(planet)
-			planet.terrainChangeCount++
-			planetRenderer.update(planet)
-			Gui.instance.brushTool.refreshOptions()
+			if (Gui.instance.mode == Mode.PLAY) {
+				advanceHistoryTurn()
+			} else {
+				runSelectedEditSimulation()
+			}
 		}
+
+		if (Gui.instance.mode != Mode.EDIT) return
 
 		val selectedTile = planet.planetTiles[Gui.instance.selectedTile?.id] ?: return
 		if (Input.isActionJustPressed("place_land")) {
@@ -77,25 +81,50 @@ class Main : Node() {
 		}
 	}
 
-	val timerStep = 0.1
+	private val editSimulationTimerStep = 0.1
 	var timerActive = false
 		set(value) {
 			field = value
-			timerTime = timerStep
+			timerTime = editSimulationTimerStep
 		}
-	var timerTime = timerStep
+	private var timerTime = editSimulationTimerStep
+
+	private val historyTurnTimerStep = 0.5
+	var historyTimerActive = false
+		set(value) {
+			field = value
+			historyTimerTime = historyTurnTimerStep
+		}
+	private var historyTimerTime = historyTurnTimerStep
 
 	@RegisterFunction
 	override fun _process(delta: Double) {
-		if (timerActive && ::planet.isInitialized && ::planetRenderer.isInitialized) {
+		if (timerActive && Gui.instance.mode == Mode.EDIT && ::planet.isInitialized && ::planetRenderer.isInitialized) {
 			timerTime += delta
-			if (timerTime >= timerStep) {
+			if (timerTime >= editSimulationTimerStep) {
 				timerTime = 0.0
-				simulations[Gui.instance.selectedSimulation]!!.invoke(planet)
-				planetRenderer.update(planet)
-				Gui.instance.brushTool.refreshOptions()
+				runSelectedEditSimulation()
 			}
 		}
+
+		if (historyTimerActive && Gui.instance.mode == Mode.PLAY && ::planet.isInitialized) {
+			historyTimerTime += delta
+			if (historyTimerTime >= historyTurnTimerStep) {
+				historyTimerTime = 0.0
+				advanceHistoryTurn()
+			}
+		}
+	}
+
+	private fun runSelectedEditSimulation() {
+		simulations[Gui.instance.selectedSimulation]!!.invoke(planet)
+		planetRenderer.update(planet)
+		Gui.instance.brushTool.refreshOptions()
+	}
+
+	fun advanceHistoryTurn() {
+		planet.historyTurn++
+		Gui.instance.updateHistoryDisplay()
 	}
 
 	val hasPlanet get() = ::planet.isInitialized
@@ -107,6 +136,7 @@ class Main : Node() {
 		planetRenderer.update(newPlanet)
 		Gui.instance.statsGraph.planet = newPlanet
 		Gui.instance.brushTool.refreshOptions()
+		Gui.instance.updateHistoryDisplay()
 	}
 
 	companion object {
