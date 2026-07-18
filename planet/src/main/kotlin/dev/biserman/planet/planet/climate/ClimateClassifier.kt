@@ -5,6 +5,7 @@ import dev.biserman.planet.utils.UtilityExtensions.formatDigits
 import godot.core.Color
 import godot.global.GD
 import kotlin.jvm.optionals.getOrNull
+import kotlin.math.floor
 
 enum class MonthIndex {
     JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC;
@@ -20,17 +21,17 @@ fun <T> (List<T>).monthRange(from: MonthIndex, through: MonthIndex): List<T> {
     }
 }
 
-data class ClimateDatumMonth(
+data class ClimateDatumSample(
     val averageTemperature: Double, // avgT, °C
     val insolation: Double, // W/m²
-    val precipitation: Double, // mm
+    val precipitation: Double, // mm/month
 //    val minTemperature: Double? = null, // minT, °C
 //    val maxTemperature: Double? = null, // maxT, °C
 ) {
 
     companion object {
-        fun Iterable<ClimateDatumMonth>.average(): ClimateDatumMonth {
-            return ClimateDatumMonth(
+        fun Iterable<ClimateDatumSample>.average(): ClimateDatumSample {
+            return ClimateDatumSample(
                 this.map { it.averageTemperature }.average(),
                 this.map { it.insolation }.average(),
                 this.map { it.precipitation }.average(),
@@ -39,11 +40,34 @@ data class ClimateDatumMonth(
     }
 }
 
-class ClimateDatum(val tileId: Int, val months: List<ClimateDatumMonth>) {
+class ClimateDatum(val tileId: Int, val months: List<ClimateDatumSample>) {
+    init {
+        require(months.size == MonthIndex.entries.size) {
+            "ClimateDatum requires one sample for each month"
+        }
+    }
+
     val averageTemperature = months.map { it.averageTemperature }.average()
     val annualPrecipitation = months.sumOf { it.precipitation }
     val temperatureRange = months.maxOf { it.averageTemperature } - months.minOf { it.averageTemperature }
     val precipitationRange = months.maxOf { it.precipitation } - months.minOf { it.precipitation }
+
+    /** Periodically interpolates the monthly samples at a fractional simulation year. */
+    fun sampleAt(year: Double): ClimateDatumSample {
+        val monthPosition = (year - floor(year)) * months.size
+        val firstIndex = floor(monthPosition).toInt().coerceIn(0, months.lastIndex)
+        val secondIndex = (firstIndex + 1) % months.size
+        val fraction = monthPosition - floor(monthPosition)
+        val first = months[firstIndex]
+        val second = months[secondIndex]
+        return ClimateDatumSample(
+            averageTemperature = first.averageTemperature +
+                fraction * (second.averageTemperature - first.averageTemperature),
+            insolation = first.insolation + fraction * (second.insolation - first.insolation),
+            precipitation = first.precipitation +
+                fraction * (second.precipitation - first.precipitation),
+        )
+    }
 }
 
 data class ClimateClassification(val id: String, val name: String, val color: Color, val terrainColor: Color)
