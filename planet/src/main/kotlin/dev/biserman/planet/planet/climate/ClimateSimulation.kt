@@ -17,7 +17,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windBlockingS
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.planet.climate.ClimateDatumMonth.Companion.average
+import dev.biserman.planet.planet.climate.ClimateDatumSample.Companion.average
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureElevationFallStart
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureElevationFallStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.airPressureSeasonalExpectedMin
@@ -565,8 +565,8 @@ object ClimateSimulation {
             return celsius
         }
 
-    fun (PlanetTile).calculateClimateDatumMonth(): ClimateDatumMonth {
-        return ClimateDatumMonth(
+    fun (PlanetTile).calculateClimateDatumSample(): ClimateDatumSample {
+        return ClimateDatumSample(
             averageTemperature,
             lightLevel * insolationToWm2,
             moisture * moistureToMm
@@ -583,7 +583,7 @@ object ClimateSimulation {
             }
             planet.daysPassed = (i * (yearLength / totalSamples)).roundToInt()
             updatePlanetClimate(planet)
-            planet.planetTiles.values.associateWith { it.calculateClimateDatumMonth() }
+            planet.planetTiles.values.associateWith { it.calculateClimateDatumSample() }
         }.chunked(climateSimulationSamplesPerMonth).map { samples ->
             planet.planetTiles.values.associateWith { tile -> samples.map { it[tile]!! }.average() }
         }

@@ -101,7 +101,7 @@ object Koppen : ClimateClassifier {
 
     val highlandElevationThreshold = 1500
 
-    fun getSummerAndWinter(datum: ClimateDatum): Pair<Set<ClimateDatumMonth>, Set<ClimateDatumMonth>> {
+    fun getSummerAndWinter(datum: ClimateDatum): Pair<Set<ClimateDatumSample>, Set<ClimateDatumSample>> {
         val groupA = MonthIndex.values().toList().monthRange(MonthIndex.APR, MonthIndex.SEP)
             .map { datum.months[it.ordinal] }
         val groupB = MonthIndex.values().toList().monthRange(MonthIndex.OCT, MonthIndex.MAR)
