@@ -7,6 +7,7 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
+import dev.biserman.planet.planet.ecology.TaxonomicOrder
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionCount
@@ -232,7 +233,12 @@ class Planet(val seed: Int, val size: Int) {
         tectonicPlates.forEach { plate ->
             plate.torque = noise.mantleConvection.sample4d(plate.region.tiles.first().tile.position, 0.0)
         }
-        biotaDistributions = (1..biotaDistributionCount).map { BiotaDistribution.random(this) }
+        val assignedBiotaOrders = mutableSetOf<TaxonomicOrder>()
+        biotaDistributions = (1..biotaDistributionCount).map {
+            BiotaDistribution.random(this, assignedBiotaOrders).also { distribution ->
+                assignedBiotaOrders += distribution.taxonomicOrder
+            }
+        }
     }
 
     fun makeTopology(degree: Int): Topology {

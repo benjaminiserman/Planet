@@ -3,6 +3,8 @@ package dev.biserman.planet
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.gui.Gui.Mode
 import dev.biserman.planet.planet.climate.ClimateSimulation
+import dev.biserman.planet.planet.ecology.EcologyRuntime
+import dev.biserman.planet.planet.BiotaDistribution
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.rendering.PlanetRenderer
@@ -123,7 +125,10 @@ class Main : Node() {
 	}
 
 	fun advanceHistoryTurn() {
+		EcologyRuntime.advanceAllOneSeason(planet)
 		planet.historyTurn++
+		Gui.instance.statsGraph.updateHistory(planet)
+		planetRenderer.update(planet)
 		Gui.instance.updateHistoryDisplay()
 	}
 
@@ -131,6 +136,7 @@ class Main : Node() {
 
 	fun updatePlanet(newPlanet: Planet) {
 		GD.print("updating planet: $newPlanet")
+		BiotaDistribution.ensureUniqueOrders(newPlanet)
 		planet = newPlanet
 		Gui.instance.resetMapPreviewCenter()
 		planetRenderer.update(newPlanet)

@@ -22,6 +22,8 @@ import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
+import dev.biserman.planet.planet.ecology.EcologyRuntime
+import dev.biserman.planet.planet.ecology.TileEcosystem
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -62,6 +64,7 @@ class PlanetTile(
     @get:JsonIgnore
     val hotspot get() = planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble())
     var moisture = 0.0
+    var ecosystem: TileEcosystem = TileEcosystem()
     var elevation = -100000.0 // set it really low to make errors easier to see
     val airPressure by memo(
         { planet.terrainChangeCount }, { planet.daysPassed }, { ClimateRuntimeConfig.revision }
@@ -187,6 +190,7 @@ class PlanetTile(
         this.elevation = other.elevation
 //        this.temperature = other.temperature
         this.moisture = other.moisture
+        this.ecosystem = TileEcosystem(other.ecosystem.biomass.toMutableMap())
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
         this.springDisplacement = other.springDisplacement
@@ -308,7 +312,7 @@ class PlanetTile(
     fun getInfoText(tab: String): String = when (tab) {
         "basic" -> """
         elevation: ${elevation.formatDigits()}m (density: ${density.formatDigits()})
-        position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()})
+        position: ${tile.position.formatDigits()} (${tile.position.toGeoPoint().formatDigits()}), tile area: ${tile.area.formatDigits(10)}
         prominence: ${prominence.formatDigits()}
         formation time: $formationTime My
         plate: ${tectonicPlate?.name ?: "null"}
@@ -367,6 +371,36 @@ class PlanetTile(
                 }.joinToString("\n") { "  ${it.first}: ${it.second}" }
             }"
         } else ""
+
+        "ecology" -> buildString {
+            appendLine("species count: ${ecosystem.speciesCount}")
+            appendLine("total biomass: ${ecosystem.totalBiomass.formatDigits()}")
+            appendLine("simulation area: ${EcologyRuntime.simulationArea(this@PlanetTile).formatDigits()}")
+            appendLine("biota distributions:")
+            val overlappingDistributions = planet.biotaDistributions
+                .filter { this@PlanetTile in it.region.tiles }
+                .groupingBy { it.taxonomicOrder }
+                .eachCount()
+                .toSortedMap(compareBy { it.name })
+            if (overlappingDistributions.isEmpty()) {
+                appendLine("  none")
+            } else {
+                overlappingDistributions.forEach { (order, count) ->
+                    appendLine("  ${order.name}${if (count > 1) " x$count" else ""}")
+                }
+            }
+            appendLine("species:")
+            if (ecosystem.biomass.isEmpty()) {
+                appendLine("  none")
+            } else {
+                ecosystem.biomass.entries.sortedByDescending { it.value }.forEach { (species, biomass) ->
+                    appendLine(
+                        "  $species: ${biomass.formatDigits()} " +
+                            "(${EcologyRuntime.biomassDensity(this@PlanetTile, species).formatDigits()} density)"
+                    )
+                }
+            }
+        }.trimEnd()
 
         "tectonics" -> """
             formation time: $formationTime My

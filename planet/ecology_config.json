@@ -1,0 +1,18 @@
+{
+  "environmentalVolatility" : 0.2,
+  "globallyDistributedOrders" : [ "POALES", "FABALES", "ASTERALES", "DINOPHYSIALES", "RODENTIA", "CARNIVORA", "PASSERIFORMES", "ACCIPITRIFORMES", "COLEOPTERA", "DIPTERA", "LEPIDOPTERA", "ORTHOPTERA", "LAMINARIALES", "ALISMATALES", "BACILLARIALES", "CALANOIDA", "DECAPODA", "CLUPEIFORMES", "SCLERACTINIA" ],
+  "initialConsumerDensityMax" : 0.06,
+  "initialConsumerDensityMin" : 0.002,
+  "initialProducerCapacityFractionMax" : 0.55,
+  "initialProducerCapacityFractionMin" : 0.1,
+  "integrationSubstepsPerSeason" : 16,
+  "maxSpeciesPerEcosystem" : 10,
+  "maximumAverageEstablishmentStress" : 0.85,
+  "maximumPeakEstablishmentStress" : 2.75,
+  "minimumViableIndividuals" : 2.0,
+  "debugProfiling" : true,
+  "parallelTileSimulation" : false,
+  "parallelTileWorkers" : 2,
+  "simulationAreaPerSquareMeter" : 1.0E-6,
+  "speciesVolatility" : 0.3
+}

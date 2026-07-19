@@ -17,7 +17,9 @@ class ShowSettingsButton() : OptionButton() {
     var settingsCategory = "none"
         set(value) {
             field = value
-            mapLayerButtons.forEach { it.button.setVisible(value in it.categories) }
+            mapLayerButtons.forEach { entry ->
+                entry.button.setVisible(entry.available && value in entry.categories)
+            }
             settingsOptionsPanel.visible = !hiddenForTileInspection && value != "none"
         }
 
@@ -35,22 +37,36 @@ class ShowSettingsButton() : OptionButton() {
 
     fun setHiddenForTileInspection(hidden: Boolean) {
         hiddenForTileInspection = hidden
-        settingsButtons.visible = !hidden
+        // Keep the permanent action buttons available while the tile infobox is open.
+        settingsButtons.visible = true
         settingsOptionsPanel.visible = !hidden && settingsCategory != "none"
     }
 
     private val toggles = mutableMapOf<String, Boolean>()
-    fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any) {
+    fun addToggle(
+        toggle: String,
+        categories: List<String>,
+        onClick: (Boolean) -> Any,
+    ): MapLayerCheckButton {
         val defaultValue = "default" in categories
         toggles[toggle] = defaultValue
-        mapLayerButtons += MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
+        return MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
             toggles[toggle] = it
             onClick(it)
         }).also {
             it.text = toggle
             it.setVisible(false)
             settingsOptionsList.addChild(it)
-        }, categories)
+        }, categories).also { mapLayerButtons += it }
+    }
+
+    fun setAvailable(entry: MapLayerCheckButton, available: Boolean) {
+        entry.available = available
+        if (!available && entry.button.isPressed()) {
+            entry.button.setPressed(false)
+            entry.button.onClick?.invoke(false)
+        }
+        entry.button.visible = available && settingsCategory in entry.categories
     }
 
     fun resetToggles() {
@@ -77,6 +93,9 @@ class ShowSettingsButton() : OptionButton() {
             "terrain",
             "biome",
             "climate",
+            "ecology",
+            "animal_ranges",
+            "biota_distributions",
             "tectonics",
             "debug"
         ).forEachIndexed { index, category ->

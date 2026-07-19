@@ -3,6 +3,11 @@ package dev.biserman.planet.rendering
 import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateSimulation
+import dev.biserman.planet.planet.ecology.EcologyConfig
+import dev.biserman.planet.planet.ecology.EcologyRuntime
+import dev.biserman.planet.planet.ecology.TaxonomicOrder
+import dev.biserman.planet.planet.ecology.Trait
+import dev.biserman.planet.planet.ecology.speciesCatalog
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevationStrength
@@ -34,6 +39,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.ln1p
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.measureTime
@@ -237,6 +243,89 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             categories = listOf("climate", "feature")
         ),
     )
+
+    private val ecologyDensityColor = SimpleDoubleColorMode.redWhenNull { value ->
+        Color.black.transparent.lerp(Color.green, value.coerceIn(0.0, 1.0))
+    }
+    private val biotaDistributionColorModesByOrder = mutableMapOf<TaxonomicOrder, PlanetColorMode>()
+    private val animalColorModesBySpeciesId = mutableMapOf<String, PlanetColorMode>()
+
+    val ecologyColorModes: List<PlanetColorMode> = buildList {
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "ecology_species_richness",
+            categories = listOf("ecology", "overlay"),
+            colorFn = ecologyDensityColor,
+        ) { tile -> tile.ecosystem.speciesCount.toDouble() / EcologyConfig.maxSpeciesPerEcosystem.coerceAtLeast(1) })
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "ecology_total_biomass_density",
+            categories = listOf("ecology", "overlay"),
+            colorFn = ecologyDensityColor,
+        ) { tile -> ln1p(tile.ecosystem.totalBiomass / EcologyRuntime.simulationArea(tile)) / 12.0 })
+
+        val animalSpecies = speciesCatalog.filter { it.feeding != null && Trait.MOTILE in it.traits }
+        val producerSpecies = speciesCatalog.filter { it.autotrophy != null }
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "ecology_animal_biomass_density",
+            categories = listOf("ecology", "overlay"),
+            colorFn = ecologyDensityColor,
+        ) { tile ->
+            ln1p(animalSpecies.sumOf { tile.ecosystem.biomass[it.id] ?: 0.0 } / EcologyRuntime.simulationArea(tile)) / 12.0
+        })
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "ecology_producer_biomass_density",
+            categories = listOf("ecology", "overlay"),
+            colorFn = ecologyDensityColor,
+        ) { tile ->
+            ln1p(producerSpecies.sumOf { tile.ecosystem.biomass[it.id] ?: 0.0 } / EcologyRuntime.simulationArea(tile)) / 12.0
+        })
+
+        animalSpecies.sortedBy { it.id }.forEach { species ->
+            val mode = SimpleDoubleColorMode(
+                this@PlanetRenderer,
+                "${species.id}_range_and_density",
+                categories = listOf("animal_ranges"),
+                colorFn = ecologyDensityColor,
+            ) { tile ->
+                if ((tile.ecosystem.biomass[species.id] ?: 0.0) <= 0.0) {
+                    0.0
+                } else {
+                    0.15 + 0.85 * (ln1p(EcologyRuntime.biomassDensity(tile, species.id)) / 12.0)
+                        .coerceIn(0.0, 1.0)
+                }
+            }
+            animalColorModesBySpeciesId[species.id] = mode
+            add(mode)
+        }
+
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "biota_distribution_overlap",
+            categories = listOf("biota_distributions"),
+            colorFn = ecologyDensityColor,
+        ) { tile ->
+            val count = planet.biotaDistributions.count { tile in it.region.tiles }
+            if (count == 0) 0.0 else (0.15 + count / 6.0).coerceAtMost(1.0)
+        })
+        TaxonomicOrder.entries.sortedBy { it.name }.forEach { order ->
+            val mode = SimpleDoubleColorMode(
+                this@PlanetRenderer,
+                "${order.name.lowercase()}_biota_distribution",
+                categories = listOf("biota_distributions"),
+                colorFn = ecologyDensityColor,
+            ) { tile ->
+                val count = planet.biotaDistributions.count { distribution ->
+                    distribution.taxonomicOrder == order && tile in distribution.region.tiles
+                }
+                if (count == 0) 0.0 else (0.25 + count / 4.0).coerceAtMost(1.0)
+            }
+            biotaDistributionColorModesByOrder[order] = mode
+            add(mode)
+        }
+    }
 
     val planetColorModes = listOf(
         BiomeColorMode(this, categories = listOf("default", "biome", "terrain", "base_layer")),
@@ -445,7 +534,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             categories = listOf("debug", "base_layer")
         ) { if (it.isAboveWater) Color.dimGray else Color.black },
         SimpleColorMode(this, "debug_color", categories = listOf("debug")) { it.debugColor },
-    )
+    ) + ecologyColorModes
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
 
@@ -453,10 +542,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         parent.addChild(meshInstance, forceReadableName = true)
         planetDebugRenders.forEach { it.init() }
         planetColorModes.forEach { it.init() }
+        updateEcologyModeAvailability()
     }
 
     fun update(planet: Planet) {
         this.planet = planet
+        updateEcologyModeAvailability()
         updateMesh()
 
         val timeTaken = measureTime {
@@ -466,6 +557,19 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         }
 
         GD.print("Updating renderers took ${timeTaken.inWholeMilliseconds}ms")
+    }
+
+    private fun updateEcologyModeAvailability() {
+        val presentOrders = planet.biotaDistributions.mapTo(mutableSetOf()) { it.taxonomicOrder }
+        biotaDistributionColorModesByOrder.forEach { (order, mode) ->
+            mode.setAvailable(order in presentOrders)
+        }
+        val extantSpeciesIds = planet.planetTiles.values.asSequence()
+            .flatMap { it.ecosystem.speciesIds.asSequence() }
+            .toSet()
+        animalColorModesBySpeciesId.forEach { (speciesId, mode) ->
+            mode.setAvailable(speciesId in extantSpeciesIds)
+        }
     }
 
     fun getColor(planetTile: PlanetTile): Color {

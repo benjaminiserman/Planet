@@ -15,9 +15,17 @@ abstract class PlanetColorMode(val planetRenderer: PlanetRenderer) {
             planetRenderer.updateMesh()
         }
 
+    private lateinit var toggleEntry: Gui.MapLayerCheckButton
+
     fun init() {
         visible = "default" in categories
-        Gui.instance.showSettingsButton.addToggle("$displayName Color Mode", categories) { visible = it }
+        toggleEntry = Gui.instance.showSettingsButton.addToggle("$displayName Color Mode", categories) { visible = it }
+    }
+
+    fun setAvailable(available: Boolean) {
+        if (::toggleEntry.isInitialized) {
+            Gui.instance.showSettingsButton.setAvailable(toggleEntry, available)
+        }
     }
 
     abstract fun colorsFor(planetTile: PlanetTile): Sequence<Color?>

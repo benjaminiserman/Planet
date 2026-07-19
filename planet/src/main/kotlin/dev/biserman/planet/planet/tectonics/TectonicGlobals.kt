@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.things.StonePlacementType
 import godot.common.util.lerp
 import godot.global.GD
@@ -30,6 +31,10 @@ object TectonicGlobals {
     var tectonicSimulationStop = 100000
 
     var plateTorqueScalar = 0.1
+    // Least-squares fit of corrected degree-35 tile inertia tensors to the legacy area
+    // calculation across representative 10-14 plate partitions. Apply it to every
+    // area-weighted tectonic term so forces and inertia remain in the same calibrated units.
+    var tectonicAreaScale = 0.11513827487177024
     var riftCutoff = 0.4
     var riftSeparationStrength = 0.1
     var minElevation = -12000.0
@@ -129,3 +134,5 @@ object TectonicGlobals {
         return tile.elevation
     }
 }
+
+fun Tile.tectonicArea(): Double = area * TectonicGlobals.tectonicAreaScale
