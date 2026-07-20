@@ -45,7 +45,7 @@ class TectonicPlate(
         try {
             val unconstrainedPole = eulerPole(
                 torque,
-                tiles.map { tile -> tile.tile.position to tile.tile.area }
+                tiles.map { tile -> tile.tile.position to tile.tile.tectonicArea() }
             )
             if (!unconstrainedPole.isFinite()) {
                 GD.print("Discarding non-finite Euler pole for plate $id (${tiles.size} tiles)")
@@ -114,7 +114,7 @@ class TectonicPlate(
         GD.print("Rifting $debugColor in ${points.size}")
         val riftRegions = region.voronoi(points, warp)
         val regionAreas = riftRegions.associateWith { riftRegion ->
-            riftRegion.tiles.sumOf { it.tile.area }
+            riftRegion.tiles.sumOf { it.tile.tectonicArea() }
         }
         val totalArea = regionAreas.values.sum()
         val separationAxes = riftRegions.associateWith { riftRegion ->

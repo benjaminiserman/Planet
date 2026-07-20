@@ -45,7 +45,7 @@ class DivergenceZone(
             PointForce(
                 tile.position,
                 if (towardPlateCenter.lengthSquared() == 0.0) Vector3.ZERO
-                else towardPlateCenter.normalized() * tile.area * TectonicGlobals.ridgePushStrength
+                else towardPlateCenter.normalized() * tile.tectonicArea() * TectonicGlobals.ridgePushStrength
             )
         }
 
