@@ -209,7 +209,7 @@ class ConvergenceZone(
                         PointForce(
                             tile.position,
                             pullDirection.normalized() * TectonicGlobals.slabPullStrength *
-                                tile.area * subductionStrengths[plate]!!
+                                tile.tectonicArea() * subductionStrengths[plate]!!
                         )
                     }
                 }
@@ -245,7 +245,7 @@ class ConvergenceZone(
                     TectonicGlobals.collisionStiffness * stiffnessMultiplier * penetration +
                         TectonicGlobals.collisionDamping * closingSpeed *
                         (1.0 + TectonicGlobals.collisionRestitution)
-                val force = normal * TectonicGlobals.convergencePushStrength * tile.area *
+                val force = normal * TectonicGlobals.convergencePushStrength * tile.tectonicArea() *
                     subductingMass * collisionResistance * response
 
                 convergencePush.getOrPut(plate) { mutableListOf() }

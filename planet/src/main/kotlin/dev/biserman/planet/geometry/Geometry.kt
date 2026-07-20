@@ -24,12 +24,7 @@ fun calculateNormal(p1: Vector3, p2: Vector3, p3: Vector3): Vector3 {
 }
 
 fun triArea(p0: Vector3, p1: Vector3, p2: Vector3): Double {
-    val vab = p1 - p0
-    val faceNormal = vab.cross(p2 - p0)
-    val vabNormal = faceNormal.cross(vab).normalized()
-    val height = Plane(vabNormal, p0).distanceTo(p2)
-    val width = vab.length()
-    return width * height * 0.5
+    return (p1 - p0).cross(p2 - p0).length() * 0.5
 }
 
 fun centroid(verts: List<Vector3>): Vector3 = verts.fold(Vector3.ZERO) { a, b -> a + b } / verts.size
