@@ -23,7 +23,11 @@ import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
 import dev.biserman.planet.planet.ecology.EcologyRuntime
+import dev.biserman.planet.planet.ecology.EnvironmentProfile
 import dev.biserman.planet.planet.ecology.TileEcosystem
+import dev.biserman.planet.planet.ecology.environmentAffinity
+import dev.biserman.planet.planet.ecology.hersfeldtEnvironmentProfile
+import dev.biserman.planet.planet.ecology.speciesCatalogById
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -373,9 +377,19 @@ class PlanetTile(
         } else ""
 
         "ecology" -> buildString {
+            val environment = planet.climateMap[tileId]?.let { climate ->
+                hersfeldt.getOrNull()?.let { hersfeldtEnvironmentProfile(it, climate) }
+            } ?: EnvironmentProfile(emptyMap())
             appendLine("species count: ${ecosystem.speciesCount}")
             appendLine("total biomass: ${ecosystem.totalBiomass.formatDigits()}")
             appendLine("simulation area: ${EcologyRuntime.simulationArea(this@PlanetTile).formatDigits()}")
+            appendLine(
+                "environment tags: " + environment.weights.entries
+                    .filter { it.value > 0.0 }
+                    .sortedByDescending { it.value }
+                    .joinToString { "${it.key.name.lowercase()}=${it.value.formatDigits(2)}" }
+                    .ifEmpty { "none" }
+            )
             appendLine("biota distributions:")
             val overlappingDistributions = planet.biotaDistributions
                 .filter { this@PlanetTile in it.region.tiles }
@@ -394,9 +408,11 @@ class PlanetTile(
                 appendLine("  none")
             } else {
                 ecosystem.biomass.entries.sortedByDescending { it.value }.forEach { (species, biomass) ->
+                    val affinity = speciesCatalogById[species]?.environmentAffinity(environment) ?: 0.0
                     appendLine(
                         "  $species: ${biomass.formatDigits()} " +
-                            "(${EcologyRuntime.biomassDensity(this@PlanetTile, species).formatDigits()} density)"
+                            "(${EcologyRuntime.biomassDensity(this@PlanetTile, species).formatDigits()} density, " +
+                            "${affinity.formatDigits(2)} affinity)"
                     )
                 }
             }

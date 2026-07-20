@@ -52,6 +52,15 @@ fun speciesClimateStressRate(
         altitudeStressMortalityRate(species, elevationMeters)
 }
 
+/** Average annualized climate mortality pressure across all monthly samples. */
+fun averageAnnualClimateStress(
+    species: SpeciesDefinition,
+    climate: ClimateDatum,
+    elevationMeters: Double,
+): Double = climate.months
+    .map { sample -> speciesClimateStressRate(species, sample, elevationMeters) }
+    .average()
+
 /** Allows survivable seasonal stress while rejecting severe average or peak conditions. */
 fun isSpeciesSuitedTo(
     species: SpeciesDefinition,

@@ -5,6 +5,8 @@ import dev.biserman.planet.planet.BiotaDistribution
 import dev.biserman.planet.planet.BiotaDistributionTerrestrial
 import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.ClimateDatumSample
+import dev.biserman.planet.planet.climate.ClimateClassification
+import godot.core.Color
 import kotlin.random.Random
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -12,6 +14,22 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class EcologyProductionTest {
+    private fun climate(
+        temperatureC: Double,
+        insolationWm2: Double,
+        precipitationMm: Double,
+    ) = ClimateDatum(
+        tileId = 1,
+        months = List(12) { ClimateDatumSample(temperatureC, insolationWm2, precipitationMm) },
+    )
+
+    private fun classification(name: String) = ClimateClassification(
+        id = name,
+        name = name,
+        color = Color.html("000000"),
+        terrainColor = Color.html("000000"),
+    )
+
     @Test
     fun `taxonomic order mapping covers every catalog species exactly once`() {
         assertEquals(speciesCatalog.size, speciesCatalogById.size)
@@ -131,6 +149,77 @@ class EcologyProductionTest {
     }
 
     @Test
+    fun `hersfeldt environments expose vegetation and climate placement tags`() {
+        val rainforest = hersfeldtEnvironmentProfile(
+            classification("tropical_rainforest"),
+            climate(27.0, 260.0, 220.0),
+        )
+        val desert = hersfeldtEnvironmentProfile(
+            classification("hot_desert"),
+            climate(31.0, 310.0, 4.0),
+        )
+        val boreal = hersfeldtEnvironmentProfile(
+            classification("continental_boreal"),
+            ClimateDatum(
+                tileId = 1,
+                months = List(12) { month ->
+                    if (month in 4..8) ClimateDatumSample(13.0, 190.0, 55.0)
+                    else ClimateDatumSample(-16.0, 45.0, 35.0)
+                },
+            ),
+        )
+        val savanna = hersfeldtEnvironmentProfile(
+            classification("tropical_dry_savanna"),
+            climate(26.0, 270.0, 65.0),
+        )
+
+        assertEquals(1.0, rainforest[EnvironmentTag.FOREST])
+        assertTrue(rainforest[EnvironmentTag.WET] >= 0.8)
+        assertEquals(1.0, desert[EnvironmentTag.DESERT])
+        assertTrue(desert[EnvironmentTag.DRY] >= 0.9)
+        assertTrue(boreal[EnvironmentTag.COLD] >= 0.8)
+        assertTrue(boreal[EnvironmentTag.SNOWY] >= 0.7)
+        assertEquals(1.0, savanna[EnvironmentTag.GRASSLAND])
+    }
+
+    @Test
+    fun `concrete traits favor specialists in matching hersfeldt environments`() {
+        val rainforest = hersfeldtEnvironmentProfile(
+            classification("tropical_rainforest"),
+            climate(27.0, 260.0, 220.0),
+        )
+        val desert = hersfeldtEnvironmentProfile(
+            classification("hot_desert"),
+            climate(31.0, 310.0, 4.0),
+        )
+        val boreal = hersfeldtEnvironmentProfile(
+            classification("continental_boreal"),
+            climate(-2.0, 120.0, 45.0),
+        )
+
+        val arcticFox = speciesCatalogById.getValue("arctic_fox")
+        val frog = speciesCatalogById.getValue("frog")
+        val cactus = speciesCatalogById.getValue("cactus")
+        val lion = speciesCatalogById.getValue("lion")
+
+        assertTrue(arcticFox.environmentAffinity(boreal) > arcticFox.environmentAffinity(desert))
+        assertTrue(frog.environmentAffinity(rainforest) > frog.environmentAffinity(desert))
+        assertTrue(cactus.environmentAffinity(desert) > cactus.environmentAffinity(rainforest))
+        assertTrue(lion.environmentAffinity(desert) > lion.environmentAffinity(boreal))
+    }
+
+    @Test
+    fun `weighted sampling strongly prefers high affinity candidates`() {
+        val random = Random(1234)
+        val candidates = listOf("specialist", "neutral")
+        val specialistSelections = (1..200).count {
+            candidates.weightedRandomOrNull(random) { if (it == "specialist") 100.0 else 1.0 } == "specialist"
+        }
+
+        assertTrue(specialistSelections >= 190)
+    }
+
+    @Test
     fun `annual suitability permits cold adapted animals through boreal winters`() {
         val boreal = ClimateDatum(
             tileId = 1,
@@ -219,6 +308,35 @@ class EcologyProductionTest {
         assertEquals(7.5, history.first().year, 1e-12)
         assertEquals(7.75, history.last().year, 1e-12)
         assertTrue(history.last().biomass.values.all { it.isFinite() && it >= 0.0 })
+    }
+
+    @Test
+    fun `rk2 midpoint closely tracks rk4 over a weekly step`() {
+        val selected = listOf(
+            speciesCatalogById.getValue("grass"),
+            speciesCatalogById.getValue("rabbit"),
+        )
+        val model = EcosystemModel(
+            species = selected,
+            seasonsEnabled = true,
+            landArea = 10_000.0,
+            climate = oceanicTemperateClimate,
+            altitudeMeters = 500.0,
+        )
+        val state = mapOf("grass" to 5_000.0, "rabbit" to 100.0)
+        val dt = 1.0 / 52.0
+        val rk2 = rk2Step(0.0, state, dt, model)
+        val rk4 = rk4Step(0.0, state, dt, model)
+
+        selected.forEach { species ->
+            val expected = rk4.getValue(species.id)
+            assertEquals(
+                expected,
+                rk2.getValue(species.id),
+                maxOf(1e-6, expected * 0.005),
+                "RK2 drifted more than 0.5% for ${species.id}",
+            )
+        }
     }
 
     @Test

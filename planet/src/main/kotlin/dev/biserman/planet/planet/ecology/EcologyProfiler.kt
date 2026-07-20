@@ -17,6 +17,7 @@ internal class EcologyTurnProfile(
     val solverNanos = LongAdder()
     val finalizationNanos = LongAdder()
     val tileNanos = LongAdder()
+    val rk2Steps = LongAdder()
     val rk4Steps = LongAdder()
     val derivativeCalls = LongAdder()
     val derivativeNanos = LongAdder()
@@ -92,7 +93,7 @@ internal class EcologyTurnProfile(
                 "  model cache: hits=${modelCacheHits.sum()} misses=${modelCacheMisses.sum()}"
             )
             appendLine(
-                    "  integration: rk4=${rk4Steps.sum()} derivatives=$derivatives " +
+                    "  integration: rk2=${rk2Steps.sum()} rk4=${rk4Steps.sum()} derivatives=$derivatives " +
                     "derivativeCpu=${milliseconds(derivativeNanos.sum())}ms " +
                     "habitatCpu=${milliseconds(habitatNanos.sum())}ms " +
                     "otherDerivativeCpu=${milliseconds(derivativeOtherNanos)}ms"

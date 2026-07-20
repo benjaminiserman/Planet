@@ -76,6 +76,16 @@ fun addScaled(state: Biomass, rate: Biomass, scale: Double): Biomass =
         (biomass + rate.getValue(id) * scale).coerceAtLeast(0.0)
     }
 
+/** Second-order midpoint Runge-Kutta step requiring two derivative evaluations. */
+fun rk2Step(year: Double, state: Biomass, dt: Double, model: EcosystemModel): Biomass {
+    EcologyProfiler.current?.rk2Steps?.increment()
+    val initialRate = derivatives(year, state, model)
+    val midpointState = addScaled(state, initialRate, dt / 2.0)
+    val midpointRate = derivatives(year + dt / 2.0, midpointState, model)
+    return addScaled(state, midpointRate, dt)
+}
+
+/** Fourth-order Runge-Kutta step retained for accuracy comparisons and notebook experiments. */
 fun rk4Step(year: Double, state: Biomass, dt: Double, model: EcosystemModel): Biomass {
     EcologyProfiler.current?.rk4Steps?.increment()
     val k1 = derivatives(year, state, model)
@@ -130,7 +140,7 @@ fun simulate(
         }
         if (step < totalSteps) {
             val deterministicState = applyIndividualExtinctionThreshold(
-                rk4Step(startYear + step * dt, state, dt, model),
+                rk2Step(startYear + step * dt, state, dt, model),
                 model,
                 minimumIndividuals,
             )

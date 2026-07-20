@@ -9,6 +9,9 @@ object EcologyConfig {
     var speciesVolatility = 0.30
     var maximumAverageEstablishmentStress = 0.85
     var maximumPeakEstablishmentStress = 2.75
+    var minimumEnvironmentAffinity = -0.35
+    var environmentAffinitySelectionStrength = 1.5
+    var climateStressSelectionStrength = 2.0
     var debugProfiling = false
     var parallelTileSimulation = false
     var parallelTileWorkers = 2
@@ -50,6 +53,9 @@ object EcologyConfig {
         require(speciesVolatility >= 0.0)
         require(maximumAverageEstablishmentStress >= 0.0)
         require(maximumPeakEstablishmentStress >= maximumAverageEstablishmentStress)
+        require(minimumEnvironmentAffinity.isFinite())
+        require(environmentAffinitySelectionStrength >= 0.0)
+        require(climateStressSelectionStrength >= 0.0)
         require(parallelTileWorkers >= 1)
         require(simulationAreaPerSquareMeter > 0.0)
         require(initialProducerCapacityFractionMin in 0.0..1.0)

@@ -8,6 +8,32 @@ typealias Biomass = Map<String, Double>
 /** Marker interface for the declarative effects attached to a species trait. */
 sealed interface TraitEffect
 
+/** Broad environmental conditions used to bias establishment without replacing numeric climate stress. */
+enum class EnvironmentTag {
+    COLD,
+    HOT,
+    DRY,
+    WET,
+    ASEASONAL,
+    SEASONAL,
+    HYPERSEASONAL,
+    FOREST,
+    GRASSLAND,
+    WETLAND,
+    DESERT,
+    SNOWY,
+    HIGH_INSOLATION,
+    LOW_LIGHT,
+}
+
+/** Signed affinity contributed by a concrete trait toward one environmental condition. */
+data class EnvironmentAffinityEffect(
+    val tag: EnvironmentTag,
+    val affinity: Double,
+) : TraitEffect {
+    init { require(affinity.isFinite()) }
+}
+
 /** Capability and behavior labels used by requirements, conflicts, and counters. */
 enum class EffectTag {
     AUTOTROPHY,      // Can gain biomass without eating another species.
@@ -287,4 +313,3 @@ enum class SizeClass(
     /** Allometric multiplier used by baseline feeding and mortality rates. */
     val feedingAllometry: Double = individualBiomass.pow(-0.08)
 }
-

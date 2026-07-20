@@ -10,6 +10,7 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.random.Random
 import java.util.concurrent.ForkJoinPool
+import kotlin.jvm.optionals.getOrNull
 
 object EcologyRuntime {
     internal fun SpeciesDefinition.matchesHabitat(method: BiotaDistributionMethod): Boolean =
@@ -61,9 +62,17 @@ object EcologyRuntime {
         if (habitatSpecies.isEmpty()) return
 
         val climate = tile.planet.climateMap[tile.tileId] ?: return
-        val suitedSpecies = habitatSpecies.filter { species ->
-            isSpeciesSuitedTo(species, climate, tile.elevationAboveSeaLevel)
+        val environment = tile.hersfeldt.getOrNull()
+            ?.let { hersfeldtEnvironmentProfile(it, climate) }
+            ?: EnvironmentProfile(emptyMap())
+        val averageStress = habitatSpecies.associateWith { species ->
+            averageAnnualClimateStress(species, climate, tile.elevationAboveSeaLevel)
         }
+        val suitedSpecies = habitatSpecies
+            .filter { species -> isSpeciesSuitedTo(species, climate, tile.elevationAboveSeaLevel) }
+            .filter { species ->
+                species.environmentAffinity(environment) >= EcologyConfig.minimumEnvironmentAffinity
+            }
         val preferredPool = suitedSpecies
         val producerPool = suitedSpecies.filter { it.autotrophy != null }.ifEmpty {
             leastUnsuitableProducers(
@@ -77,6 +86,13 @@ object EcologyRuntime {
             producerPool = producerPool,
             limit = EcologyConfig.maxSpeciesPerEcosystem,
             random = random,
+            weight = { species ->
+                speciesEstablishmentWeight(
+                    species,
+                    environment,
+                    averageStress.getValue(species),
+                )
+            },
         )
         if (selected.isEmpty()) return
 
@@ -229,12 +245,45 @@ internal fun selectSpeciesForEcosystem(
     producerPool: List<SpeciesDefinition>,
     limit: Int,
     random: Random,
+    weight: (SpeciesDefinition) -> Double = { 1.0 },
 ): List<SpeciesDefinition> {
     require(limit >= 1)
-    val producer = producerPool.randomOrNull(random) ?: return emptyList()
+    val producer = producerPool.weightedRandomOrNull(random, weight) ?: return emptyList()
     return buildList {
         add(producer)
-        addAll((preferredPool - producer).shuffled(random).take(limit - 1))
+        addAll((preferredPool - producer).weightedSampleWithoutReplacement(limit - 1, random, weight))
+    }
+}
+
+internal fun <T> List<T>.weightedRandomOrNull(
+    random: Random,
+    weight: (T) -> Double,
+): T? {
+    if (isEmpty()) return null
+    val usableWeights = map { weight(it).takeIf { value -> value.isFinite() && value > 0.0 } ?: 0.0 }
+    val total = usableWeights.sum()
+    if (total <= 0.0) return randomOrNull(random)
+    var remaining = random.nextDouble(total)
+    for (index in indices) {
+        remaining -= usableWeights[index]
+        if (remaining <= 0.0) return this[index]
+    }
+    return last()
+}
+
+internal fun <T> List<T>.weightedSampleWithoutReplacement(
+    count: Int,
+    random: Random,
+    weight: (T) -> Double,
+): List<T> {
+    if (count <= 0 || isEmpty()) return emptyList()
+    val remaining = toMutableList()
+    return buildList {
+        repeat(count.coerceAtMost(remaining.size)) {
+            val selected = remaining.weightedRandomOrNull(random, weight) ?: return@repeat
+            add(selected)
+            remaining.remove(selected)
+        }
     }
 }
 
