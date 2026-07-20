@@ -137,7 +137,7 @@ class Gui() : Node() {
     val isPlayToggled get() = editSimulationRunning
     fun togglePlayButton(shouldToggleOn: Boolean = !isPlayToggled) {
         editSimulationRunning = shouldToggleOn && mode == Mode.EDIT
-        playButton.text = if (editSimulationRunning) "⏹" else "▶"
+        playButton.text = if (editSimulationRunning) "■" else "▶"
         Main.instance.timerActive = editSimulationRunning
     }
 
