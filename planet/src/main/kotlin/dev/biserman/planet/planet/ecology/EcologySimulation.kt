@@ -76,6 +76,12 @@ fun addScaled(state: Biomass, rate: Biomass, scale: Double): Biomass =
         (biomass + rate.getValue(id) * scale).coerceAtLeast(0.0)
     }
 
+/** First-order forward Euler step requiring one derivative evaluation. */
+fun eulerStep(year: Double, state: Biomass, dt: Double, model: EcosystemModel): Biomass {
+    EcologyProfiler.current?.eulerSteps?.increment()
+    return addScaled(state, derivatives(year, state, model), dt)
+}
+
 /** Second-order midpoint Runge-Kutta step requiring two derivative evaluations. */
 fun rk2Step(year: Double, state: Biomass, dt: Double, model: EcosystemModel): Biomass {
     EcologyProfiler.current?.rk2Steps?.increment()
@@ -114,7 +120,9 @@ fun simulate(
     minimumIndividuals: Double = minimumViableIndividuals,
     startYear: Double = 0.0,
 ): List<SimulationPoint> {
-    require(dt > 0.0 && dt <= 1.0 / 52.0) { "Use weekly or smaller ecological substeps" }
+    require(dt > 0.0 && dt <= 1.0 / 16.0) {
+        "Use at least four ecological substeps per season"
+    }
     require(minimumIndividuals >= 0.0)
     require(initial.keys == model.species.map { it.id }.toSet())
     require(initial.values.all { it >= 0.0 })
@@ -140,7 +148,7 @@ fun simulate(
         }
         if (step < totalSteps) {
             val deterministicState = applyIndividualExtinctionThreshold(
-                rk2Step(startYear + step * dt, state, dt, model),
+                eulerStep(startYear + step * dt, state, dt, model),
                 model,
                 minimumIndividuals,
             )

@@ -3,7 +3,7 @@ package dev.biserman.planet.planet.ecology
 @Suppress("MayBeConstant")
 object EcologyConfig {
     var maxSpeciesPerEcosystem = 20
-    var integrationSubstepsPerSeason = 16
+    var integrationSubstepsPerSeason = 4
     var minimumViableIndividuals = 2.0
     var environmentalVolatility = 0.20
     var speciesVolatility = 0.30
@@ -45,8 +45,8 @@ object EcologyConfig {
 
     fun validate() {
         require(maxSpeciesPerEcosystem >= 1) { "maxSpeciesPerEcosystem must be positive" }
-        require(integrationSubstepsPerSeason >= 13) {
-            "integrationSubstepsPerSeason must preserve weekly-or-smaller integration steps"
+        require(integrationSubstepsPerSeason >= 4) {
+            "integrationSubstepsPerSeason must preserve four-or-more steps per season"
         }
         require(minimumViableIndividuals >= 0.0)
         require(environmentalVolatility >= 0.0)

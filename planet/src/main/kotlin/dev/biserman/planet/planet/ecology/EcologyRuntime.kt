@@ -149,7 +149,7 @@ object EcologyRuntime {
         val modelStart = if (profile != null) System.nanoTime() else 0L
         val model = modelFor(tile, definitions)
         if (profile != null) profile.modelNanos.add(System.nanoTime() - modelStart)
-        val steps = EcologyConfig.integrationSubstepsPerSeason.coerceAtLeast(13)
+        val steps = EcologyConfig.integrationSubstepsPerSeason.coerceAtLeast(4)
         val solverStart = if (profile != null) System.nanoTime() else 0L
         val result = simulate(
             model = model,

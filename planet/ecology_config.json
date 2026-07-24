@@ -5,7 +5,7 @@
   "initialConsumerDensityMin" : 0.002,
   "initialProducerCapacityFractionMax" : 0.55,
   "initialProducerCapacityFractionMin" : 0.1,
-  "integrationSubstepsPerSeason" : 16,
+  "integrationSubstepsPerSeason" : 4,
   "maxSpeciesPerEcosystem" : 10,
   "maximumAverageEstablishmentStress" : 0.85,
   "maximumPeakEstablishmentStress" : 2.75,

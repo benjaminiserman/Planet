@@ -340,6 +340,71 @@ class EcologyProductionTest {
     }
 
     @Test
+    fun `forward euler remains close to rk4 over a weekly step`() {
+        val selected = listOf(
+            speciesCatalogById.getValue("grass"),
+            speciesCatalogById.getValue("rabbit"),
+        )
+        val model = EcosystemModel(
+            species = selected,
+            seasonsEnabled = true,
+            landArea = 10_000.0,
+            climate = oceanicTemperateClimate,
+            altitudeMeters = 500.0,
+        )
+        val state = mapOf("grass" to 5_000.0, "rabbit" to 100.0)
+        val dt = 1.0 / 52.0
+        val euler = eulerStep(0.0, state, dt, model)
+        val rk4 = rk4Step(0.0, state, dt, model)
+
+        selected.forEach { species ->
+            val expected = rk4.getValue(species.id)
+            assertEquals(
+                expected,
+                euler.getValue(species.id),
+                maxOf(1e-6, expected * 0.02),
+                "Euler drifted more than 2% for ${species.id}",
+            )
+        }
+    }
+
+    @Test
+    fun `four euler substeps remain close to rk4 over one season`() {
+        val selected = listOf(
+            speciesCatalogById.getValue("grass"),
+            speciesCatalogById.getValue("rabbit"),
+        )
+        val model = EcosystemModel(
+            species = selected,
+            seasonsEnabled = true,
+            landArea = 10_000.0,
+            climate = oceanicTemperateClimate,
+            altitudeMeters = 500.0,
+        )
+        val initial = mapOf("grass" to 5_000.0, "rabbit" to 100.0)
+        val dt = 0.25 / 4.0
+        var euler = initial
+        var rk4 = initial
+        repeat(4) { step ->
+            val year = step * dt
+            euler = eulerStep(year, euler, dt, model)
+            rk4 = rk4Step(year, rk4, dt, model)
+        }
+
+        selected.forEach { species ->
+            val expected = rk4.getValue(species.id)
+            val actual = euler.getValue(species.id)
+            assertTrue(actual.isFinite() && actual >= 0.0)
+            assertEquals(
+                expected,
+                actual,
+                maxOf(1e-6, expected * 0.10),
+                "Four-step Euler drifted more than 10% for ${species.id}",
+            )
+        }
+    }
+
+    @Test
     fun `extinction threshold is based on individual count`() {
         val rabbit = speciesCatalogById.getValue("rabbit")
         val model = EcosystemModel(listOf(rabbit), seasonsEnabled = false, landArea = 1.0)
