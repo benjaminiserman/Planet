@@ -22,6 +22,13 @@ object ClimateRuntimeConfig {
                 revision++
             }
         }
+    var periapsis = 3.5
+        set(value) {
+            if (field != value) {
+                field = value
+                revision++
+            }
+        }
     var distanceToStar = 0.0
         set(value) {
             if (field != value) {
@@ -113,6 +120,7 @@ object ClimateRuntimeConfig {
     fun resetToDefaults() {
         axialTiltDegrees = defaultAxialTiltDegrees
         orbitalEccentricity = defaultOrbitalEccentricity
+        periapsis = 3.5
         distanceToStar = 0.0
         greenhouseEffect = 0.0
         moisture = 0.0

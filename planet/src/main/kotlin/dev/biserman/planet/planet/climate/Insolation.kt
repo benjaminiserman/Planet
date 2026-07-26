@@ -2,7 +2,6 @@ package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.northSpringEquinox
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.opticalDepthConstant
-import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.periapsis
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.solarConstant
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
@@ -13,7 +12,7 @@ object Insolation {
     // Earth–Sun distance correction
     fun eccentricityFactor(dayOfYear: Double): Double {
         return 1.0 + ClimateRuntimeConfig.orbitalEccentricity * 2 *
-                cos(2.0 * Math.PI * (dayOfYear + periapsis) / yearLength)
+                cos(2.0 * Math.PI * (dayOfYear + ClimateRuntimeConfig.periapsis) / yearLength)
     }
 
     // Solar declination (radians, Cooper’s formula)

@@ -281,6 +281,28 @@ layout_mode = 2
 text = "0.017"
 horizontal_alignment = 2
 
+[node name="PeriapsisRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/PeriapsisRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Periapsis timing"
+
+[node name="PeriapsisSlider" type="HSlider" parent="GUI/ClimateConfigPanel/Margin/Content/PeriapsisRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = -182.621
+max_value = 182.621
+value = 3.379
+
+[node name="PeriapsisValue" type="Label" parent="GUI/ClimateConfigPanel/Margin/Content/PeriapsisRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "+4 d (summer)"
+horizontal_alignment = 2
+
 [node name="DistanceRow" type="HBoxContainer" parent="GUI/ClimateConfigPanel/Margin/Content"]
 layout_mode = 2
 
