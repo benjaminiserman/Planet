@@ -230,6 +230,42 @@ class EcologyEnvironmentTest {
         assertEquals(Habitat.AERIAL, ecology.niches[nicheIndex].habitat)
     }
 
+    @Test
+    fun `ordinary flight does not establish over open ocean`() {
+        val ecology = EcologyCompiler.compile(
+            listOf(
+                EarthSpeciesCatalog.ALL.first { it.id == "bald-eagle" },
+                EarthSpeciesCatalog.ALL.first { it.id == "brown-pelican" },
+                EarthSpeciesCatalog.ALL.first { it.id == "wandering-albatross" },
+            ),
+        )
+        val openOcean = ocean(waterDepthM = 80.0, usefulSunlightReachesWater = true)
+
+        assertEquals(-1, NicheSelection.choose(ecology.species[0], ecology, openOcean))
+        assertEquals(-1, NicheSelection.choose(ecology.species[1], ecology, openOcean))
+        val albatrossNiche = NicheSelection.choose(ecology.species[2], ecology, openOcean)
+        assertTrue(albatrossNiche >= 0)
+        assertEquals(Habitat.AERIAL, ecology.niches[albatrossNiche].habitat)
+        assertTrue(ecology.species[2].pelagicAerialResident)
+    }
+
+    @Test
+    fun `dark water requires an explicit depth adaptation`() {
+        val ecology = EcologyCompiler.compile(
+            listOf(
+                EarthSpeciesCatalog.ALL.first { it.id == "ocellaris-clownfish" },
+                EarthSpeciesCatalog.ALL.first { it.id == "deep-sea-anglerfish" },
+            ),
+        )
+        val darkOcean = ocean(waterDepthM = 900.0, usefulSunlightReachesWater = false)
+
+        assertEquals(-1, NicheSelection.choose(ecology.species[0], ecology, darkOcean))
+        val anglerfishNiche = NicheSelection.choose(ecology.species[1], ecology, darkOcean)
+        assertTrue(anglerfishNiche >= 0)
+        assertEquals(Habitat.DARK_WATER, ecology.niches[anglerfishNiche].habitat)
+        assertTrue(ecology.species[1].darkWaterAdapted)
+    }
+
     private fun land(
         adjacentToMajorRiver: Boolean = false,
         canopyCover: Double = 0.0,

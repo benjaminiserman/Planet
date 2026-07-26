@@ -21,8 +21,14 @@ class EcologyWorldEcosystemHealthTest {
                     "tail_cv=${"%.4f".format(result.tailCv)} expected_stable=${result.intendedStable} " +
                     "expected_extinctions=${result.expectedExtinctions.joinToString(",")} " +
                     "missing_roles=${result.missingRoles.joinToString(",")} " +
+                    "producer_kg=${"%.3e".format(result.trophicBiomass.producers)} " +
+                    "primary_kg=${"%.3e".format(result.trophicBiomass.primaryConsumers)} " +
+                    "predator_kg=${"%.3e".format(result.trophicBiomass.predators)} " +
+                    "apex_kg=${"%.3e".format(result.trophicBiomass.apexPredators)} " +
+                    "plankton_kg=${"%.3e".format(result.finalBiomassById.getOrDefault("invariant-plankton", 0.0))} " +
                     "survivors=${result.survivors.joinToString(",")} " +
-                    "losses=${result.extinctionSeasons.entries.joinToString(",") { "${it.key}@${it.value}" }}",
+                    "losses=${result.extinctionSeasons.entries.joinToString(",") { "${it.key}@${it.value}" }} " +
+                    "all_kg=${result.finalBiomassById.entries.joinToString(",") { "${it.key}:${"%.2e".format(it.value)}" }}",
             )
             val actualExtinctions = result.extinctionSeasons.keys
             val missingExpectedExtinctions =
@@ -45,6 +51,47 @@ class EcologyWorldEcosystemHealthTest {
                 }
                 if (result.expectedExtinctions.isEmpty() && result.missingRoles.isNotEmpty()) {
                     failures += "${result.name} lost required roles: ${result.missingRoles.joinToString()}"
+                }
+            }
+            if (result.intendedStable && result.expectedExtinctions.isEmpty()) {
+                val animalBiomass =
+                    result.trophicBiomass.primaryConsumers +
+                        result.trophicBiomass.predators +
+                        result.trophicBiomass.apexPredators
+                if (result.isLand && animalBiomass > 0.0 &&
+                    result.trophicBiomass.producers / animalBiomass < 3.0
+                ) {
+                    failures += "${result.name} had less than a threefold terrestrial producer/animal pyramid"
+                }
+                if (!result.isLand) {
+                    val plankton =
+                        result.finalBiomassById.getOrDefault("invariant-plankton", 0.0)
+                    if (plankton !in 1.0e8..1.0e11) {
+                        failures +=
+                            "${result.name} plankton biomass ${"%.3e".format(plankton)} kg " +
+                                "was outside the broad one-tile target"
+                    }
+                    if (
+                        plankton > 0.0 &&
+                        result.evolvingFilterFeederBiomass > plankton * 0.10
+                    ) {
+                        failures +=
+                            "${result.name} had evolving filter feeders above 10% of plankton biomass"
+                    }
+                }
+                val predatoryBiomass =
+                    result.trophicBiomass.predators +
+                        result.trophicBiomass.apexPredators
+                if (
+                    result.trophicBiomass.primaryConsumers > 0.0 &&
+                    predatoryBiomass > result.trophicBiomass.primaryConsumers
+                ) {
+                    failures += "${result.name} had more predatory than primary-consumer biomass"
+                }
+                if (result.poorClimateFits.isNotEmpty()) {
+                    failures +=
+                        "${result.name} retained species without a viable season: " +
+                            result.poorClimateFits.joinToString()
                 }
             }
             when (result.name) {
@@ -71,6 +118,22 @@ class EcologyWorldEcosystemHealthTest {
                     }
                 }
             }
+        }
+        val baselineLandRatios = results
+            .filter { it.intendedStable && it.expectedExtinctions.isEmpty() && it.isLand }
+            .mapNotNull { result ->
+                val animals =
+                    result.trophicBiomass.primaryConsumers +
+                        result.trophicBiomass.predators +
+                        result.trophicBiomass.apexPredators
+                if (animals > 0.0) result.trophicBiomass.producers / animals else null
+            }
+            .sorted()
+        if (
+            baselineLandRatios.isEmpty() ||
+            baselineLandRatios[baselineLandRatios.size / 2] < 50.0
+        ) {
+            failures += "Median terrestrial producer/animal biomass ratio was below 50"
         }
         assertTrue(failures.isEmpty(), failures.joinToString(separator = "\n"))
     }
@@ -112,7 +175,7 @@ class EcologyWorldEcosystemHealthTest {
         }
 
         val fluxes = CellTurnFluxes()
-        val totals = DoubleArray(400)
+        val totals = DoubleArray(SIMULATION_SEASONS)
         var carrion = 0.0
         var detritus = 0.0
         var waste = 0.0
@@ -120,7 +183,7 @@ class EcologyWorldEcosystemHealthTest {
         var activeClimate = scenario.climate
         var activeTile = scenario.tile
         val extinctionSeasons = linkedMapOf<String, Int>()
-        repeat(400) { season ->
+        repeat(SIMULATION_SEASONS) { season ->
             scenario.climateShifts.filter { it.year * 4 == season }.forEach { shift ->
                 activeClimate = shift.climate
             }
@@ -205,7 +268,7 @@ class EcologyWorldEcosystemHealthTest {
             totals[season] = community.totalBiomass()
         }
 
-        val tail = totals.copyOfRange(320, 400)
+        val tail = totals.copyOfRange(SIMULATION_SEASONS * 4 / 5, SIMULATION_SEASONS)
         val mean = tail.average()
         val cv =
             if (mean > 0.0) sqrt(tail.sumOf { (it - mean) * (it - mean) } / tail.size) / mean
@@ -230,8 +293,42 @@ class EcologyWorldEcosystemHealthTest {
         val missingRoles = requiredRoles.filter { role ->
             survivingSpecies.none { it.supports(role) }
         }
+        val trophicBiomass = trophicBiomass(ecology, community, finalBiomassById)
+        val evolvingFilterFeederBiomass = (0 until community.size).sumOf { populationIndex ->
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            if (
+                species.kind == SpeciesKind.EVOLVING &&
+                species.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal] > 0.0
+            ) {
+                finalBiomassById.getValue(species.id)
+            } else {
+                0.0
+            }
+        }
+        val poorClimateFits = ecology.species
+            .filter { species ->
+                species.kind == SpeciesKind.EVOLVING &&
+                    finalBiomassById.getOrDefault(species.id, 0.0) > 0.0
+            }
+            .filter { species ->
+                val niche = ecology.niches[nicheBySpecies.getValue(species.index)]
+                (0 until 48).maxOf { sampleIndex ->
+                    val year = sampleIndex / 48.0
+                    val environment = environmentAt(
+                        scenario.climate.sampleAt(year),
+                        scenario.climate.averageTemperature,
+                        scenario.tile,
+                        scenario.climate.tileId,
+                        year,
+                        marineSnow = initialMarineSnow,
+                    )
+                    EcologyFitness.combined(species, environment, niche.habitat)
+                } < 0.35
+            }
+            .map { it.displayName }
         return HealthResult(
             scenario.name,
+            scenario.tile.isLand,
             community.size,
             ecology.species.size,
             cv,
@@ -241,7 +338,44 @@ class EcologyWorldEcosystemHealthTest {
             missingRoles,
             scenario.expectedExtinctions,
             finalBiomassById,
+            trophicBiomass,
+            evolvingFilterFeederBiomass,
+            poorClimateFits,
         )
+    }
+
+    private fun trophicBiomass(
+        ecology: CompiledEcology,
+        community: TileCommunity,
+        finalBiomassById: Map<String, Double>,
+    ): TrophicBiomass {
+        val extantIndices = (0 until community.size)
+            .mapTo(hashSetOf()) { community.speciesIndices[it] }
+        var producers = 0.0
+        var primaryConsumers = 0.0
+        var predators = 0.0
+        var apexPredators = 0.0
+        var other = 0.0
+        extantIndices.forEach { speciesIndex ->
+            val species = ecology.species[speciesIndex]
+            val biomass = finalBiomassById.getValue(species.id)
+            when {
+                species.supports(TrophicRole.PRODUCER) -> producers += biomass
+                species.supports(TrophicRole.PREDATOR) -> {
+                    val eatsExtantPredator =
+                        extantIndices.any { consumerIndex ->
+                            consumerIndex != speciesIndex &&
+                                ecology.species[consumerIndex].supports(TrophicRole.PREDATOR) &&
+                                ecology.interactions.get(speciesIndex, consumerIndex).kind ==
+                                InteractionKind.PREDATION
+                        }
+                    if (eatsExtantPredator) apexPredators += biomass else predators += biomass
+                }
+                species.supports(TrophicRole.PRIMARY_CONSUMER) -> primaryConsumers += biomass
+                else -> other += biomass
+            }
+        }
+        return TrophicBiomass(producers, primaryConsumers, predators, apexPredators, other)
     }
 
     private fun invariantGuilds(tile: ParsedTile): List<SpeciesDefinition> = buildList {
@@ -263,15 +397,11 @@ class EcologyWorldEcosystemHealthTest {
         speciesSharingNiche: Int,
     ): Double {
         val carryingBiomass =
-            environment.areaKm2 *
-                220.0 *
-                species.sizeClass.densityScale *
-                environment.fertility *
-                environment.habitatAvailability(niche.habitat).coerceAtLeast(0.02) *
-                environment.resourceSupport(niche, species.sizeClass).coerceAtLeast(0.04)
+            EcologyBiomass.carryingCapacityKg(species, niche, environment)
         val viableSeedMultiplier = when (niche.strategy) {
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.FILTER_FEEDING,
             EcoStrategy.SCAVENGING -> 20.0
             else -> 100.0
@@ -285,6 +415,7 @@ class EcologyWorldEcosystemHealthTest {
             EcoStrategy.COPROPHAGY -> 0.45
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.SCAVENGING,
             EcoStrategy.PARASITISM -> 0.015
         }
@@ -612,6 +743,7 @@ class EcologyWorldEcosystemHealthTest {
 
     private data class HealthResult(
         val name: String,
+        val isLand: Boolean,
         val extant: Int,
         val total: Int,
         val tailCv: Double,
@@ -621,6 +753,17 @@ class EcologyWorldEcosystemHealthTest {
         val missingRoles: List<TrophicRole>,
         val expectedExtinctions: Set<String>,
         val finalBiomassById: Map<String, Double>,
+        val trophicBiomass: TrophicBiomass,
+        val evolvingFilterFeederBiomass: Double,
+        val poorClimateFits: List<String>,
+    )
+
+    private data class TrophicBiomass(
+        val producers: Double,
+        val primaryConsumers: Double,
+        val predators: Double,
+        val apexPredators: Double,
+        val other: Double,
     )
 
     private enum class TrophicRole {
@@ -639,5 +782,9 @@ class EcologyWorldEcosystemHealthTest {
         TrophicRole.PREDATOR ->
             strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0 ||
                 strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] > 0.0
+    }
+
+    private companion object {
+        const val SIMULATION_SEASONS = 4_000
     }
 }

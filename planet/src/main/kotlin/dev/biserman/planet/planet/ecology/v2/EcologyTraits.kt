@@ -88,7 +88,9 @@ enum class CommonTrait(
             TraitEffect.TemperatureOptimalTolerance(colderC = 30.0, hotterC = 20.0),
             TraitEffect.WaterRequirement(-0.25),
             TraitEffect.ReserveCapacity(0.15),
-            TraitEffect.Dormancy(DormancyKind.PROPAGULE, 0.995),
+            TraitEffect.NicheCompetitionSensitivity(0.15),
+            TraitEffect.Dormancy(DormancyKind.PROPAGULE, 0.9995),
+            TraitEffect.BroadSalinityTolerance,
             TraitEffect.ReproductionMultiplier(0.88),
             TraitEffect.MaintenanceCost(0.08),
         ),
@@ -130,8 +132,6 @@ enum class CommonTrait(
         "A broad light-harvesting body surface containing photosynthetic pigments.",
         listOf(
             TraitEffect.StrategySupport(EcoStrategy.PHOTOSYNTHESIS, 1.0),
-            TraitEffect.HabitatSupport(Habitat.LAND_SURFACE, 0.35),
-            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.35),
             TraitEffect.MaintenanceCost(0.08),
         ),
     ),
@@ -141,6 +141,7 @@ enum class CommonTrait(
         listOf(
             TraitEffect.StrategySupport(EcoStrategy.PHOTOSYNTHESIS, 1.0),
             TraitEffect.HabitatSupport(Habitat.AERIAL, 0.78),
+            TraitEffect.PelagicAerialResidency,
             TraitEffect.WaterRequirement(-0.15),
             TraitEffect.MaintenanceCost(0.08),
         ),
@@ -168,10 +169,18 @@ enum class CommonTrait(
         "Broad propulsive limbs or fins that support controlled swimming in open water.",
         listOf(
             TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.72),
-            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.58),
             TraitEffect.HabitatSupport(Habitat.COASTAL, 0.52),
-            TraitEffect.HabitatSupport(Habitat.FRESHWATER, 0.48),
             TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    DEEP_DIVING_PHYSIOLOGY(
+        "deep-diving physiology",
+        "Pressure-tolerant tissues, collapsible gas spaces, oxygen stores, or equivalent adaptations permit prolonged activity below the sunlit surface layer.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.65),
+            TraitEffect.DarkWaterAdaptation,
+            TraitEffect.ReserveCapacity(0.08),
+            TraitEffect.MaintenanceCost(0.12),
         ),
     ),
     AMPHIBIOUS_LIMBS(
@@ -217,7 +226,6 @@ enum class CommonTrait(
         "A gas- or fluid-regulating chamber that controls position in the water column without continuous swimming.",
         listOf(
             TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.70),
-            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.35),
             TraitEffect.HabitatSupport(Habitat.COASTAL, 0.55),
             TraitEffect.Defense(-0.05),
             TraitEffect.MaintenanceCost(0.04),
@@ -228,8 +236,19 @@ enum class CommonTrait(
         "Membranes and excretory structures that maintain internal chemistry in dilute freshwater.",
         listOf(
             TraitEffect.HabitatSupport(Habitat.FRESHWATER, 0.80),
+            TraitEffect.FreshwaterOsmoregulation,
             TraitEffect.ReproductionMultiplier(0.96),
             TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    EURYHALINE_OSMOREGULATION(
+        "euryhaline osmoregulation",
+        "Adjustable membranes, kidneys, salt glands, or analogous organs permit repeated transitions between dilute freshwater and salty water.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.FRESHWATER, 0.68),
+            TraitEffect.BroadSalinityTolerance,
+            TraitEffect.ReproductionMultiplier(0.92),
+            TraitEffect.MaintenanceCost(0.07),
         ),
     ),
     COASTAL_CLINGING_FEET(
@@ -251,6 +270,16 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.04),
         ),
     ),
+    FLOATING_FRONDS(
+        "floating fronds",
+        "Long buoyant photosynthetic blades rise from an aquatic anchor into well-lit surface water.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.40),
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.28),
+            TraitEffect.InsolationOptimum(-0.06),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
     POWERED_FLIGHT(
         "powered flight",
         "Actively driven wings or analogous structures capable of sustained movement through the air.",
@@ -260,6 +289,16 @@ enum class CommonTrait(
             TraitEffect.HabitatSupport(Habitat.LAND_SURFACE, 0.12),
             TraitEffect.CaptureAbility(0.12),
             TraitEffect.MaintenanceCost(0.24),
+        ),
+    ),
+    PELAGIC_SOARING_WINGS(
+        "pelagic soaring wings",
+        "Long, efficient wings and wind-harvesting flight allow extended foraging far from land without exhausting energy reserves.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.AERIAL, 0.10),
+            TraitEffect.PelagicAerialResidency,
+            TraitEffect.ReserveCapacity(0.08),
+            TraitEffect.MaintenanceCost(0.08),
         ),
     ),
     SUBTERRANEAN_BURROWING(
@@ -417,6 +456,7 @@ enum class CommonTrait(
         listOf(
             TraitEffect.StrategySupport(EcoStrategy.DEPOSIT_FEEDING, 0.84),
             TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.30),
+            TraitEffect.DarkWaterAdaptation,
             TraitEffect.MaintenanceCost(0.05),
         ),
     ),
@@ -552,6 +592,14 @@ enum class CommonTrait(
             TraitEffect.WaterRequirement(-0.08),
             TraitEffect.CanopyLightEfficiency(-0.04),
             TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    FROST_SENSITIVE_SUCCULENT_TISSUES(
+        "frost-sensitive succulent tissues",
+        "Large water-filled cells tolerate extreme heat and drought but are readily damaged when their fluids freeze.",
+        listOf(
+            TraitEffect.TemperatureTolerance(colderC = -5.0, hotterC = 2.0),
+            TraitEffect.MaintenanceCost(0.02),
         ),
     ),
     DROUGHT_DECIDUOUS_LEAVES(
@@ -717,6 +765,314 @@ enum class CommonTrait(
             TraitEffect.ReefUse(0.18),
             TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.28),
             TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    GLIDING_MEMBRANE(
+        "gliding membrane",
+        "A broad skin membrane or flattened body turns height and forward speed into controlled unpowered flight.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.AERIAL, 0.48),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.32),
+            TraitEffect.CaptureAbility(0.04),
+            TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    WEB_SILK(
+        "prey-catching silk web",
+        "Strong adhesive fibers are arranged into traps that intercept moving prey.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.58),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.18),
+            TraitEffect.CaptureAbility(0.24),
+            TraitEffect.ReproductionMultiplier(0.94),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    VENOM_DELIVERY(
+        "venom delivery",
+        "Fangs, stingers, spines, or saliva introduce toxins that rapidly disable prey.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.16),
+            TraitEffect.StrategySupport(EcoStrategy.PURSUIT_PREDATION, 0.08),
+            TraitEffect.CaptureAbility(0.24),
+            TraitEffect.ReproductionMultiplier(0.95),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    CONSTRICTING_BODY(
+        "constricting body",
+        "A long muscular body coils around captured prey and prevents breathing or circulation.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.24),
+            TraitEffect.CaptureAbility(0.20),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    HOOKED_TALONS(
+        "hooked talons",
+        "Curved claws seize, carry, and kill struggling prey.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.12),
+            TraitEffect.CaptureAbility(0.18),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    ECHOLOCATION(
+        "echolocation",
+        "The organism emits sound and reconstructs nearby surfaces and moving prey from returning echoes.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.12),
+            TraitEffect.CaptureAbility(0.20),
+            TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    ELECTRORECEPTION(
+        "electroreception",
+        "Sensitive organs detect the weak electrical fields produced by hidden or moving organisms in water.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.10),
+            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.16),
+            TraitEffect.CaptureAbility(0.18),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    ARMORED_HIDE(
+        "armored hide",
+        "Thick skin reinforced with plates or embedded bone resists bites, claws, and impacts.",
+        listOf(
+            TraitEffect.Defense(0.34),
+            TraitEffect.CaptureAbility(-0.07),
+            TraitEffect.ReproductionMultiplier(0.92),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    PROTECTIVE_SHELL(
+        "protective shell",
+        "A rigid external shell encloses vulnerable tissues and can withstand crushing or abrasion.",
+        listOf(
+            TraitEffect.Defense(0.46),
+            TraitEffect.CaptureAbility(-0.14),
+            TraitEffect.ReproductionMultiplier(0.86),
+            TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    QUILLS(
+        "defensive quills",
+        "Long rigid hairs or spines make biting and grappling dangerous.",
+        listOf(
+            TraitEffect.Defense(0.32),
+            TraitEffect.CaptureAbility(-0.08),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    TOXIC_SKIN(
+        "toxic skin",
+        "Skin glands or accumulated compounds make the organism poisonous or intensely distasteful.",
+        listOf(
+            TraitEffect.Defense(0.28),
+            TraitEffect.ReproductionMultiplier(0.93),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    INK_CLOUD(
+        "defensive ink cloud",
+        "A released cloud obscures vision and confuses chemical senses during escape.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.10),
+            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.10),
+            TraitEffect.Defense(0.22),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    JET_PROPULSION(
+        "jet propulsion",
+        "Water is forcefully expelled from a muscular chamber for rapid acceleration and maneuvering.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.26),
+            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.30),
+            TraitEffect.CaptureAbility(0.12),
+            TraitEffect.MaintenanceCost(0.12),
+        ),
+    ),
+    GRASPING_TENTACLES(
+        "grasping tentacles",
+        "Flexible muscular appendages explore crevices and restrain several prey items at once.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.16),
+            TraitEffect.CaptureAbility(0.18),
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.12),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    BIOLUMINESCENT_LURE(
+        "bioluminescent lure",
+        "A controlled light organ attracts curious prey in otherwise dark water.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.40),
+            TraitEffect.DarkWaterAdaptation,
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.24),
+            TraitEffect.CaptureAbility(0.18),
+            TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    RUMINANT_STOMACH(
+        "ruminant stomach",
+        "Several fermentation chambers and repeated chewing extract energy from fibrous photosynthetic tissue.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.20),
+            TraitEffect.ReserveCapacity(0.10),
+            TraitEffect.ReproductionMultiplier(0.95),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    FERMENTING_HINDGUT(
+        "fermenting hindgut",
+        "A large microbe-rich hindgut digests cellulose after food has passed through the stomach.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.16),
+            TraitEffect.ReserveCapacity(0.07),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    SEED_CRACKING_MOUTHPARTS(
+        "seed-cracking mouthparts",
+        "Deep reinforced jaws or a stout beak crush hard seeds and nuts from ground and canopy producers.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.54),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.16),
+            TraitEffect.CaptureAbility(0.04),
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    NECTAR_SIPPING_TONGUE(
+        "nectar-sipping tongue",
+        "An elongated tongue or proboscis reaches energy-rich secretions within elevated reproductive structures.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.46),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.24),
+            TraitEffect.CaptureAbility(-0.04),
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    SAP_SUCKING_PROBOSCIS(
+        "sap-sucking proboscis",
+        "A narrow piercing mouthpart taps fluids from the living tissues of a host organism.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.PARASITISM, 0.58),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.18),
+            TraitEffect.CaptureAbility(-0.04),
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    LONG_NECK(
+        "long browsing neck",
+        "An elongated neck reaches foliage beyond the feeding height of most ground animals.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.42),
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.10),
+            TraitEffect.WaterRequirement(0.04),
+            TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    PREHENSILE_TRUNK(
+        "prehensile trunk",
+        "A muscular mobile appendage manipulates branches, uproots food, and draws water without lowering the whole body.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.18),
+            TraitEffect.CaptureAbility(0.10),
+            TraitEffect.WaterRequirement(0.03),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    COOPERATIVE_HUNTING(
+        "cooperative hunting",
+        "Several individuals coordinate pursuit, encirclement, or ambush rather than attacking independently.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.12),
+            TraitEffect.StrategySupport(EcoStrategy.PURSUIT_PREDATION, 0.18),
+            TraitEffect.CaptureAbility(0.18),
+            TraitEffect.ReproductionMultiplier(0.96),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    COLONY_LIVING(
+        "defended social colony",
+        "Many related individuals share shelter, defense, and food information in a persistent colony.",
+        listOf(
+            TraitEffect.Defense(0.18),
+            TraitEffect.ReproductionMultiplier(1.08),
+            TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    EXTENDED_BROOD_CARE(
+        "extended brood care",
+        "Parents protect, feed, teach, or transport offspring through a prolonged vulnerable period.",
+        listOf(
+            TraitEffect.Defense(0.05),
+            TraitEffect.ReproductionMultiplier(1.12),
+            TraitEffect.MaintenanceCost(0.11),
+        ),
+    ),
+    WATERPROOF_PLUMAGE(
+        "waterproof plumage",
+        "Overlapping oiled feathers retain insulating air and shed water during swimming and rain.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.34),
+            TraitEffect.HabitatSupport(Habitat.FRESHWATER, 0.30),
+            TraitEffect.TemperatureTolerance(colderC = 2.0),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    DIGGING_CLAWS(
+        "digging claws",
+        "Broad reinforced claws rapidly excavate soil, tear apart nests, and expose concealed food.",
+        listOf(
+            TraitEffect.TemperatureTolerance(colderC = 2.0, hotterC = 2.0),
+            TraitEffect.CaptureAbility(0.10),
+            TraitEffect.WaterRequirement(-0.04),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    LEAPING_LEGS(
+        "powerful leaping legs",
+        "Elongated spring-like limbs cross obstacles and produce abrupt escapes or attacks.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.LAND_SURFACE, 0.18),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.14),
+            TraitEffect.CaptureAbility(0.08),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    TOOL_USING_FORELIMBS(
+        "tool-using forelimbs",
+        "Dexterous grasping limbs manipulate stones, sticks, containers, or other objects to obtain defended food.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.08),
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.08),
+            TraitEffect.CaptureAbility(0.14),
+            TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    CRUSHING_CLAWS(
+        "crushing claws",
+        "Opposed hardened claws crack shells, cut plant tissue, and restrain struggling prey.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.18),
+            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.10),
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.12),
+            TraitEffect.CaptureAbility(0.12),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    SUCTION_CUPS(
+        "gripping suction cups",
+        "Pressure-sealing discs attach to rock, prey, and other bodies under water.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.COASTAL, 0.24),
+            TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.14),
+            TraitEffect.Defense(0.08),
+            TraitEffect.CaptureAbility(0.10),
+            TraitEffect.MaintenanceCost(0.06),
         ),
     ),
     NEIGHBOR_DISPERSAL(

@@ -1,6 +1,6 @@
 # Ecology V2 Prototype Results
 
-Date: 2026-07-25
+Date: 2026-07-26
 
 This report accompanies `ECOLOGY_V2_DESIGN.md` and the standalone
 `dev.biserman.planet.planet.ecology.v2` package. The prototype is not connected
@@ -34,8 +34,12 @@ performance budget without exposing optimized storage to trait authors.
   applied, so raw biomass differences do not make grasses automatically exclude
   trees or small consumers automatically exclude large ones.
 - Seasonal populations use active biomass, reserve energy, and dormant biomass.
-- Temperature, water, hard-coded light color, canopy light, freshwater, coastal,
-  sunlit/dark water, reefs, and snow/ice affect the relevant mechanics.
+- Temperature, water, hard-coded light color, canopy light, freshwater versus
+  saltwater physiology, coastal, sunlit/dark water, reefs, and snow/ice affect
+  the relevant mechanics.
+- Captured food is usable only while climate fitness clears a simple activity
+  threshold. This prevents abundant prey from allowing a profoundly
+  heat-, cold-, or water-mismatched consumer to thrive.
 - Neighbor dispersal and precomputed seasonal routes use two-phase transfers so
   results do not depend on tile iteration order.
 - Thermal foundation traits compile to an explicit runtime `ThermalStrategy`;
@@ -63,8 +67,8 @@ After three warm-up turns, seven measured turns produced:
 
 | Metric | Result |
 |---|---:|
-| Median seasonal turn | 132.172 ms |
-| Slowest measured turn | 196.333 ms |
+| Median seasonal turn | 110.906 ms |
+| Slowest measured turn | 146.488 ms |
 | Requested ceiling | a few hundred ms |
 
 The benchmark runs the climate/niche/resource, competition, dense interaction,
@@ -86,7 +90,7 @@ A four-population producer/grazer/predator/scavenger community was advanced for
 
 | Metric | Result |
 |---|---:|
-| Final biomass | 66,100,175 |
+| Final biomass | 241,442,711,300 |
 | Tail coefficient of variation | 0.000000 |
 | Surviving modeled populations | 4 |
 
@@ -102,10 +106,10 @@ community ran for another 240 seasons.
 
 | Metric | Result |
 |---|---:|
-| Resident before introduction | 11,317,000 |
-| Resident after introduction | 9,880,591 |
-| Invader after introduction | 9,583,525 |
-| Final total biomass | 71,564,732 |
+| Resident before introduction | 5,912,718,947 |
+| Resident after introduction | 5,295,249,963 |
+| Invader after introduction | 4,735,092,542 |
+| Final total biomass | 222,088,898,984 |
 
 The invader established and perturbed the resident without forcing deterministic
 exclusion. Both partitioned the broad niche and total biomass remained bounded.
@@ -118,10 +122,10 @@ then returned to the original climate for 180 seasons.
 
 | Metric | Result |
 |---|---:|
-| Pre-shock biomass | 53,582,118 |
-| Post-shock biomass | 22,112,881 |
-| Peak dormant biomass | 47,152,263 |
-| Recovered biomass | 53,535,016 |
+| Pre-shock biomass | 199,950,429,529 |
+| Post-shock biomass | 62,042,061,353 |
+| Peak dormant biomass | 175,956,377,985 |
+| Recovered biomass | 199,932,830,438 |
 | Recovery relative to baseline | 99.9% |
 
 Dormancy preserved biomass without allowing it to feed, and reactivation
@@ -129,7 +133,7 @@ supported recovery after conditions improved.
 
 ## Authored ecosystem outcomes
 
-The world-ecosystem notebook now contains 23 one-tile, 100-year scenarios with
+The world-ecosystem notebook now contains 23 one-tile, 1,000-year scenarios with
 exact extinction contracts rather than a permissive minimum-survivor score.
 
 - All 16 representative stable ecosystems retain every authored species and
@@ -156,12 +160,132 @@ major-river access, which also exposes its modeled freshwater invariant guilds.
 Regression checks additionally require spruce budworm biomass to remain below
 the two modeled spruce populations together, Canada lynx biomass below snowshoe
 hare biomass, and snow leopard biomass below its named pika-plus-bharal prey.
+They also reject surviving species whose best season never reaches viable
+climate fitness, require evolving ocean filter feeders to remain below 10% of
+plankton biomass, and require each stable food web to retain its expected
+trophic roles.
+
+## Standing-biomass calibration
+
+Population biomass is interpreted as live mass. The calibration uses deliberately
+broad order-of-magnitude expectations rather than a fitted target for each
+ecosystem:
+
+- terrestrial producers should ordinarily outweigh all modeled animals by tens
+  to hundreds of times, with a lower floor for heavily grazed grasslands and
+  productive wetlands;
+- primary consumers should outweigh predators as a group;
+- predators and superpredators should remain a small fraction of producer
+  biomass, without requiring a rigid tenfold step between every trophic label;
+- ocean producer standing stock may be similar to or lower than consumer stock
+  because phytoplankton turns over much faster than large consumers;
+- a representative 40,000 square kilometre ocean tile should carry roughly
+  `10^8` to `10^10` kg of live plankton, while `10^11` kg is reserved for an
+  exceptionally dense or vertically extensive bloom.
+
+`EcologyBiomass` now authors producer density as strongly typed `SizeClass`
+maps and compiles those maps to primitive arrays for the seasonal loop. Large
+terrestrial producers retain much more structural tissue than carpet plants,
+but only a small size-dependent fraction of that standing tissue is accessible
+to ordinary grazing. Aquatic producer densities use a separate scale so rapid
+plankton turnover does not require forest-like standing stock. Consumers retain
+the previous size-derived density scale.
+
+Across the eleven stable land and mixed representative tiles used by the
+biomass regression check, the median producer-to-animal biomass ratio is about
+124:1. The most consumer-heavy cases are the Okavango wetland at about 4.6:1
+and Serengeti grassland at about 7.2:1; the Amazon rainforest is about 106:1.
+Primary-consumer biomass exceeds combined predator and superpredator biomass in
+every stable authored food web.
+
+The Southern Ocean settles near `2.9e10` kg of plankton and the productive
+Humboldt Current near `4.7e9` kg per tile. A dedicated whale-shark/plankton
+regression runs for 1,000 years and requires the huge filter feeder to remain
+below 2% of its plankton stock. Size-authored filtering efficiency preserves
+the agreed prey rule: medium and smaller filter feeders consume minuscule life,
+while huge filter feeders can also consume tiny life.
+
+The broad regression guardrails require at least a 3:1 producer-to-animal ratio
+for each stable terrestrial tile and a median of at least 50:1 across them.
+Pure-ocean plankton must settle between `1e8` and `1e11` kg per tile, and total
+predatory biomass may not exceed primary-consumer biomass. These checks are
+intentionally loose enough to preserve meaningful biome differences.
+
+## Broad species catalog and randomized communities
+
+`EarthSpeciesCatalog` contains 159 readable prototype definitions:
+
+| Group | Definitions |
+|---|---:|
+| Mammals | 48 |
+| Familiar extinct species | 13 |
+| Birds | 20 |
+| Reptiles and amphibians | 15 |
+| Fish | 18 |
+| Invertebrates | 25 |
+| Producers and fungi | 20 |
+
+The catalog spans domestic animals, iconic terrestrial and marine
+megafauna, small vertebrates, insects and other invertebrates, reef organisms,
+vascular plants, algae, fungi, and recognizable extinct forms including major
+dinosaur body plans, mammoths, megalodon, ammonites, and trilobites. It is a
+stress-test and authoring catalog rather than a calibrated claim about exact
+adult masses.
+
+The trait vocabulary now has 111 entries. New descriptive coverage includes
+gliding, silk webs, venom, constriction, talons, echolocation,
+electroreception, shells and armor, quills, ink, jet propulsion, tentacles,
+bioluminescent lures, digestive specializations, nectar and seed feeding,
+social hunting and colonies, brood care, waterproof plumage, digging, leaping,
+tool use, suction cups, and floating aquatic fronds.
+
+`ecology_v2_random_communities.ipynb` calls the production
+`RandomEcosystemExperiment` harness for six displayed seeds. The automated pass
+ran 64 seeds, each with a random authored Hersfeldt climate, a compatible
+one-tile habitat, ten structurally compatible catalog species, ordinary
+invariant guilds, and 400 seasons. Seven land profiles are preserved from
+`ecology.ipynb`; four additional marine profiles cover tropical reefs,
+temperate shelves, polar seas, and the dark deep ocean.
+
+An additional audit runs twelve independently assembled communities for 4,000
+seasons each (1,000 years). It records every species' best climate fitness
+across a sampled year and fails if an evolving species remains extant despite
+never having a viable season.
+
+- All 64 runs remained finite and non-negative, and all organic resource levels
+  remained inside `[0, 1]`.
+- No active direct consumer survived after all of its modeled food disappeared.
+- Every consumer selected without any initial modeled food eventually became
+  extinct.
+- Randomly unassembled communities range from complete collapse to retention of
+  nearly every selected population; this spread is expected because food-web
+  completeness is deliberately not enforced.
+- Stable non-collapsed tails generally had low variation; complete collapses
+  correctly report an undefined/infinite coefficient of variation.
+- The long audit correctly removed examples such as saguaro and reindeer lichen
+  from an oceanic-temperate tile, tropical mammals and birds from a desert,
+  temperate organisms from an ice cap, and warm-water fishes from polar seas.
+- Random food webs can still collapse even when their individual species fit
+  the climate; this is expected when ten unstructured draws omit a required
+  producer, prey size, or intermediate trophic level.
+
+The random pass found and corrected three composition problems. Plankton is no
+longer inserted into wholly dark water, a generic photosynthetic surface no
+longer grants both terrestrial and aquatic habitat by itself, and kelp now uses
+floating fronds rather than terrestrial canopy growth. Wetland papyrus and
+reeds were given explicit freshwater support after that separation exposed
+their previously accidental aquatic feeding edge.
+
+One intentional limitation remains visible. Flying species can use the aerial
+compartment over ocean because nesting substrate is not modeled. Salinity is
+now represented at the deliberately coarse level of saltwater-only,
+freshwater-only, or broad tolerance; it does not model salinity gradients.
 
 ## Verification
 
 The complete project test task passed:
 
-- 72 tests;
+- 95 tests;
 - 0 failures;
 - 0 errors.
 
@@ -180,6 +304,7 @@ Ecology V2 tests cover:
 - single-value water availability;
 - lower and optional upper water-tolerance bounds;
 - freshwater, coastal, sunlit-water, and dark-water availability;
+- saltwater-only, freshwater-only, and broad aquatic tolerance;
 - reserve use and starvation;
 - dormancy and the immersed anhydrobiosis restriction;
 - reef construction and decay;
@@ -195,8 +320,20 @@ Ecology V2 tests cover:
 - the full-scale benchmark and event experiments.
 - deterministic climate-anomaly bounds and organic-pool accessibility;
 - explicit terrestrial grazing edges to carpet plants and rejection of
-  medium-predator edges to tiny aggregate insects;
+  medium-predator edges to tiny aggregate insects, while medium aquatic
+  predators can exploit tiny aquatic life without opening that shortcut to
+  large marine hunters;
 - exact survivor/extinction outcomes for all 23 authored ecosystem scenarios.
+- complete strongly typed biomass tables, terrestrial producer structural-mass
+  scaling, and order-of-magnitude plausible ocean plankton capacity;
+- broad trophic-biomass guardrails across all stable authored ecosystem
+  scenarios.
+- 1,000-year persistence of coastal carpet-plant and plankton guilds without
+  animal recycling;
+- tropical-reef extinction of emperor penguins even when aquatic prey is
+  initially abundant;
+- 64 short randomized communities and twelve 1,000-year randomized
+  climate-mismatch audits.
 
 ## What remains intentionally approximate
 

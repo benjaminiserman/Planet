@@ -46,6 +46,7 @@ object InvariantSpecies {
             CommonTrait.INVARIANT_RESISTANCE,
             CommonTrait.ECTOTHERMY,
             CommonTrait.BUOYANCY_BLADDER,
+            CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.FRESHWATER_OSMOREGULATION,
             CommonTrait.GILL_PADS,
         ),

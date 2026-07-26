@@ -25,6 +25,10 @@ enum class EcoStrategy(
         "grazing",
         setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.SUNLIT_WATER),
     ),
+    GENERALIST_FORAGING(
+        "generalist-foraging",
+        setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.SUNLIT_WATER),
+    ),
     AMBUSH_PREDATION(
         "ambush-predation",
         setOf(
@@ -88,6 +92,9 @@ enum class EcoStrategy(
         // precompiled interaction matrix, not from background resource pools.
         FILTER_FEEDING -> 0.0
         GRAZING -> 0.0
+        // This niche groups omnivores for competition; their food still comes
+        // from the ordinary grazing and predation interaction edges.
+        GENERALIST_FORAGING -> 0.0
         AMBUSH_PREDATION, PURSUIT_PREDATION -> 0.0
         // Carcasses are spatially concentrated rather than evenly diluted
         // across a tile. Long-range scavengers can still locate useful patches

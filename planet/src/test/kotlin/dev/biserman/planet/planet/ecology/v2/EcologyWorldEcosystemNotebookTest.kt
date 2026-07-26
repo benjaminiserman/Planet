@@ -31,7 +31,7 @@ class EcologyWorldEcosystemNotebookTest {
             assertTrue("seasonalClimate(" in source)
             assertTrue("TileTemplate(" in source)
             assertTrue("sp(" in source)
-            assertTrue("repeat(400)" !in source, "The shared harness should own the 100-year loop")
+            assertTrue("repeat(4000)" !in source, "The shared harness should own the 1,000-year loop")
         }
     }
 

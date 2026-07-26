@@ -3,6 +3,7 @@ package dev.biserman.planet.planet.ecology.v2
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
 class TileCommunity(val capacity: Int = 48) {
     val speciesIndices = IntArray(capacity)
@@ -77,6 +78,11 @@ data class EcologyRuntimeConfig(
      * deterministic competitive exclusion.
      */
     val interspecificNicheCompetition: Double = 0.15,
+    /**
+     * Seasonal food throughput may exceed consumer standing biomass even
+     * though only a fraction of eaten tissue is assimilated.
+     */
+    val maximumConsumedBiomassFraction: Double = 0.75,
     val dormantEntryFitness: Double = 0.35,
     val dormantExitFitness: Double = 0.58,
     val dormantEntryFraction: Double = 0.88,
@@ -234,7 +240,9 @@ class EcologyRuntime(
                 community.nicheIndices[populationIndex] * SizeClass.entries.size +
                     species.sizeClass.ordinal
             normalizedBiomassByNicheAndSize[offset] +=
-                effectiveActive[populationIndex] / species.sizeClass.densityScale
+                effectiveActive[populationIndex] /
+                    species.sizeClass.densityScale *
+                    species.nicheCompetitionSensitivity
         }
     }
 
@@ -245,6 +253,7 @@ class EcologyRuntime(
         val speciesCount = ecology.species.size
         for (consumerPopulation in 0 until community.size) {
             val consumerIndex = community.speciesIndices[consumerPopulation]
+            val consumer = ecology.species[consumerIndex]
             val consumerBiomass = effectiveActive[consumerPopulation]
             if (consumerBiomass <= 0.0) continue
 
@@ -297,7 +306,24 @@ class EcologyRuntime(
 
             val consumptionScale =
                 if (potentialConsumption > 0.0) {
-                    min(1.0, consumerBiomass * 0.45 / potentialConsumption)
+                    val filterFeeder =
+                        consumer.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal] > 0.0
+                    val predator =
+                        consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0 ||
+                            consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] > 0.0
+                    val metabolicThroughput = when {
+                        predator && consumer.thermalStrategy == ThermalStrategy.ENDOTHERMY -> 1.50
+                        predator && consumer.thermalStrategy == ThermalStrategy.HETEROTHERMY -> 1.25
+                        filterFeeder && consumer.thermalStrategy == ThermalStrategy.ENDOTHERMY -> 4.0 / 3.0
+                        else -> 1.0
+                    }
+                    min(
+                        1.0,
+                        consumerBiomass *
+                            config.maximumConsumedBiomassFraction *
+                            metabolicThroughput /
+                            potentialConsumption,
+                    )
                 } else {
                     1.0
                 }
@@ -392,14 +418,8 @@ class EcologyRuntime(
                 } else {
                     baseResource
                 }
-            val carryingBiomass = (
-                environment.areaKm2 *
-                    220.0 *
-                    species.sizeClass.densityScale *
-                    max(0.05, environment.fertility) *
-                    max(0.02, habitat) *
-                    max(0.04, resource)
-                )
+            val carryingBiomass =
+                EcologyBiomass.carryingCapacityKg(species, niche, environment)
             val nicheSizeOffset =
                 community.nicheIndices[populationIndex] * SizeClass.entries.size
             var normalizedNicheBiomass = 0.0
@@ -416,12 +436,16 @@ class EcologyRuntime(
                     normalizedBiomassByNicheAndSize[nicheSizeOffset + otherSize.ordinal] *
                         overlap
             }
-            val normalizedActive = active / species.sizeClass.densityScale
+            val normalizedActive =
+                active /
+                    species.sizeClass.densityScale *
+                    species.nicheCompetitionSensitivity
             val competingBiomass =
                 active +
                     max(0.0, normalizedNicheBiomass - normalizedActive) *
                     species.sizeClass.densityScale *
-                    config.interspecificNicheCompetition
+                    config.interspecificNicheCompetition *
+                    species.nicheCompetitionSensitivity
             val crowding = competingBiomass /
                 max(1.0, carryingBiomass)
             // The denominator offset controls saturation; it must not act as
@@ -433,10 +457,18 @@ class EcologyRuntime(
                     (0.30 + species.seasonalReproduction) *
                     environmentalFitness *
                     resourceFactor
+            // Below the viable-activity threshold an organism may endure for a
+            // while, but cannot turn captured food into growth. This prevents
+            // abundant prey from making a profoundly climate-mismatched animal
+            // thrive while still allowing recovery during a suitable season.
+            val physiologicalAssimilation =
+                if (environmentalFitness < 0.35) 0.0 else sqrt(environmentalFitness)
             val grossAssimilation =
                 backgroundAssimilation +
-                    interactionGains[populationIndex] +
-                    relationshipBenefits[populationIndex]
+                    (
+                        interactionGains[populationIndex] +
+                            relationshipBenefits[populationIndex]
+                        ) * physiologicalAssimilation
             val maintenanceFraction = species.maintenanceDemand / species.massKg
             val maintenance = active * maintenanceFraction
             val stress = 1.0 - environmentalFitness
