@@ -15,6 +15,7 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.ecology.v2.PlanetEcology
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
@@ -43,6 +44,8 @@ class Gui() : Node() {
 
     val showSettingsButton by lazy { findChild("ShowSettingsButton") as ShowSettingsButton }
     val clearMapButton by lazy { findChild("ClearMapButton") as Button }
+    val randomizeEcosystemsButton by lazy { findChild("RandomizeEcosystemsButton") as Button }
+    val clearEcosystemsButton by lazy { findChild("ClearEcosystemsButton") as Button }
 
     val saveButton by lazy { findChild("SaveButton") as Button }
     val loadButton by lazy { findChild("LoadButton") as Button }
@@ -173,10 +176,13 @@ class Gui() : Node() {
             autoTurnsButton,
             historyYearLabel,
             historySeasonLabel,
+            randomizeEcosystemsButton,
+            clearEcosystemsButton,
         ).forEach { it.visible = !isEditMode }
 
         modeToggleButton.buttonPressed = !isEditMode
         modeToggleButton.text = if (isEditMode) "Edit Mode" else "Play Mode"
+        statsGraph.setHistoryMode(!isEditMode)
         brushTool.setEditModeEnabled(isEditMode)
 
         if (!isEditMode) {
@@ -298,6 +304,25 @@ class Gui() : Node() {
         }
 
         clearMapButton.pressed.connect { showSettingsButton.resetToggles() }
+        randomizeEcosystemsButton.pressed.connect {
+            if (Main.instance.hasPlanet) {
+                val planet = Main.instance.planet
+                if (planet.climateMap.size != planet.planetTiles.size) {
+                    planet.climateMap =
+                        ClimateSimulation.calculateClimate(planet).mapKeys { it.key.tileId }
+                }
+                PlanetEcology.randomizeEcosystems(planet)
+                Main.instance.planetRenderer.update(planet)
+                updateInfobox()
+            }
+        }
+        clearEcosystemsButton.pressed.connect {
+            if (Main.instance.hasPlanet) {
+                PlanetEcology.clearEcosystems(Main.instance.planet)
+                Main.instance.planetRenderer.update(Main.instance.planet)
+                updateInfobox()
+            }
+        }
 
         simulationOptions.clear()
         Main.simulations.keys.forEachIndexed { index, simulationName ->
@@ -392,7 +417,11 @@ class Gui() : Node() {
         }
     }
 
-    class MapLayerCheckButton(val button: ToggleButton, val categories: List<String>)
+    class MapLayerCheckButton(
+        val button: ToggleButton,
+        val categories: List<String>,
+        var available: Boolean = true,
+    )
 
     companion object {
         const val MAP_PREVIEW_WIDTH = 256

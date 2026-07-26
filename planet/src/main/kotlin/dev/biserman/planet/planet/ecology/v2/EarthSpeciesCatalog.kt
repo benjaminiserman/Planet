@@ -1192,6 +1192,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ECTOTHERMY,
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
+            CommonTrait.COLD_ACTIVE_ENZYMES,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.BIOLUMINESCENT_LURE,
             camouflage = BiologicalColor.BLACK
@@ -1736,7 +1737,9 @@ object EarthSpeciesCatalog {
             "reindeer-lichen",
             "Reindeer lichen",
             SizeClass.TINY,
-            BiologicalColor.PALE,
+            // Its thallus is pale, but its photobiont still captures light with
+            // chlorophyll rather than a pale photosynthetic pigment.
+            BiologicalColor.GREEN,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,
             CommonTrait.ABSORPTIVE_FILAMENTS,

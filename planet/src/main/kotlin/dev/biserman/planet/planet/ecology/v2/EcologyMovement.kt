@@ -57,6 +57,7 @@ class CompiledMovementPlan private constructor(
  * maximum number of populations expected to move in one season.
  */
 class MovementScratch(maximumTransfers: Int, nicheCount: Int) {
+    internal val capacity: Int = maximumTransfers
     internal val originTiles = IntArray(maximumTransfers)
     internal val destinationTiles = IntArray(maximumTransfers)
     internal val speciesIndices = IntArray(maximumTransfers)
@@ -72,6 +73,131 @@ class MovementScratch(maximumTransfers: Int, nicheCount: Int) {
 }
 
 object EcologyMovement {
+    /**
+     * Low-frequency neighboring colonization for ordinary range expansion.
+     *
+     * This is deliberately separate from authored seasonal migration routes.
+     * Transfers are planned from the pre-transfer world and applied together,
+     * so tile traversal order cannot create multi-tile movement in one season.
+     */
+    fun applyRadiation(
+        ecology: CompiledEcology,
+        communities: Array<TileCommunity>,
+        environments: Array<SeasonalCellEnvironment>,
+        neighbors: Array<IntArray>,
+        seasonIndex: Long,
+        planetSeed: Int,
+        scratch: MovementScratch,
+    ) {
+        require(communities.size == environments.size)
+        require(communities.size == neighbors.size)
+        scratch.clear()
+
+        for (originTile in communities.indices) {
+            val origin = communities[originTile]
+            for (populationIndex in 0 until origin.size) {
+                val speciesIndex = origin.speciesIndices[populationIndex]
+                val species = ecology.species[speciesIndex]
+                if (species.kind == SpeciesKind.INVARIANT) continue
+                val chance = when (species.dispersalKind) {
+                    DispersalKind.NEIGHBOR -> 0.14
+                    DispersalKind.SHORT_MIGRATION,
+                    DispersalKind.REGIONAL_MIGRATION,
+                    DispersalKind.LONG_MIGRATION -> 0.08
+                    DispersalKind.NONE -> 0.05
+                }
+                val hash = radiationHash(planetSeed, seasonIndex, originTile, speciesIndex)
+                if (hashToUnit(hash) >= chance) continue
+
+                val adjacent = neighbors[originTile]
+                if (adjacent.isEmpty()) continue
+                val start = Math.floorMod(hash, adjacent.size)
+                var destination = -1
+                var nicheIndex = -1
+                for (offset in adjacent.indices) {
+                    val candidate = adjacent[(start + offset) % adjacent.size]
+                    val target = communities[candidate]
+                    if (target.find(speciesIndex) < 0 && target.size >= target.capacity) continue
+                    Arrays.fill(scratch.competitionByNiche, 0.0)
+                    for (targetPopulation in 0 until target.size) {
+                        scratch.competitionByNiche[target.nicheIndices[targetPopulation]] +=
+                            target.activeBiomass[targetPopulation]
+                    }
+                    val candidateNiche = NicheSelection.choose(
+                        species,
+                        ecology,
+                        environments[candidate],
+                        scratch.competitionByNiche,
+                    )
+                    if (candidateNiche < 0) continue
+                    val candidateHabitat = ecology.niches[candidateNiche].habitat
+                    if (
+                        EcologyFitness.combined(
+                            species,
+                            environments[candidate],
+                            candidateHabitat,
+                        ) < EcologySuitability.MINIMUM_ACTIVE_FITNESS
+                    ) {
+                        continue
+                    }
+                    destination = candidate
+                    nicheIndex = candidateNiche
+                    break
+                }
+                if (destination < 0) continue
+
+                val active = origin.activeBiomass[populationIndex]
+                val founderFloor = species.massKg * 4.0
+                if (active < founderFloor * 4.0) continue
+                val transferFraction = if (species.motile) 0.010 else 0.005
+                val transfer = maxOf(active * transferFraction, founderFloor)
+                if (transfer >= active * 0.25) continue
+                val reserveFraction = transfer / active
+                val reserveTransfer = origin.reserves[populationIndex] * reserveFraction
+
+                require(scratch.size < scratch.originTiles.size) {
+                    "Movement scratch capacity exceeded"
+                }
+                val transferIndex = scratch.size++
+                scratch.originTiles[transferIndex] = originTile
+                scratch.destinationTiles[transferIndex] = destination
+                scratch.speciesIndices[transferIndex] = speciesIndex
+                scratch.nicheIndices[transferIndex] = nicheIndex
+                scratch.activeBiomass[transferIndex] = transfer
+                scratch.reserves[transferIndex] = reserveTransfer
+            }
+        }
+
+        // Remove every founder group before adding any of them. Planning above
+        // therefore observes one immutable seasonal snapshot, independent of
+        // tile traversal order, and a population cannot radiate through several
+        // tiles during one season.
+        for (transferIndex in 0 until scratch.size) {
+            val origin = communities[scratch.originTiles[transferIndex]]
+            val populationIndex = origin.find(scratch.speciesIndices[transferIndex])
+            check(populationIndex >= 0)
+            origin.activeBiomass[populationIndex] -= scratch.activeBiomass[transferIndex]
+            origin.reserves[populationIndex] -= scratch.reserves[transferIndex]
+        }
+
+        for (transferIndex in 0 until scratch.size) {
+            val destination = communities[scratch.destinationTiles[transferIndex]]
+            val speciesIndex = scratch.speciesIndices[transferIndex]
+            val existing = destination.find(speciesIndex)
+            if (existing >= 0) {
+                destination.activeBiomass[existing] += scratch.activeBiomass[transferIndex]
+                destination.reserves[existing] += scratch.reserves[transferIndex]
+            } else {
+                destination.add(
+                    speciesIndex = speciesIndex,
+                    nicheIndex = scratch.nicheIndices[transferIndex],
+                    activeBiomass = scratch.activeBiomass[transferIndex],
+                    reserves = scratch.reserves[transferIndex],
+                )
+            }
+        }
+    }
+
     fun applySeason(
         ecology: CompiledEcology,
         runtime: EcologyRuntime,
@@ -163,4 +289,22 @@ object EcologyMovement {
 
         communities.forEach(runtime::finalizeLocalExtinctions)
     }
+
+    private fun radiationHash(
+        planetSeed: Int,
+        seasonIndex: Long,
+        originTile: Int,
+        speciesIndex: Int,
+    ): Int {
+        var value = planetSeed
+        value = value * 31 + seasonIndex.hashCode()
+        value = value * 31 + originTile
+        value = value * 31 + speciesIndex
+        value = (value xor (value ushr 16)) * 0x45D9F3B
+        value = (value xor (value ushr 16)) * 0x45D9F3B
+        return value xor (value ushr 16)
+    }
+
+    private fun hashToUnit(hash: Int): Double =
+        hash.toUInt().toDouble() / UInt.MAX_VALUE.toDouble()
 }

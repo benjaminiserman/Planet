@@ -686,6 +686,18 @@ tooltip_text = "Switch between planet editing and history simulation"
 toggle_mode = true
 text = "Edit Mode"
 
+[node name="RandomizeEcosystemsButton" type="Button" parent="GUI/SettingsButtons"]
+visible = false
+layout_mode = 2
+tooltip_text = "Clear every tile, add its invariant guilds, and establish about ten climate-suitable species"
+text = "Randomize Ecosystems"
+
+[node name="ClearEcosystemsButton" type="Button" parent="GUI/SettingsButtons"]
+visible = false
+layout_mode = 2
+tooltip_text = "Remove all populations and ecology resources from every tile"
+text = "Clear Ecosystems"
+
 [node name="SettingsOptionsPanel" type="PanelContainer" parent="GUI"]
 visible = false
 layout_mode = 1
@@ -764,6 +776,16 @@ layout_mode = 2
 metadata/_tab_index = 3
 
 [node name="Label" type="Label" parent="GUI/InfoboxContainer/Climate"]
+custom_minimum_size = Vector2(300, 500)
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Ecology" type="ScrollContainer" parent="GUI/InfoboxContainer"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 4
+
+[node name="Label" type="Label" parent="GUI/InfoboxContainer/Ecology"]
 custom_minimum_size = Vector2(300, 500)
 layout_mode = 2
 autowrap_mode = 3

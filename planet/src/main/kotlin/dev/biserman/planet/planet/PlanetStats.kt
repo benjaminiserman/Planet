@@ -72,4 +72,28 @@ class PlanetStats {
     )
 
     val tectonicStatValues = tectonicStats.associate { it.name to mutableListOf<Vector2>() }.toMutableMap()
+
+    @JsonIgnore
+    val historyStats: List<Stat<*>> = listOf(
+        Stat("occupied ecosystem tiles") { planet ->
+            planet.planetTiles.values.count { it.ecosystem.populations.isNotEmpty() }
+        },
+        Stat("extant tile populations") { planet ->
+            planet.planetTiles.values.sumOf { it.ecosystem.speciesCount }
+        },
+        Stat("globally extant ecology species") { planet ->
+            planet.planetTiles.values.flatMap { tile -> tile.ecosystem.populations.map { it.speciesId } }.distinct().size
+        },
+        Stat("total ecosystem biomass") { planet ->
+            planet.planetTiles.values.sumOf { it.ecosystem.totalBiomassKg }
+        },
+        Stat("average species per occupied ecosystem") { planet ->
+            planet.planetTiles.values.filter { it.ecosystem.speciesCount > 0 }
+                .map { it.ecosystem.speciesCount }.average().takeUnless { it.isNaN() } ?: 0.0
+        },
+    )
+
+    val historyStatValues = historyStats.associate { it.name to mutableListOf<Vector2>() }.toMutableMap()
+    @get:JsonIgnore
+    val allStatValues get() = tectonicStatValues + historyStatValues
 }

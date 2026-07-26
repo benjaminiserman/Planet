@@ -89,6 +89,51 @@ class EcologyMovementTest {
         assertEquals(-1, communities[1].find(0))
     }
 
+    @Test
+    fun `population radiation is conservative and reaches only one neighbor per season`() {
+        val ecology = EcologyCompiler.compile(listOf(landDisperser()))
+        val environments = arrayOf(land(), land(), land())
+        val niche = NicheSelection.choose(ecology.species.single(), ecology, environments[0])
+        var radiated: Array<TileCommunity>? = null
+
+        for (season in 0L..500L) {
+            val communities = emptyCommunities(3)
+            communities[0].add(0, niche, activeBiomass = 10_000.0, reserves = 1_000.0)
+            EcologyMovement.applyRadiation(
+                ecology = ecology,
+                communities = communities,
+                environments = environments,
+                neighbors = arrayOf(intArrayOf(1), intArrayOf(0, 2), intArrayOf(1)),
+                seasonIndex = season,
+                planetSeed = 42,
+                scratch = MovementScratch(maximumTransfers = 3, nicheCount = ecology.niches.size),
+            )
+            if (communities[1].find(0) >= 0) {
+                radiated = communities
+                break
+            }
+        }
+
+        val communities = requireNotNull(radiated)
+        assertEquals(-1, communities[2].find(0))
+        assertEquals(
+            10_000.0,
+            communities.sumOf { community ->
+                val population = community.find(0)
+                if (population < 0) 0.0 else community.activeBiomass[population]
+            },
+            absoluteTolerance = 1e-9,
+        )
+        assertEquals(
+            1_000.0,
+            communities.sumOf { community ->
+                val population = community.find(0)
+                if (population < 0) 0.0 else community.reserves[population]
+            },
+            absoluteTolerance = 1e-9,
+        )
+    }
+
     private fun emptyCommunities(count: Int) = Array(count) { TileCommunity() }
 
     private fun land(majorRiver: Boolean = false) = SeasonalCellEnvironment.create(

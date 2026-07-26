@@ -662,7 +662,7 @@ enum class CommonTrait(
         "cold-active enzymes",
         "Specialized metabolic enzymes retain useful reaction rates in cold water but become unstable at ordinary warm temperatures.",
         listOf(
-            TraitEffect.TemperatureShift(-8.0),
+            TraitEffect.TemperatureShift(-13.0),
             TraitEffect.ReproductionMultiplier(0.90),
             TraitEffect.MaintenanceCost(0.06),
         ),
