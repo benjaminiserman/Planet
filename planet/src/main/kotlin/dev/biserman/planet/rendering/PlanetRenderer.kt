@@ -5,6 +5,8 @@ import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.planet.ecology.v2.EarthSpeciesCatalog
+import dev.biserman.planet.planet.ecology.v2.TileEcosystem
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevationStrength
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode
@@ -33,6 +35,7 @@ import kotlin.math.PI
 import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.ln1p
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -237,6 +240,32 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             categories = listOf("climate", "feature")
         ),
     )
+
+    private val animalRangeModes = mutableMapOf<String, PlanetColorMode>()
+
+    private val ecologyColorModes = buildList {
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "number_of_species_in_ecosystem",
+            categories = listOf("ecology", "overlay"),
+        ) { tile -> tile.ecosystem.speciesCount.toDouble() / TileEcosystem.MAXIMUM_POPULATIONS })
+
+        EarthSpeciesCatalog.ALL.filter { it.motile }.sortedBy { it.id }.forEach { species ->
+            val mode = SimpleDoubleColorMode(
+                this@PlanetRenderer,
+                "${species.id}_animal_range",
+                categories = listOf("animal_ranges"),
+                colorFn = redWhenNull { value -> Color.black.transparent.lerp(Color.green, value) },
+            ) { tile ->
+                val biomass = tile.ecosystem.populations
+                    .filter { it.speciesId == species.id }
+                    .sumOf { it.activeBiomassKg + it.dormantBiomassKg }
+                if (biomass <= 0.0) null else ln1p(biomass) / 12.0
+            }
+            animalRangeModes[species.id] = mode
+            add(mode)
+        }
+    }
 
     val planetColorModes = listOf(
         BiomeColorMode(this, categories = listOf("default", "biome", "terrain", "base_layer")),
@@ -445,7 +474,7 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             categories = listOf("debug", "base_layer")
         ) { if (it.isAboveWater) Color.dimGray else Color.black },
         SimpleColorMode(this, "debug_color", categories = listOf("debug")) { it.debugColor },
-    )
+    ) + ecologyColorModes
 
     val meshInstance = MeshInstance3D().also { it.setName("Planet") }
 
@@ -453,10 +482,12 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         parent.addChild(meshInstance, forceReadableName = true)
         planetDebugRenders.forEach { it.init() }
         planetColorModes.forEach { it.init() }
+        updateEcologyModeAvailability()
     }
 
     fun update(planet: Planet) {
         this.planet = planet
+        updateEcologyModeAvailability()
         updateMesh()
 
         val timeTaken = measureTime {
@@ -466,6 +497,13 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
         }
 
         GD.print("Updating renderers took ${timeTaken.inWholeMilliseconds}ms")
+    }
+
+    private fun updateEcologyModeAvailability() {
+        val extantSpecies = planet.planetTiles.values
+            .flatMap { tile -> tile.ecosystem.populations.map { it.speciesId } }
+            .toSet()
+        animalRangeModes.forEach { (speciesId, mode) -> mode.setAvailable(speciesId in extantSpecies) }
     }
 
     fun getColor(planetTile: PlanetTile): Color {
