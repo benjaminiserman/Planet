@@ -52,7 +52,7 @@ class EcologyExperimentsTest {
                 "tail_cv=${"%.6f".format(coefficientOfVariation)} populations=${community.size}",
         )
         assertTrue(mean > 0.0)
-        assertTrue(mean < 1e11)
+        assertTrue(mean < terrestrialBiomassGuardrail(environment))
         assertTrue(coefficientOfVariation < 0.12)
     }
 
@@ -86,7 +86,7 @@ class EcologyExperimentsTest {
                 "total_after=${"%.3f".format(community.totalBiomass())}",
         )
         assertTrue(community.totalBiomass().isFinite())
-        assertTrue(community.totalBiomass() < 1e11)
+        assertTrue(community.totalBiomass() < terrestrialBiomassGuardrail(environment))
         assertTrue(residentAfter != residentBefore || invaderAfter > 0.0)
     }
 
@@ -128,7 +128,7 @@ class EcologyExperimentsTest {
         assertTrue(dormantPeak > 0.0)
         assertTrue(afterShock > 0.0)
         assertTrue(recovered > afterShock)
-        assertTrue(recovered < 1e11)
+        assertTrue(recovered < terrestrialBiomassGuardrail(normal))
     }
 
     private fun experimentalRuntime(ecology: CompiledEcology) = EcologyRuntime(
@@ -172,6 +172,16 @@ class EcologyExperimentsTest {
 
     private fun standardDeviation(values: DoubleArray, mean: Double): Double =
         sqrt(values.sumOf { (it - mean).pow(2) } / values.size)
+
+    /**
+     * Emergency runaway check scaled to tile area and the largest authored
+     * terrestrial producer density. This is intentionally much looser than an
+     * ecological target; trophic-proportion tests provide the meaningful bounds.
+     */
+    private fun terrestrialBiomassGuardrail(environment: SeasonalCellEnvironment): Double =
+        environment.areaKm2 *
+            EcologyBiomass.terrestrialProducerDensityKgKm2.values.max() *
+            10.0
 
     private fun producer(
         id: String,

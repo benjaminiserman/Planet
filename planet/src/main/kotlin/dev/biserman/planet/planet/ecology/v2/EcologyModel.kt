@@ -24,6 +24,12 @@ enum class ThermalStrategy {
     HETEROTHERMY,
 }
 
+enum class AquaticSalinityTolerance {
+    SALTWATER_ONLY,
+    FRESHWATER_ONLY,
+    BROAD,
+}
+
 enum class DormancyKind {
     NONE,
     PROPAGULE,
@@ -100,9 +106,14 @@ sealed interface TraitEffect {
     data class ReefBuilding(val change: Double) : TraitEffect
     data class WasteFertilization(val change: Double) : TraitEffect
     data class ReserveCapacity(val change: Double) : TraitEffect
+    data class NicheCompetitionSensitivity(val multiplier: Double) : TraitEffect
     data class Dormancy(val kind: DormancyKind, val survivalPerSeason: Double) : TraitEffect
     data class Dispersal(val kind: DispersalKind) : TraitEffect
     data class ReproductionMultiplier(val multiplier: Double) : TraitEffect
+    data object FreshwaterOsmoregulation : TraitEffect
+    data object BroadSalinityTolerance : TraitEffect
+    data object PelagicAerialResidency : TraitEffect
+    data object DarkWaterAdaptation : TraitEffect
     data class MaintenanceCost(val fraction: Double) : TraitEffect
 }
 

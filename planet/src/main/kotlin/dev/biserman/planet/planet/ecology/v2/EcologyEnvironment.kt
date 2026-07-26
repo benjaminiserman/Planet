@@ -27,6 +27,7 @@ class SeasonalCellEnvironment private constructor(
     val reefCover: Double,
     val snowOrIce: Boolean,
     val starLight: StarLight,
+    val isLand: Boolean,
     val resources: FunctionalResources,
     private val habitatAvailability: DoubleArray,
 ) {
@@ -59,6 +60,7 @@ class SeasonalCellEnvironment private constructor(
             reefCover = reefCover,
             snowOrIce = snowOrIce,
             starLight = starLight,
+            isLand = isLand,
             resources = resources,
             habitatAvailability = habitatAvailability.copyOf(),
         )
@@ -135,6 +137,7 @@ class SeasonalCellEnvironment private constructor(
                 reefCover = reefCover,
                 snowOrIce = snowOrIce,
                 starLight = starLight,
+                isLand = isLand,
                 resources = resources,
                 habitatAvailability = habitats,
             )
@@ -231,9 +234,23 @@ object EcologyFitness {
         return when (species.thermalStrategy) {
             ThermalStrategy.ECTOTHERMY -> passiveFit.pow(1.15)
             ThermalStrategy.ENDOTHERMY ->
-                if (passiveFit <= 0.0) 0.0 else 0.65 + passiveFit * 0.35
+                when {
+                    passiveFit <= 0.0 -> 0.0
+                    environment.temperatureC < species.temperatureOptimalLow ->
+                        0.65 + passiveFit * 0.35
+                    environment.temperatureC > species.temperatureOptimalHigh ->
+                        passiveFit.pow(0.80)
+                    else -> 1.0
+                }
             ThermalStrategy.HETEROTHERMY ->
-                if (passiveFit <= 0.0) 0.0 else 0.35 + passiveFit * 0.65
+                when {
+                    passiveFit <= 0.0 -> 0.0
+                    environment.temperatureC < species.temperatureOptimalLow ->
+                        0.35 + passiveFit * 0.65
+                    environment.temperatureC > species.temperatureOptimalHigh ->
+                        passiveFit.pow(0.95)
+                    else -> 1.0
+                }
             null -> passiveFit
         }
     }
@@ -306,6 +323,16 @@ object NicheSelection {
         var bestScore = 0.0
         ecology.niches.indices.forEach { nicheIndex ->
             val niche = ecology.niches[nicheIndex]
+            if (
+                !environment.isLand &&
+                niche.habitat == Habitat.AERIAL &&
+                !species.pelagicAerialResident
+            ) {
+                return@forEach
+            }
+            if (niche.habitat == Habitat.DARK_WATER && !species.darkWaterAdapted) {
+                return@forEach
+            }
             // A temporarily empty carrion, marine-snow, or seasonal resource
             // pool should not make an otherwise valid niche impossible to
             // establish. Reserves and subsequent resource production decide

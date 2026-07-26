@@ -100,6 +100,46 @@ class EcologyCompilerTest {
     }
 
     @Test
+    fun `plant and animal feeding adaptations derive a generalist niche`() {
+        val plant = producer("plant")
+        val herbivore = SpeciesDefinition(
+            id = "herbivore",
+            displayName = "herbivore",
+            sizeClass = SizeClass.SMALL,
+            motile = true,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ENDOTHERMY,
+                CommonTrait.TERRESTRIAL_LOCOMOTION,
+                CommonTrait.GRAZING_MOUTHPARTS,
+            ),
+        )
+        val omnivore = predator("omnivore").copy(
+            traits = predator("omnivore").traits + CommonTrait.GRAZING_MOUTHPARTS,
+        )
+
+        val ecology = EcologyCompiler.compile(listOf(plant, herbivore, omnivore))
+        val compiled = ecology.species[ecology.speciesIndex("omnivore")]
+        val strongest = ecology.niches[compiled.nicheFit.indices.maxBy { compiled.nicheFit[it] }]
+
+        assertEquals(Habitat.LAND_SURFACE, strongest.habitat)
+        assertEquals(EcoStrategy.GENERALIST_FORAGING, strongest.strategy)
+        assertEquals(
+            InteractionKind.GRAZING,
+            ecology.interactions.get(compiled.index, ecology.speciesIndex("plant")).kind,
+        )
+        assertEquals(
+            InteractionKind.PREDATION,
+            ecology.interactions.get(compiled.index, ecology.speciesIndex("herbivore")).kind,
+        )
+        assertEquals(
+            0.0,
+            ecology.species[ecology.speciesIndex("herbivore")]
+                .strategySupport[EcoStrategy.GENERALIST_FORAGING.ordinal],
+        )
+    }
+
+    @Test
     fun `specific food creates only the requested directed edge`() {
         val cucumber = producer("aardvark-cucumber")
         val otherProducer = producer("other-producer")
@@ -189,6 +229,25 @@ class EcologyCompilerTest {
     }
 
     @Test
+    fun `medium aquatic predators can use tiny aquatic life without opening that prey to large hunters`() {
+        val mediumPredator = aquaticPredator("medium-aquatic-predator", SizeClass.MEDIUM)
+        val largePredator = aquaticPredator("large-aquatic-predator", SizeClass.LARGE)
+        val ecology = EcologyCompiler.compile(
+            listOf(InvariantSpecies.SMALL_AQUATIC_LIFE, mediumPredator, largePredator),
+        )
+        val prey = ecology.speciesIndex(InvariantSpecies.SMALL_AQUATIC_LIFE.id)
+
+        assertEquals(
+            InteractionKind.PREDATION,
+            ecology.interactions.get(ecology.speciesIndex(mediumPredator.id), prey).kind,
+        )
+        assertEquals(
+            InteractionKind.NONE,
+            ecology.interactions.get(ecology.speciesIndex(largePredator.id), prey).kind,
+        )
+    }
+
+    @Test
     fun `terrestrial grazers consume the modeled carpet plant population`() {
         val grazer = predator("grazer", SizeClass.SMALL).copy(
             traits = listOf(
@@ -227,6 +286,7 @@ class EcologyCompilerTest {
         assertEquals(5, ecology.species.size)
         assertTrue(ecology.species.all { it.kind == SpeciesKind.INVARIANT })
         assertTrue(ecology.species.all { it.dormancyKind == DormancyKind.PROPAGULE })
+        assertTrue(ecology.species.all { it.nicheCompetitionSensitivity < 0.20 })
     }
 
     @Test
@@ -310,6 +370,22 @@ class EcologyCompilerTest {
             CommonTrait.TEMPERATE_BIOCHEMISTRY,
             CommonTrait.ECTOTHERMY,
             CommonTrait.BUOYANCY_BLADDER,
+        ),
+    )
+
+    private fun aquaticPredator(
+        id: String,
+        sizeClass: SizeClass,
+    ) = SpeciesDefinition(
+        id = id,
+        displayName = id,
+        sizeClass = sizeClass,
+        motile = true,
+        traits = listOf(
+            CommonTrait.TEMPERATE_BIOCHEMISTRY,
+            CommonTrait.ECTOTHERMY,
+            CommonTrait.AQUATIC_FLIPPERS,
+            CommonTrait.AMBUSH_MUSCULATURE,
         ),
     )
 }
