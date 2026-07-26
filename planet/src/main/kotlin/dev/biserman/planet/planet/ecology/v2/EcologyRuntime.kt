@@ -1,0 +1,563 @@
+package dev.biserman.planet.planet.ecology.v2
+
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+
+class TileCommunity(val capacity: Int = 48) {
+    val speciesIndices = IntArray(capacity)
+    val nicheIndices = IntArray(capacity)
+    val activeBiomass = DoubleArray(capacity)
+    val reserves = DoubleArray(capacity)
+    val dormantBiomass = DoubleArray(capacity)
+    var size: Int = 0
+        private set
+
+    fun add(
+        speciesIndex: Int,
+        nicheIndex: Int,
+        activeBiomass: Double,
+        reserves: Double = 0.0,
+        dormantBiomass: Double = 0.0,
+    ): Int {
+        require(size < capacity) { "Tile community capacity $capacity exceeded" }
+        require(find(speciesIndex) < 0) { "Species $speciesIndex already exists in this tile" }
+        require(activeBiomass >= 0.0 && reserves >= 0.0 && dormantBiomass >= 0.0)
+        val index = size++
+        speciesIndices[index] = speciesIndex
+        nicheIndices[index] = nicheIndex
+        this.activeBiomass[index] = activeBiomass
+        this.reserves[index] = reserves
+        this.dormantBiomass[index] = dormantBiomass
+        return index
+    }
+
+    fun find(speciesIndex: Int): Int {
+        for (index in 0 until size) {
+            if (speciesIndices[index] == speciesIndex) return index
+        }
+        return -1
+    }
+
+    fun removeAt(index: Int) {
+        require(index in 0 until size)
+        val last = size - 1
+        if (index != last) {
+            speciesIndices[index] = speciesIndices[last]
+            nicheIndices[index] = nicheIndices[last]
+            activeBiomass[index] = activeBiomass[last]
+            reserves[index] = reserves[last]
+            dormantBiomass[index] = dormantBiomass[last]
+        }
+        speciesIndices[last] = 0
+        nicheIndices[last] = 0
+        activeBiomass[last] = 0.0
+        reserves[last] = 0.0
+        dormantBiomass[last] = 0.0
+        size--
+    }
+
+    fun totalBiomass(): Double {
+        var total = 0.0
+        for (index in 0 until size) {
+            total += activeBiomass[index] + dormantBiomass[index]
+        }
+        return total
+    }
+}
+
+data class EcologyRuntimeConfig(
+    val backgroundMortality: Double = 0.012,
+    val stressMortality: Double = 0.42,
+    val maximumStarvationMortality: Double = 0.72,
+    /**
+     * Species assigned to the same broad authored niche still partition food,
+     * space, or time in ways this coarse model does not name explicitly.
+     * Keeping this below 1 prevents tiny fitness differences from forcing
+     * deterministic competitive exclusion.
+     */
+    val interspecificNicheCompetition: Double = 0.15,
+    val dormantEntryFitness: Double = 0.35,
+    val dormantExitFitness: Double = 0.58,
+    val dormantEntryFraction: Double = 0.88,
+    val dormantExitFraction: Double = 0.55,
+    // One 40,000 km² tile may hold only a few viable huge animals. The later
+    // regional extinction pass is responsible for treating a handful spread
+    // across several tiles as non-viable.
+    val minimumViableIndividuals: Double = 2.0,
+)
+
+class CellTurnFluxes {
+    var carrionBiomass: Double = 0.0
+        internal set
+    var detritusBiomass: Double = 0.0
+        internal set
+    var wasteBiomass: Double = 0.0
+        internal set
+    var carrionConsumedBiomass: Double = 0.0
+        internal set
+    var detritusConsumedBiomass: Double = 0.0
+        internal set
+    var wasteConsumedBiomass: Double = 0.0
+        internal set
+    var marineSnowBiomass: Double = 0.0
+        internal set
+    var marineSnowConsumedBiomass: Double = 0.0
+        internal set
+    var reefCoverDelta: Double = 0.0
+        internal set
+
+    internal fun clear() {
+        carrionBiomass = 0.0
+        detritusBiomass = 0.0
+        wasteBiomass = 0.0
+        carrionConsumedBiomass = 0.0
+        detritusConsumedBiomass = 0.0
+        wasteConsumedBiomass = 0.0
+        marineSnowBiomass = 0.0
+        marineSnowConsumedBiomass = 0.0
+        reefCoverDelta = 0.0
+    }
+}
+
+/**
+ * Allocation-free after construction for communities no larger than
+ * [maximumPopulationsPerCell]. One instance is intended to advance cells
+ * sequentially and reuse its scratch arrays.
+ */
+class EcologyRuntime(
+    private val ecology: CompiledEcology,
+    private val config: EcologyRuntimeConfig = EcologyRuntimeConfig(),
+    maximumPopulationsPerCell: Int = 48,
+) {
+    private val effectiveActive = DoubleArray(maximumPopulationsPerCell)
+    private val fitness = DoubleArray(maximumPopulationsPerCell)
+    private val interactionGains = DoubleArray(maximumPopulationsPerCell)
+    private val interactionLosses = DoubleArray(maximumPopulationsPerCell)
+    private val relationshipBenefits = DoubleArray(maximumPopulationsPerCell)
+    private val nextActive = DoubleArray(maximumPopulationsPerCell)
+    private val nextReserves = DoubleArray(maximumPopulationsPerCell)
+    private val nextDormant = DoubleArray(maximumPopulationsPerCell)
+    private val normalizedBiomassByNicheAndSize =
+        DoubleArray(ecology.niches.size * SizeClass.entries.size)
+
+    fun advanceSeason(
+        community: TileCommunity,
+        environment: SeasonalCellEnvironment,
+        fluxes: CellTurnFluxes? = null,
+        finalizeExtinctions: Boolean = true,
+    ) {
+        require(community.size <= effectiveActive.size)
+        fluxes?.clear()
+        if (fluxes != null) {
+            fluxes.reefCoverDelta = -environment.reefCover * 0.015
+        }
+        clearScratch(community.size)
+        prepareDormancyAndFitness(community, environment)
+        accumulateNicheBiomass(community)
+        accumulateInteractions(community, environment)
+        updatePopulations(community, environment, fluxes)
+        if (finalizeExtinctions) {
+            finalizeLocalExtinctions(community)
+        }
+    }
+
+    private fun clearScratch(populationCount: Int) {
+        java.util.Arrays.fill(normalizedBiomassByNicheAndSize, 0.0)
+        java.util.Arrays.fill(interactionGains, 0, populationCount, 0.0)
+        java.util.Arrays.fill(interactionLosses, 0, populationCount, 0.0)
+        java.util.Arrays.fill(relationshipBenefits, 0, populationCount, 0.0)
+    }
+
+    private fun prepareDormancyAndFitness(
+        community: TileCommunity,
+        environment: SeasonalCellEnvironment,
+    ) {
+        for (populationIndex in 0 until community.size) {
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            val niche = ecology.niches[community.nicheIndices[populationIndex]]
+            val habitatPresent = environment.habitatAvailability(niche.habitat) > 0.0
+            val requiredTargetPresent = requiredTargetPresent(species.index, community)
+            val populationFitness =
+                if (!habitatPresent || !requiredTargetPresent) {
+                    0.0
+                } else {
+                    (
+                        EcologyFitness.combined(species, environment, niche.habitat) *
+                            (1.0 + species.reefUse * environment.reefCover)
+                        ).coerceIn(0.0, 1.0)
+                }
+            fitness[populationIndex] = populationFitness
+
+            var active = community.activeBiomass[populationIndex]
+            var dormant = community.dormantBiomass[populationIndex] * species.dormantSurvival
+            val canEnterDormancy =
+                species.dormancyKind != DormancyKind.NONE &&
+                    !(species.dormancyKind == DormancyKind.WHOLE_BODY_DESICCATION &&
+                        niche.habitat in EcologyFitness.aquaticHabitats)
+            if (populationFitness < config.dormantEntryFitness && canEnterDormancy) {
+                val entering = active * config.dormantEntryFraction
+                active -= entering
+                dormant += entering
+            } else if (populationFitness > config.dormantExitFitness && dormant > 0.0) {
+                val exiting = dormant * config.dormantExitFraction
+                dormant -= exiting
+                active += exiting
+            }
+            effectiveActive[populationIndex] = active
+            nextDormant[populationIndex] = dormant
+        }
+    }
+
+    private fun requiredTargetPresent(consumerSpeciesIndex: Int, community: TileCommunity): Boolean {
+        val speciesCount = ecology.species.size
+        val rowOffset = consumerSpeciesIndex * speciesCount
+        var hasRequirement = false
+        for (targetSpeciesIndex in 0 until speciesCount) {
+            if (!ecology.interactions.targetRequiredAt(rowOffset + targetSpeciesIndex)) continue
+            hasRequirement = true
+            val populationIndex = community.find(targetSpeciesIndex)
+            if (
+                populationIndex >= 0 &&
+                community.activeBiomass[populationIndex] + community.dormantBiomass[populationIndex] > 0.0
+            ) {
+                return true
+            }
+        }
+        return !hasRequirement
+    }
+
+    private fun accumulateNicheBiomass(community: TileCommunity) {
+        for (populationIndex in 0 until community.size) {
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            val offset =
+                community.nicheIndices[populationIndex] * SizeClass.entries.size +
+                    species.sizeClass.ordinal
+            normalizedBiomassByNicheAndSize[offset] +=
+                effectiveActive[populationIndex] / species.sizeClass.densityScale
+        }
+    }
+
+    private fun accumulateInteractions(
+        community: TileCommunity,
+        environment: SeasonalCellEnvironment,
+    ) {
+        val speciesCount = ecology.species.size
+        for (consumerPopulation in 0 until community.size) {
+            val consumerIndex = community.speciesIndices[consumerPopulation]
+            val consumerBiomass = effectiveActive[consumerPopulation]
+            if (consumerBiomass <= 0.0) continue
+
+            var potentialConsumption = 0.0
+            var hasPrioritySupplement = false
+            for (targetPopulation in 0 until community.size) {
+                if (consumerPopulation == targetPopulation) continue
+                val targetIndex = community.speciesIndices[targetPopulation]
+                val offset = consumerIndex * speciesCount + targetIndex
+                if (ecology.interactions.kindAt(offset) == InteractionKind.NONE.ordinal) continue
+                val targetBiomass = effectiveActive[targetPopulation]
+                if (targetBiomass <= 0.0) continue
+
+                val kind = InteractionKind.entries[ecology.interactions.kindAt(offset)]
+                val target = ecology.species[targetIndex]
+                val targetHabitat = ecology.niches[community.nicheIndices[targetPopulation]].habitat
+                val authoredCamouflage = target.camouflage[targetHabitat.ordinal]
+                val colorCamouflage = targetHabitat.camouflageMatch(
+                    target.camouflageColor,
+                    environment.snowOrIce,
+                    environment.reefCover,
+                )
+                val concealment =
+                    if (
+                        kind == InteractionKind.PREDATION ||
+                        kind == InteractionKind.SUPPLEMENTAL_FEEDING
+                    ) {
+                        (authoredCamouflage + colorCamouflage).coerceIn(0.0, 0.72)
+                    } else {
+                        0.0
+                    }
+                val lossRate = ecology.interactions.targetLossAt(offset) * (1.0 - concealment)
+                val accessibilityCoefficient = kind.lowDensityAccessibilityCoefficient
+                val lowDensityAccessibility =
+                    if (accessibilityCoefficient > 0.0) {
+                        targetBiomass /
+                            (targetBiomass + consumerBiomass * accessibilityCoefficient)
+                    } else {
+                        1.0
+                    }
+                val potentialTargetLoss =
+                    targetBiomass * lossRate * lowDensityAccessibility
+                if (kind == InteractionKind.SUPPLEMENTAL_FEEDING) {
+                    hasPrioritySupplement = true
+                } else {
+                    potentialConsumption += potentialTargetLoss
+                }
+            }
+            if (potentialConsumption <= 0.0 && !hasPrioritySupplement) continue
+
+            val consumptionScale =
+                if (potentialConsumption > 0.0) {
+                    min(1.0, consumerBiomass * 0.45 / potentialConsumption)
+                } else {
+                    1.0
+                }
+            for (targetPopulation in 0 until community.size) {
+                if (consumerPopulation == targetPopulation) continue
+                val targetIndex = community.speciesIndices[targetPopulation]
+                val offset = consumerIndex * speciesCount + targetIndex
+                if (ecology.interactions.kindAt(offset) == InteractionKind.NONE.ordinal) continue
+                val targetBiomass = effectiveActive[targetPopulation]
+                if (targetBiomass <= 0.0) continue
+
+                val kind = InteractionKind.entries[ecology.interactions.kindAt(offset)]
+                val target = ecology.species[targetIndex]
+                val targetHabitat = ecology.niches[community.nicheIndices[targetPopulation]].habitat
+                val authoredCamouflage = target.camouflage[targetHabitat.ordinal]
+                val colorCamouflage = targetHabitat.camouflageMatch(
+                    target.camouflageColor,
+                    environment.snowOrIce,
+                    environment.reefCover,
+                )
+                val concealment =
+                    if (
+                        kind == InteractionKind.PREDATION ||
+                        kind == InteractionKind.SUPPLEMENTAL_FEEDING
+                    ) {
+                        (authoredCamouflage + colorCamouflage).coerceIn(0.0, 0.72)
+                    } else {
+                        0.0
+                    }
+                val lossRate = ecology.interactions.targetLossAt(offset) * (1.0 - concealment)
+                val accessibilityCoefficient = kind.lowDensityAccessibilityCoefficient
+                val lowDensityAccessibility =
+                    if (accessibilityCoefficient > 0.0) {
+                        targetBiomass /
+                            (targetBiomass + consumerBiomass * accessibilityCoefficient)
+                    } else {
+                        1.0
+                    }
+                // `lossRate` describes the fraction of available prey captured,
+                // while `consumptionScale` enforces one total intake ceiling
+                // without making species-list order determine which prey is eaten.
+                // Modeled prey also become disproportionately difficult to find
+                // at low density, providing the refuge needed to avoid deterministic
+                // prey extinction in this coarse one-tile model.
+                val edgeConsumptionScale =
+                    if (kind == InteractionKind.SUPPLEMENTAL_FEEDING) 1.0
+                    else consumptionScale
+                val targetLoss =
+                    targetBiomass * lossRate * lowDensityAccessibility * edgeConsumptionScale
+                if (targetLoss <= 0.0) continue
+
+                interactionLosses[targetPopulation] += targetLoss
+                val compiledLoss = ecology.interactions.targetLossAt(offset)
+                if (compiledLoss > 0.0) {
+                    val efficiency = ecology.interactions.consumerGainAt(offset) / compiledLoss
+                    interactionGains[consumerPopulation] += targetLoss * efficiency
+                }
+                relationshipBenefits[targetPopulation] +=
+                    targetLoss * ecology.interactions.targetBenefitAt(offset)
+            }
+        }
+    }
+
+    private fun updatePopulations(
+        community: TileCommunity,
+        environment: SeasonalCellEnvironment,
+        fluxes: CellTurnFluxes?,
+    ) {
+        for (populationIndex in 0 until community.size) {
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            val niche = ecology.niches[community.nicheIndices[populationIndex]]
+            val active = effectiveActive[populationIndex]
+            if (active <= 0.0) {
+                nextActive[populationIndex] = 0.0
+                nextReserves[populationIndex] = 0.0
+                continue
+            }
+
+            val habitat = environment.habitatAvailability(niche.habitat)
+            val baseResource = environment.resourceSupport(niche, species.sizeClass)
+            val canUseWasteAsFertilizer =
+                species.strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] > 0.0 ||
+                    species.strategySupport[EcoStrategy.ABSORPTION.ordinal] > 0.0
+            val resource =
+                if (canUseWasteAsFertilizer && species.wasteFertilization > 0.0) {
+                    (
+                        baseResource +
+                            species.wasteFertilization *
+                            environment.resources.waste *
+                            (1.0 - baseResource)
+                        ).coerceIn(0.0, 1.0)
+                } else {
+                    baseResource
+                }
+            val carryingBiomass = (
+                environment.areaKm2 *
+                    220.0 *
+                    species.sizeClass.densityScale *
+                    max(0.05, environment.fertility) *
+                    max(0.02, habitat) *
+                    max(0.04, resource)
+                )
+            val nicheSizeOffset =
+                community.nicheIndices[populationIndex] * SizeClass.entries.size
+            var normalizedNicheBiomass = 0.0
+            for (otherSize in SizeClass.entries) {
+                val sizeDistance = abs(otherSize.ordinal - species.sizeClass.ordinal)
+                val overlap = when (sizeDistance) {
+                    0 -> 1.0
+                    1 -> 0.35
+                    2 -> 0.10
+                    3 -> 0.03
+                    else -> 0.01
+                }
+                normalizedNicheBiomass +=
+                    normalizedBiomassByNicheAndSize[nicheSizeOffset + otherSize.ordinal] *
+                        overlap
+            }
+            val normalizedActive = active / species.sizeClass.densityScale
+            val competingBiomass =
+                active +
+                    max(0.0, normalizedNicheBiomass - normalizedActive) *
+                    species.sizeClass.densityScale *
+                    config.interspecificNicheCompetition
+            val crowding = competingBiomass /
+                max(1.0, carryingBiomass)
+            // The denominator offset controls saturation; it must not act as
+            // food when both background resources and modeled prey are absent.
+            val resourceFactor = resource / (resource + 0.08 + crowding)
+            val environmentalFitness = fitness[populationIndex]
+            val backgroundAssimilation =
+                active *
+                    (0.30 + species.seasonalReproduction) *
+                    environmentalFitness *
+                    resourceFactor
+            val grossAssimilation =
+                backgroundAssimilation +
+                    interactionGains[populationIndex] +
+                    relationshipBenefits[populationIndex]
+            val maintenanceFraction = species.maintenanceDemand / species.massKg
+            val maintenance = active * maintenanceFraction
+            val stress = 1.0 - environmentalFitness
+            // Moderate mismatch already reduces feeding and reproduction through
+            // environmentalFitness. Direct deaths are reserved for severe
+            // physiological stress so the same dry or cool season is not charged
+            // twice at full strength.
+            val stressLoss =
+                active * config.stressMortality * stress * stress * stress * stress
+            val backgroundLoss = active * config.backgroundMortality
+            val predationLoss = min(active, interactionLosses[populationIndex])
+
+            var reserves = community.reserves[populationIndex]
+            var energyBalance = grossAssimilation - maintenance
+            var starvationLoss = 0.0
+            var growth = 0.0
+            if (energyBalance >= 0.0) {
+                val reserveCapacity = active * species.reserveCapacity
+                val reserveGain = min(energyBalance * 0.32, max(0.0, reserveCapacity - reserves))
+                reserves += reserveGain
+                energyBalance -= reserveGain
+                growth = min(
+                    energyBalance * 0.62,
+                    active * species.seasonalReproduction,
+                )
+            } else {
+                val reserveUse = min(reserves, -energyBalance)
+                reserves -= reserveUse
+                energyBalance += reserveUse
+                if (energyBalance < 0.0) {
+                    starvationLoss = min(
+                        active * config.maximumStarvationMortality,
+                        -energyBalance,
+                    )
+                }
+            }
+
+            val totalLoss = min(active + growth, stressLoss + backgroundLoss + predationLoss + starvationLoss)
+            val updatedActive = max(0.0, active + growth - totalLoss)
+            nextActive[populationIndex] = updatedActive
+            nextReserves[populationIndex] = min(reserves, updatedActive * species.reserveCapacity)
+
+            fluxes?.let {
+                when (niche.strategy) {
+                    EcoStrategy.SCAVENGING ->
+                        it.carrionConsumedBiomass += backgroundAssimilation / 0.35
+                    EcoStrategy.DECOMPOSITION ->
+                        it.detritusConsumedBiomass += backgroundAssimilation / 0.42
+                    EcoStrategy.COPROPHAGY ->
+                        it.wasteConsumedBiomass += backgroundAssimilation / 0.48
+                    EcoStrategy.DEPOSIT_FEEDING ->
+                        it.marineSnowConsumedBiomass += backgroundAssimilation / 0.40
+                    else -> Unit
+                }
+                val deaths = backgroundLoss + predationLoss + starvationLoss + stressLoss
+                if (species.motile) {
+                    // Carrion is dead motile tissue. Living motile organisms
+                    // also return a fraction of assimilated food as waste.
+                    it.carrionBiomass += deaths *
+                        if (niche.habitat in EcologyFitness.aquaticHabitats) 0.20 else 0.35
+                    it.wasteBiomass += grossAssimilation * 0.08
+                } else {
+                    // Dead sessile tissue enters the detritus pool rather than
+                    // being treated as an animal carcass.
+                    it.detritusBiomass += deaths * 0.35
+                }
+                if (
+                    niche.habitat in EcologyFitness.aquaticHabitats &&
+                    niche.habitat != Habitat.FRESHWATER
+                ) {
+                    it.marineSnowBiomass += deaths * 0.30
+                }
+                if (species.reefBuilding > 0.0 && niche.habitat in EcologyFitness.aquaticHabitats) {
+                    it.reefCoverDelta +=
+                        species.reefBuilding *
+                            environmentalFitness *
+                            (updatedActive / max(1.0, carryingBiomass)) *
+                            (1.0 - environment.reefCover)
+                }
+            }
+        }
+
+        for (populationIndex in 0 until community.size) {
+            community.activeBiomass[populationIndex] = finiteNonNegative(nextActive[populationIndex])
+            community.reserves[populationIndex] = finiteNonNegative(nextReserves[populationIndex])
+            community.dormantBiomass[populationIndex] = finiteNonNegative(nextDormant[populationIndex])
+        }
+    }
+
+    fun finalizeLocalExtinctions(community: TileCommunity) {
+        var populationIndex = community.size - 1
+        while (populationIndex >= 0) {
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            val individuals =
+                (community.activeBiomass[populationIndex] + community.dormantBiomass[populationIndex]) /
+                    species.massKg
+            if (individuals < config.minimumViableIndividuals) {
+                community.removeAt(populationIndex)
+            }
+            populationIndex--
+        }
+    }
+
+    private fun finiteNonNegative(value: Double): Double =
+        if (value.isFinite()) max(0.0, value) else 0.0
+
+    private val InteractionKind.lowDensityAccessibilityCoefficient: Double
+        get() = when (this) {
+            InteractionKind.PREDATION -> 4.0
+            InteractionKind.GRAZING -> 4.0
+            InteractionKind.FILTER_FEEDING -> 0.75
+            InteractionKind.NONE,
+            InteractionKind.SUPPLEMENTAL_FEEDING,
+            InteractionKind.PARASITISM,
+            -> 0.0
+        }
+}
+
+fun isGloballyExtinct(speciesIndex: Int, communities: Iterable<TileCommunity>): Boolean =
+    communities.none { community ->
+        val index = community.find(speciesIndex)
+        index >= 0 &&
+            community.activeBiomass[index] + community.dormantBiomass[index] > 0.0
+    }

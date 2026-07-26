@@ -1,0 +1,259 @@
+package dev.biserman.planet.planet.ecology.v2
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class EcologyEnvironmentTest {
+    @Test
+    fun `major rivers expose freshwater and increase land water availability`() {
+        val dry = land(adjacentToMajorRiver = false)
+        val river = land(adjacentToMajorRiver = true)
+
+        assertEquals(0.0, dry.habitatAvailability(Habitat.FRESHWATER))
+        assertTrue(river.habitatAvailability(Habitat.FRESHWATER) > 0.0)
+        assertTrue(river.waterAvailability > dry.waterAvailability)
+    }
+
+    @Test
+    fun `water depth and useful light select aquatic compartments`() {
+        val shallow = ocean(waterDepthM = 40.0, usefulSunlightReachesWater = true)
+        val deep = ocean(waterDepthM = 900.0, usefulSunlightReachesWater = true)
+        val darkSurface = ocean(waterDepthM = 40.0, usefulSunlightReachesWater = false)
+
+        assertTrue(shallow.habitatAvailability(Habitat.SUNLIT_WATER) > 0.0)
+        assertEquals(0.0, shallow.habitatAvailability(Habitat.DARK_WATER))
+        assertTrue(deep.habitatAvailability(Habitat.DARK_WATER) > 0.0)
+        assertEquals(0.0, darkSurface.habitatAvailability(Habitat.SUNLIT_WATER))
+        assertTrue(darkSurface.habitatAvailability(Habitat.DARK_WATER) > 0.0)
+    }
+
+    @Test
+    fun `hard-coded pigments favor different star colors`() {
+        val greenAtYellow = LightColorModel.photosyntheticMatch(StarLight.YELLOW, BiologicalColor.GREEN)
+        val redAtYellow = LightColorModel.photosyntheticMatch(StarLight.YELLOW, BiologicalColor.RED)
+        val greenAtRed = LightColorModel.photosyntheticMatch(StarLight.RED, BiologicalColor.GREEN)
+        val redAtRed = LightColorModel.photosyntheticMatch(StarLight.RED, BiologicalColor.RED)
+
+        assertTrue(greenAtYellow > redAtYellow)
+        assertTrue(redAtRed > greenAtRed)
+    }
+
+    @Test
+    fun `authored light table covers every strongly typed star and pigment`() {
+        assertEquals(StarLight.entries.toSet(), LightColorModel.authoredCompatibility.keys)
+        LightColorModel.authoredCompatibility.values.forEach { compatibility ->
+            assertEquals(BiologicalColor.entries.toSet(), compatibility.byPigment.keys)
+        }
+    }
+
+    @Test
+    fun `grazing obtains food only from modeled producer populations`() {
+        assertEquals(
+            0.0,
+            EcoStrategy.GRAZING.resourceSupport(
+                land(),
+                Habitat.LAND_SURFACE,
+                SizeClass.MEDIUM,
+            ),
+        )
+    }
+
+    @Test
+    fun `functional organic resources start empty`() {
+        assertEquals(FunctionalResources(), land().resources)
+    }
+
+    @Test
+    fun `decomposition and coprophagy use their dynamic organic resources`() {
+        val environment = land().withResources(
+            FunctionalResources(detritus = 0.62, waste = 0.37),
+        )
+
+        assertEquals(
+            0.62,
+            EcoStrategy.DECOMPOSITION.resourceSupport(
+                environment,
+                Habitat.LAND_SURFACE,
+                SizeClass.SMALL,
+            ),
+        )
+        assertEquals(
+            0.37,
+            EcoStrategy.COPROPHAGY.resourceSupport(
+                environment,
+                Habitat.LAND_SURFACE,
+                SizeClass.SMALL,
+            ),
+        )
+    }
+
+    @Test
+    fun `dry burrow nests have an upper water limit but generic burrowing does not`() {
+        fun burrower(id: String, dryNest: Boolean) = SpeciesDefinition(
+            id = id,
+            displayName = id,
+            sizeClass = SizeClass.SMALL,
+            motile = true,
+            traits = listOfNotNull(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ECTOTHERMY,
+                CommonTrait.SUBTERRANEAN_BURROWING,
+                CommonTrait.AMBUSH_MUSCULATURE,
+                CommonTrait.DRY_BURROW_NEST.takeIf { dryNest },
+            ),
+        )
+        val ecology = EcologyCompiler.compile(
+            listOf(burrower("generic-burrower", false), burrower("dry-nester", true)),
+        )
+        val saturated = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 20.0,
+            insolation = 0.7,
+            precipitationMm = 10_000.0,
+            isLand = true,
+        )
+        val genericFit = EcologyFitness.water(ecology.species[0], saturated, Habitat.LAND_SURFACE)
+        val dryNestFit = EcologyFitness.water(ecology.species[1], saturated, Habitat.LAND_SURFACE)
+
+        assertEquals(1.0, genericFit)
+        assertTrue(dryNestFit < genericFit)
+    }
+
+    @Test
+    fun `thermal strategies affect activity fitness`() {
+        fun grazer(id: String, thermalTrait: CommonTrait) = SpeciesDefinition(
+            id = id,
+            displayName = id,
+            sizeClass = SizeClass.MEDIUM,
+            motile = true,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                thermalTrait,
+                CommonTrait.TERRESTRIAL_LOCOMOTION,
+                CommonTrait.GRAZING_MOUTHPARTS,
+            ),
+        )
+        val ecology = EcologyCompiler.compile(
+            listOf(
+                grazer("ectotherm", CommonTrait.ECTOTHERMY),
+                grazer("endotherm", CommonTrait.ENDOTHERMY),
+            ),
+        )
+        val cold = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 4.0,
+            insolation = 0.5,
+            precipitationMm = 60.0,
+            isLand = true,
+        )
+
+        assertTrue(
+            EcologyFitness.thermal(ecology.species[1], cold) >
+                EcologyFitness.thermal(ecology.species[0], cold),
+        )
+    }
+
+    @Test
+    fun `seasonal coat responds to low insolation rather than cold alone`() {
+        val coated = SpeciesDefinition(
+            id = "coated",
+            displayName = "Coated grazer",
+            sizeClass = SizeClass.MEDIUM,
+            motile = true,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ENDOTHERMY,
+                CommonTrait.TERRESTRIAL_LOCOMOTION,
+                CommonTrait.GRAZING_MOUTHPARTS,
+                CommonTrait.SEASONAL_WINTER_COAT,
+            ),
+        )
+        val species = EcologyCompiler.compile(listOf(coated)).species.single()
+        val winterFitness = EcologyFitness.seasonalTemperature(species, -5.0, insolation = 0.18)
+        val brightColdFitness = EcologyFitness.seasonalTemperature(species, -5.0, insolation = 0.85)
+
+        assertTrue(winterFitness > brightColdFitness)
+    }
+
+    @Test
+    fun `competition can make a locally secondary niche the best establishment choice`() {
+        val definition = SpeciesDefinition(
+            id = "branch-mat",
+            displayName = "Branch mat",
+            sizeClass = SizeClass.SMALL,
+            motile = false,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.PHOTOSYNTHETIC_SURFACE,
+                CommonTrait.ROOTED_BODY,
+                CommonTrait.CANOPY_GROWTH,
+            ),
+            photosyntheticColor = BiologicalColor.GREEN,
+        )
+        val ecology = EcologyCompiler.compile(listOf(definition))
+        val species = ecology.species.single()
+        val environment = land(canopyCover = 0.9)
+        val unopposed = NicheSelection.choose(species, ecology, environment)
+        val competition = DoubleArray(ecology.niches.size)
+        competition[unopposed] = 1_000.0
+        val diverted = NicheSelection.choose(species, ecology, environment, competition)
+
+        assertTrue(unopposed >= 0)
+        assertTrue(diverted >= 0)
+        assertTrue(diverted != unopposed)
+    }
+
+    @Test
+    fun `a valid scavenging niche can establish before the first carrion flux`() {
+        val definition = SpeciesDefinition(
+            id = "obligate-scavenger",
+            displayName = "Obligate scavenger",
+            sizeClass = SizeClass.MEDIUM,
+            motile = true,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ENDOTHERMY,
+                CommonTrait.POWERED_FLIGHT,
+                CommonTrait.SCAVENGING_SENSES,
+            ),
+        )
+        val ecology = EcologyCompiler.compile(listOf(definition))
+        val environment = land().withResources(
+            FunctionalResources(carrion = 0.0),
+        )
+
+        val nicheIndex = NicheSelection.choose(ecology.species.single(), ecology, environment)
+
+        assertTrue(nicheIndex >= 0)
+        assertEquals(EcoStrategy.SCAVENGING, ecology.niches[nicheIndex].strategy)
+        assertEquals(Habitat.AERIAL, ecology.niches[nicheIndex].habitat)
+    }
+
+    private fun land(
+        adjacentToMajorRiver: Boolean = false,
+        canopyCover: Double = 0.0,
+    ) = SeasonalCellEnvironment.create(
+        areaKm2 = 40_000.0,
+        temperatureC = 22.0,
+        insolation = 0.8,
+        precipitationMm = 35.0,
+        isLand = true,
+        adjacentToMajorRiver = adjacentToMajorRiver,
+        canopyCover = canopyCover,
+        resources = FunctionalResources(),
+    )
+
+    private fun ocean(
+        waterDepthM: Double,
+        usefulSunlightReachesWater: Boolean,
+    ) = SeasonalCellEnvironment.create(
+        areaKm2 = 40_000.0,
+        temperatureC = 18.0,
+        insolation = 0.8,
+        precipitationMm = 60.0,
+        isLand = false,
+        waterDepthM = waterDepthM,
+        usefulSunlightReachesWater = usefulSunlightReachesWater,
+    )
+}
