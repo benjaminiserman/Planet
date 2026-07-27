@@ -13,7 +13,7 @@
   "averageInsolationMoistureCutoff" : 0.6,
   "axialTiltDeg" : 23.45,
   "backwardsWind" : 0.02,
-  "baseTemperature" : 243.0,
+  "baseTemperature" : 244.0,
   "baseTemperatureInsolationScalar" : 86.0,
   "climateSimulationSamplesPerMonth" : 1,
   "coolCurrentAirPressureContinentialityCenter" : 0.0,

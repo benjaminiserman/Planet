@@ -169,6 +169,27 @@
       "minStep": 0.01
     },
     {
+      "name": "maxMoistureCoolingLerp",
+      "min": 0.05,
+      "max": 0.4,
+      "step": 0.025,
+      "minStep": 0.003125
+    },
+    {
+      "name": "moistureCoolingTargetTemperature",
+      "min": 265.0,
+      "max": 280.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "inlandWaterVsLandTemperatureContinentialityBase",
+      "min": 0.5,
+      "max": 1.2,
+      "step": 0.05,
+      "minStep": 0.00625
+    },
+    {
       "name": "backwardsWind",
       "min": 0.0,
       "max": 0.1,
