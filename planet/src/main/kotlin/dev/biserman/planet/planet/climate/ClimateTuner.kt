@@ -11,6 +11,7 @@ import kotlin.math.max
 
 private enum class ClimateTunerObjective(val cliName: String) {
     GLOBAL("global"),
+    BOREAL_TRANSITION("boreal-transition"),
     MEDITERRANEAN_F1("mediterranean-f1");
 
     companion object {
@@ -133,6 +134,7 @@ fun runClimateTuner(args: Array<String>) {
     var bestConfig = baseConfig.deepCopy()
     var baselineScore: HersfeldtReference.Score? = null
     var objectiveBaselineMeanConditionDistance: Double? = null
+    var objectiveBaselineScore: HersfeldtReference.Score? = null
     var bestScore: HersfeldtReference.Score? = null
     var bestPlanet: Planet? = null
     var artifacts = ClimateTunerArtifacts()
@@ -196,8 +198,10 @@ fun runClimateTuner(args: Array<String>) {
                     ?: error("Reference scoring produced no land samples")
                 val baselineDistance = objectiveBaselineMeanConditionDistance
                     ?: score.meanConditionDistance.also { objectiveBaselineMeanConditionDistance = it }
+                val baselineScore = objectiveBaselineScore
+                    ?: score.also { objectiveBaselineScore = it }
                 EvaluationOutcome(
-                    climateTuningObjectiveLoss(score, options, baselineDistance),
+                    climateTuningObjectiveLoss(score, options, baselineDistance, baselineScore),
                     score,
                     planet,
                     null,
@@ -429,7 +433,7 @@ private fun printClimateTunerHelp() {
           --space FILE           Parameter bounds and step sizes
           --parameters A,B       Tune only the named parameters
           --interactions A+B,C+D Test paired +/- moves after coordinate trials
-          --objective NAME       global or mediterranean-f1 (default: global)
+          --objective NAME       global, boreal-transition, or mediterranean-f1 (default: global)
           --max-mean-distance-regression N
                                 Allowed graph-distance increase for Mediterranean objective
           --max-evaluations N    Total simulation budget (default: $DEFAULT_MAX_EVALUATIONS)
@@ -463,8 +467,20 @@ private fun climateTuningObjectiveLoss(
     score: HersfeldtReference.Score,
     options: ClimateTunerOptions,
     baselineMeanConditionDistance: Double,
+    baselineScore: HersfeldtReference.Score,
 ): Double = when (options.objective) {
     ClimateTunerObjective.GLOBAL -> score.loss
+    ClimateTunerObjective.BOREAL_TRANSITION -> {
+        val lossRegression = max(0.0, score.loss - baselineScore.loss)
+        val forbiddenRegression =
+            max(0, confusionCount(score, "CTf", "CDb") - confusionCount(baselineScore, "CTf", "CDb")) +
+                    max(0, confusionCount(score, "CDb", "CEb") - confusionCount(baselineScore, "CDb", "CEb"))
+        if (lossRegression > IMPROVEMENT_EPSILON || forbiddenRegression > 0) {
+            1000.0 + lossRegression * 1000.0 + forbiddenRegression
+        } else {
+            confusionCount(score, "CEb", "CFb") + score.loss * 1e-6
+        }
+    }
     ClimateTunerObjective.MEDITERRANEAN_F1 -> {
         val maximumDistance = baselineMeanConditionDistance + options.maxMeanConditionDistanceRegression
         val regression = max(0.0, score.meanConditionDistance - maximumDistance)
@@ -476,6 +492,11 @@ private fun climateTuningObjectiveLoss(
         }
     }
 }
+
+private fun confusionCount(score: HersfeldtReference.Score, reference: String, simulated: String): Int =
+    score.confusionMatrix
+        .filter { it.reference.id == reference && it.simulated.id == simulated }
+        .sumOf { it.count }
 
 private const val MEDITERRANEAN_CONSTRAINT_PENALTY = 2.0
 private const val MEDITERRANEAN_DISTANCE_TIE_BREAK_WEIGHT = 1e-6

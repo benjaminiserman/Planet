@@ -36,6 +36,20 @@
       "minStep": 0.0125
     },
     {
+      "name": "landNowVsAnnualInsolationLerp",
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1,
+      "minStep": 0.0125
+    },
+    {
+      "name": "landNowVsAnnualInsolationLerpPow",
+      "min": 0.25,
+      "max": 1.5,
+      "step": 0.15,
+      "minStep": 0.01875
+    },
+    {
       "name": "moistureToMm",
       "min": 60.0,
       "max": 240.0,
@@ -153,6 +167,27 @@
       "max": 1.0,
       "step": 0.08,
       "minStep": 0.01
+    },
+    {
+      "name": "maxMoistureCoolingLerp",
+      "min": 0.05,
+      "max": 0.4,
+      "step": 0.025,
+      "minStep": 0.003125
+    },
+    {
+      "name": "moistureCoolingTargetTemperature",
+      "min": 265.0,
+      "max": 280.0,
+      "step": 1.0,
+      "minStep": 0.125
+    },
+    {
+      "name": "inlandWaterVsLandTemperatureContinentialityBase",
+      "min": 0.5,
+      "max": 1.2,
+      "step": 0.05,
+      "minStep": 0.00625
     },
     {
       "name": "backwardsWind",

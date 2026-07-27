@@ -2,7 +2,6 @@ package dev.biserman.planet.planet.climate
 
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.northSpringEquinox
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.opticalDepthConstant
-import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.periapsis
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.solarConstant
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.utils.UtilityExtensions.degToRad
@@ -12,8 +11,26 @@ import kotlin.math.*
 object Insolation {
     // Earth–Sun distance correction
     fun eccentricityFactor(dayOfYear: Double): Double {
-        return 1.0 + ClimateRuntimeConfig.orbitalEccentricity * 2 *
-                cos(2.0 * Math.PI * (dayOfYear + periapsis) / yearLength)
+        val eccentricity = ClimateRuntimeConfig.orbitalEccentricity.coerceIn(0.0, 0.999999)
+        val meanAnomaly = 2.0 * PI * (dayOfYear + ClimateRuntimeConfig.periapsis) / yearLength
+        val eccentricAnomaly = solveKeplersEquation(meanAnomaly, eccentricity)
+        val trueAnomaly = 2.0 * atan2(
+            sqrt(1.0 + eccentricity) * sin(eccentricAnomaly / 2.0),
+            sqrt(1.0 - eccentricity) * cos(eccentricAnomaly / 2.0)
+        )
+        val distanceFactor = (1.0 + eccentricity * cos(trueAnomaly)) /
+                (1.0 - eccentricity * eccentricity)
+        return distanceFactor * distanceFactor
+    }
+
+    /** Solves M = E - e sin(E), preserving the periapsis phase convention. */
+    private fun solveKeplersEquation(meanAnomaly: Double, eccentricity: Double): Double {
+        var eccentricAnomaly = meanAnomaly
+        repeat(12) {
+            eccentricAnomaly -= (eccentricAnomaly - eccentricity * sin(eccentricAnomaly) - meanAnomaly) /
+                    (1.0 - eccentricity * cos(eccentricAnomaly))
+        }
+        return eccentricAnomaly
     }
 
     // Solar declination (radians, Cooper’s formula)
@@ -42,6 +59,6 @@ object Insolation {
         val cosZ = cosZenith(latitude, dayOfYear)
         val m = airMass(cosZ)
         val transmittance = exp(opticalDepthConstant * m)
-        return (solarConstant * e0 * cosZ * transmittance).coerceIn(0.0, 1.0).absoluteValue
+        return (solarConstant * e0 * cosZ * transmittance).coerceIn(0.0, 1.0)
     }
 }

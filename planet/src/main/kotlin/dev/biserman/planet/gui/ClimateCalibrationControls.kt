@@ -30,6 +30,10 @@ class ClimateCalibrationControls(private val gui: Gui) {
             ClimateRuntimeConfig.orbitalEccentricity = it
             String.format("%.3f", it)
         }
+        bindSlider("PeriapsisSlider", "PeriapsisValue", ClimateRuntimeConfig.periapsis) {
+            ClimateRuntimeConfig.periapsis = it
+            "${formatSignedDay(it)} (${seasonForPeriapsis(it)})"
+        }
         bindSignedSlider("DistanceSlider", "DistanceValue", ClimateRuntimeConfig.distanceToStar) {
             ClimateRuntimeConfig.distanceToStar = it
         }
@@ -93,6 +97,7 @@ class ClimateCalibrationControls(private val gui: Gui) {
     private fun syncControlsToConfig() {
         slider("AxialTiltSlider").value = ClimateRuntimeConfig.axialTiltDegrees
         slider("EccentricitySlider").value = ClimateRuntimeConfig.orbitalEccentricity
+        slider("PeriapsisSlider").value = ClimateRuntimeConfig.periapsis
         slider("DistanceSlider").value = ClimateRuntimeConfig.distanceToStar
         slider("GreenhouseSlider").value = ClimateRuntimeConfig.greenhouseEffect
         slider("MoistureSlider").value = ClimateRuntimeConfig.moisture
@@ -107,4 +112,19 @@ class ClimateCalibrationControls(private val gui: Gui) {
 
     private fun formatHalfDegree(value: Double): String =
         if (value % 1.0 == 0.0) value.roundToInt().toString() else String.format("%.1f", value)
+
+    private fun formatSignedDay(value: Double): String =
+        if (value >= 0) "+${value.roundToInt()} d" else "${value.roundToInt()} d"
+
+    private fun seasonForPeriapsis(offset: Double): String {
+        // Insolation reaches its orbital maximum when cos(...) == 1:
+        // dayOfYear + periapsis == 0 (mod yearLength).
+        val day = ((-offset) % 365.242 + 365.242) % 365.242
+        return when (day) {
+            in 80.0..<172.0 -> "spring"
+            in 172.0..<266.0 -> "summer"
+            in 266.0..<355.0 -> "autumn"
+            else -> "winter"
+        }
+    }
 }

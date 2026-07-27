@@ -72,6 +72,8 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczMoistureM
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczMoistureScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczPathfindingContinentialityWeight
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.itczPathfindingNowVsAnnualInsolationLerp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.landNowVsAnnualInsolationLerp
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.landNowVsAnnualInsolationLerpPow
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.landPrecipitationScalar
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxMoistureCoolingLerp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxMoistureForCooling
@@ -489,7 +491,7 @@ object ClimateSimulation {
             val effectiveCoolCurrentTemperatureDistance =
                 coolCurrentTemperatureDistance * ClimateRuntimeConfig.oceanCurrentDistanceScale
             val localBaseTemperature =
-                baseTemperature + greenhouseOffset + insolation * landInsolationScale
+                baseTemperature + greenhouseOffset + lerp(insolation, annualInsolation.average(), landNowVsAnnualInsolationLerp).pow(landNowVsAnnualInsolationLerpPow) * landInsolationScale
 
             val oceanCurrentContinentialityScalar = 1 / maxOceanCurrentTemperatureContinentiality
             val oceanCurrentContinentialityFactor = if (continentiality >= 0) 1.0 else {

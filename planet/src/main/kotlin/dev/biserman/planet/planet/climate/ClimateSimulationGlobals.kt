@@ -79,6 +79,9 @@ object ClimateSimulationGlobals {
 
     // TEMPERATURE
 
+    var landNowVsAnnualInsolationLerp = 0.0
+    var landNowVsAnnualInsolationLerpPow = 1.0
+
     var baseTemperature = 245.0 // °K, base temperature of land
     var baseTemperatureInsolationScalar = 74.0 // °K, increasing by 1°K ≈ 0.9°K increase in tropical summer temperatures
 
