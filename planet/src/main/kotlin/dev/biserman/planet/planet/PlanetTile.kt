@@ -34,6 +34,7 @@ import dev.biserman.planet.utils.memo
 import godot.api.Time
 import godot.core.Color
 import godot.core.Vector3
+import java.util.Locale
 import godot.global.GD
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
@@ -377,8 +378,9 @@ class PlanetTile(
         } else ""
 
         "ecology" -> buildString {
+            fun Double.scientific2() = "%.1e".format(Locale.ROOT, this)
             appendLine("species count: ${ecosystem.speciesCount}")
-            appendLine("total biomass: ${ecosystem.totalBiomassKg.formatDigits()} kg")
+            appendLine("total biomass: ${ecosystem.totalBiomassKg.scientific2()} kg")
             appendLine("reef cover: ${(ecosystem.reefCover * 100.0).formatDigits(1)}%")
             appendLine(
                 "resources: carrion=${ecosystem.resources.carrion.formatDigits(3)}, " +
@@ -386,7 +388,8 @@ class PlanetTile(
                     "waste=${ecosystem.resources.waste.formatDigits(3)}, " +
                     "marine snow=${ecosystem.resources.marineSnow.formatDigits(3)}"
             )
-            appendLine("populations:")
+            val speciesCount = ecosystem.populations.map { it.speciesId }.distinct().size
+            appendLine("populations ($speciesCount):")
             if (ecosystem.populations.isEmpty()) {
                 appendLine("  none")
             } else {
@@ -399,11 +402,11 @@ class PlanetTile(
                         val niche =
                             "${population.habitat.displayName} " +
                                 population.strategy.displayName
+                        val biomassKg = population.activeBiomassKg + population.dormantBiomassKg
+                        val populationCount = species?.massKg?.let { biomassKg / it }
                         appendLine(
-                            "  $name: ${
-                                (population.activeBiomassKg + population.dormantBiomassKg)
-                                    .formatDigits()
-                            } kg ($niche)"
+                            "  $name: ${biomassKg.scientific2()} kg, " +
+                                "population count: ${populationCount?.scientific2() ?: "unknown"} ($niche)"
                         )
                     }
             }
