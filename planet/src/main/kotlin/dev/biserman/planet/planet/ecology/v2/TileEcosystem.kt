@@ -56,6 +56,7 @@ data class TileEcosystem(
             if (
                 speciesIndex >= 0 &&
                 nicheIndex >= 0 &&
+                ecology.species[speciesIndex].nicheFit[nicheIndex] > 0.0 &&
                 population.activeBiomassKg >= 0.0 &&
                 population.reservesKg >= 0.0 &&
                 population.dormantBiomassKg >= 0.0

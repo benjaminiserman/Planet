@@ -29,6 +29,8 @@ import godot.core.PackedByteArray
 import godot.core.connect
 import godot.global.GD
 import java.awt.image.BufferedImage
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.util.Locale.getDefault
 import kotlin.random.Random
@@ -64,6 +66,7 @@ class Gui() : Node() {
     val mapPreviewContainer by lazy { findChild("MapPreviewContainer") as PanelContainer }
     val mapPreview by lazy { findChild("MapPreview") as TextureRect }
     val recenterMapPreviewButton by lazy { findChild("RecenterMapPreviewButton") as Button }
+    val copyTileInfoButton by lazy { findChild("CopyTileInfoButton") as Button }
 
     val simulationOptionButton by lazy { findChild("SimulationOptionButton") as OptionButton }
     val selectedSimulation get() = simulationOptions[simulationOptionButton.selected]
@@ -128,10 +131,12 @@ class Gui() : Node() {
             selectedTileRenderer.update(value)
             if (value == null) {
                 infoboxContainer.visible = false
+                copyTileInfoButton.visible = false
                 selectedTileRenderer.visible = false
             } else {
                 updateInfobox()
                 infoboxContainer.visible = true
+                copyTileInfoButton.visible = true
                 selectedTileRenderer.visible = true
             }
         }
@@ -300,6 +305,13 @@ class Gui() : Node() {
             if (Main.instance.hasPlanet) {
                 mapPreviewDateLine = Main.instance.planet.internationalDateLine
                 updateMapPreview()
+            }
+        }
+        copyTileInfoButton.pressed.connect {
+            if (selectedTile != null) {
+                val tab = infoboxContainer.getChild(infoboxContainer.currentTab)
+                val label = tab?.findChild("Label") as? Label
+                label?.text?.let { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(it), null) }
             }
         }
 

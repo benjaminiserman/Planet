@@ -286,6 +286,13 @@ object EcologyCompiler {
             }
             AquaticSalinityTolerance.BROAD -> Unit
         }
+        // A river occupies only a small fraction of a 40,000 km² land tile and
+        // cannot support populations of the two largest aquatic body classes.
+        // Keep this in compilation so suitability, niche selection,
+        // interactions, and loaded communities all see the same restriction.
+        if (definition.sizeClass.ordinal >= SizeClass.HUGE.ordinal) {
+            habitatSupport[Habitat.FRESHWATER.ordinal] = 0.0
+        }
 
         val grazingSupport = strategySupport[EcoStrategy.GRAZING.ordinal]
         val predationSupport = max(
@@ -384,6 +391,7 @@ object EcologyCompiler {
         SizeClass.MEDIUM -> 0.5
         SizeClass.LARGE -> 1.5
         SizeClass.HUGE -> 3.0
+        SizeClass.COLOSSAL -> 4.0
     }
 
     private const val GENERALIST_MINIMUM_METHOD_SUPPORT = 0.20
@@ -423,7 +431,7 @@ object EcologyCompiler {
                 val filterSizeMatch =
                     target.sizeClass == SizeClass.MINUSCULE ||
                         (
-                            consumer.sizeClass == SizeClass.HUGE &&
+                            consumer.sizeClass.ordinal >= SizeClass.HUGE.ordinal &&
                                 target.sizeClass == SizeClass.TINY
                             )
                 if (

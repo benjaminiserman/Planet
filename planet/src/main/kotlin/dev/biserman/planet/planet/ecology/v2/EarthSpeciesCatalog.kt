@@ -424,7 +424,7 @@ object EarthSpeciesCatalog {
         animal(
             "blue-whale",
             "Blue whale",
-            SizeClass.HUGE,
+            SizeClass.COLOSSAL,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
@@ -437,7 +437,7 @@ object EarthSpeciesCatalog {
         animal(
             "humpback-whale",
             "Humpback whale",
-            SizeClass.HUGE,
+            SizeClass.COLOSSAL,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
@@ -1554,7 +1554,7 @@ object EarthSpeciesCatalog {
         sessile(
             "coast-redwood",
             "Coast redwood",
-            SizeClass.HUGE,
+            SizeClass.COLOSSAL,
             BiologicalColor.GREEN,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,

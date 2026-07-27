@@ -12,6 +12,7 @@ enum class SizeClass(
     MEDIUM(10.0, 0.12, 0.34, 1.0),
     LARGE(500.0, 0.08, 0.18, 0.38),
     HUGE(10_000.0, 0.055, 0.10, 0.12),
+    COLOSSAL(100_000.0, 0.040, 0.06, 0.04),
 }
 
 sealed interface SpeciesTrait {

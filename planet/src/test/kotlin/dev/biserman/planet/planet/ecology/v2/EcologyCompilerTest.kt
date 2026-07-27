@@ -168,9 +168,10 @@ class EcologyCompilerTest {
     }
 
     @Test
-    fun `filter feeders target minuscule motile life and huge feeders also target tiny life`() {
+    fun `filter feeders target minuscule motile life and huge or colossal feeders also target tiny life`() {
         val mediumFilter = aquaticFilter("medium-filter", SizeClass.MEDIUM)
         val hugeFilter = aquaticFilter("huge-filter", SizeClass.HUGE)
+        val colossalFilter = aquaticFilter("colossal-filter", SizeClass.COLOSSAL)
         val minusculePrey = aquaticPrey("ordinary-minuscule-prey", SizeClass.MINUSCULE)
         val tinyPrey = aquaticPrey("ordinary-tiny-prey", SizeClass.TINY)
         val ecology = EcologyCompiler.compile(
@@ -179,6 +180,7 @@ class EcologyCompilerTest {
                 tinyPrey,
                 mediumFilter,
                 hugeFilter,
+                colossalFilter,
             ),
         )
         val minuscule = ecology.speciesIndex(minusculePrey.id)
@@ -200,6 +202,33 @@ class EcologyCompilerTest {
             InteractionKind.FILTER_FEEDING,
             ecology.interactions.get(ecology.speciesIndex(hugeFilter.id), tiny).kind,
         )
+        assertEquals(
+            InteractionKind.FILTER_FEEDING,
+            ecology.interactions.get(ecology.speciesIndex(colossalFilter.id), tiny).kind,
+        )
+    }
+
+    @Test
+    fun `huge and colossal aquatic species cannot occupy river habitat`() {
+        listOf(SizeClass.HUGE, SizeClass.COLOSSAL).forEach { sizeClass ->
+            val base = aquaticFilter("oversized-river-filter-${sizeClass.name}", sizeClass)
+            val definition = base.copy(
+                traits = base.traits + CommonTrait.EURYHALINE_OSMOREGULATION,
+            )
+            val ecology = EcologyCompiler.compile(listOf(definition))
+            val species = ecology.species.single()
+            val river = SeasonalCellEnvironment.create(
+                areaKm2 = 40_000.0,
+                temperatureC = 20.0,
+                insolation = 0.8,
+                precipitationMm = 80.0,
+                isLand = true,
+                adjacentToMajorRiver = true,
+            )
+
+            assertEquals(0.0, species.habitatSupport[Habitat.FRESHWATER.ordinal])
+            assertEquals(-1, NicheSelection.choose(species, ecology, river))
+        }
     }
 
     @Test

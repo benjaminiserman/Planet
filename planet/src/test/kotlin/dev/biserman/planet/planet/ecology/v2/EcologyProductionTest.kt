@@ -14,6 +14,16 @@ class EcologyProductionTest {
     )
 
     @Test
+    fun `colossal Earth species are redwoods and baleen whales`() {
+        assertEquals(
+            setOf("coast-redwood", "blue-whale", "humpback-whale"),
+            EarthSpeciesCatalog.ALL
+                .filter { it.sizeClass == SizeClass.COLOSSAL }
+                .mapTo(linkedSetOf()) { it.id },
+        )
+    }
+
+    @Test
     fun `every authored species has a credible Hersfeldt climate`() {
         val fixtures = climateFixtures()
         val unmatched = mutableListOf<String>()

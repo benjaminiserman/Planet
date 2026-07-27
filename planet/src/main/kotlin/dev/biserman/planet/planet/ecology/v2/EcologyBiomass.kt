@@ -18,6 +18,7 @@ object EcologyBiomass {
         SizeClass.MEDIUM to 5_000_000.0,
         SizeClass.LARGE to 12_000_000.0,
         SizeClass.HUGE to 25_000_000.0,
+        SizeClass.COLOSSAL to 40_000_000.0,
     )
 
     val aquaticProducerDensityKgKm2: Map<SizeClass, Double> = mapOf(
@@ -27,6 +28,7 @@ object EcologyBiomass {
         SizeClass.MEDIUM to 800_000.0,
         SizeClass.LARGE to 2_000_000.0,
         SizeClass.HUGE to 5_000_000.0,
+        SizeClass.COLOSSAL to 8_000_000.0,
     )
 
     /**
@@ -41,6 +43,7 @@ object EcologyBiomass {
         SizeClass.MEDIUM to 0.08,
         SizeClass.LARGE to 0.03,
         SizeClass.HUGE to 0.01,
+        SizeClass.COLOSSAL to 0.005,
     )
 
     val filterFeedingEfficiencyBySize: Map<SizeClass, Double> = mapOf(
@@ -50,6 +53,7 @@ object EcologyBiomass {
         SizeClass.MEDIUM to 0.42,
         SizeClass.LARGE to 0.20,
         SizeClass.HUGE to 0.103,
+        SizeClass.COLOSSAL to 0.08,
     )
 
     val aquaticFilterFeederProducerFractionBySize: Map<SizeClass, Double> = mapOf(
@@ -59,6 +63,7 @@ object EcologyBiomass {
         SizeClass.MEDIUM to 0.01,
         SizeClass.LARGE to 0.003,
         SizeClass.HUGE to 0.0005,
+        SizeClass.COLOSSAL to 0.00025,
     )
 
     private val terrestrialProducerDensity =

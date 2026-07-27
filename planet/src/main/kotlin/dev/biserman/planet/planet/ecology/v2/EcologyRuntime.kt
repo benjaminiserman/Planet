@@ -182,7 +182,9 @@ class EcologyRuntime(
         for (populationIndex in 0 until community.size) {
             val species = ecology.species[community.speciesIndices[populationIndex]]
             val niche = ecology.niches[community.nicheIndices[populationIndex]]
-            val habitatPresent = environment.habitatAvailability(niche.habitat) > 0.0
+            val habitatPresent =
+                species.nicheFit[community.nicheIndices[populationIndex]] > 0.0 &&
+                    environment.habitatAvailability(niche.habitat) > 0.0
             val requiredTargetPresent = requiredTargetPresent(species.index, community)
             val populationFitness =
                 if (!habitatPresent || !requiredTargetPresent) {
