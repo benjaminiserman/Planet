@@ -205,6 +205,40 @@ class EcologyEnvironmentTest {
     }
 
     @Test
+    fun `radiation selects an intrinsic niche instead of escaping into an empty fallback`() {
+        val definition = SpeciesDefinition(
+            id = "branch-mat",
+            displayName = "Branch mat",
+            sizeClass = SizeClass.SMALL,
+            motile = false,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.PHOTOSYNTHETIC_SURFACE,
+                CommonTrait.ROOTED_BODY,
+                CommonTrait.CANOPY_GROWTH,
+            ),
+            photosyntheticColor = BiologicalColor.GREEN,
+        )
+        val ecology = EcologyCompiler.compile(listOf(definition))
+        val species = ecology.species.single()
+        val environment = land(canopyCover = 0.9)
+        val intrinsicBest = NicheSelection.choose(species, ecology, environment)
+        val competition = DoubleArray(ecology.niches.size)
+        competition[intrinsicBest] = 1_000_000.0
+
+        val radiationChoice = NicheSelection.choose(
+            species = species,
+            ecology = ecology,
+            environment = environment,
+            competitionByNiche = competition,
+            minimumRelativeIntrinsicFit = 0.80,
+            competitionAffectsSelection = false,
+        )
+
+        assertEquals(intrinsicBest, radiationChoice)
+    }
+
+    @Test
     fun `a valid scavenging niche can establish before the first carrion flux`() {
         val definition = SpeciesDefinition(
             id = "obligate-scavenger",

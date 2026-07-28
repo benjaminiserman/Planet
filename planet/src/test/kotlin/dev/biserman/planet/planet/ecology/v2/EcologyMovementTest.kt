@@ -134,6 +134,35 @@ class EcologyMovementTest {
         )
     }
 
+    @Test
+    fun `radiation establishment gate can reject an otherwise viable founder`() {
+        val ecology = EcologyCompiler.compile(listOf(landDisperser()))
+        val environments = arrayOf(land(), land())
+        val communities = emptyCommunities(2)
+        val niche = NicheSelection.choose(ecology.species.single(), ecology, environments[0])
+        communities[0].add(0, niche, activeBiomass = 10_000.0, reserves = 1_000.0)
+
+        EcologyMovement.applyRadiation(
+            ecology = ecology,
+            communities = communities,
+            environments = environments,
+            neighbors = arrayOf(intArrayOf(1), intArrayOf(0)),
+            seasonIndex = 0,
+            planetSeed = 42,
+            scratch = MovementScratch(maximumTransfers = 2, nicheCount = ecology.niches.size),
+            config = EcologyRuntimeConfig(
+                unassistedRadiationChancePerSeason = 1.0,
+                migrationRadiationChancePerSeason = 1.0,
+                neighborRadiationChancePerSeason = 1.0,
+            ),
+            canEstablish = { _, _, _ -> false },
+        )
+
+        assertEquals(-1, communities[1].find(0))
+        assertEquals(10_000.0, communities[0].activeBiomass[0])
+        assertEquals(1_000.0, communities[0].reserves[0])
+    }
+
     private fun emptyCommunities(count: Int) = Array(count) { TileCommunity() }
 
     private fun land(majorRiver: Boolean = false) = SeasonalCellEnvironment.create(

@@ -15,6 +15,7 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.ecology.v2.EcologyGlobals
 import dev.biserman.planet.planet.ecology.v2.PlanetEcology
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
@@ -385,6 +386,16 @@ class Gui() : Node() {
             } else {
                 Serialization.configMapper.writeValue(climateConfig, ClimateSimulationGlobals)
                 GD.print("No climate_config.json file found, created one with default values.")
+            }
+
+            val ecologyConfig = File("ecology_config.json")
+            if (ecologyConfig.exists()) {
+                Serialization.configMapper.readValue<EcologyGlobals>(ecologyConfig)
+                PlanetEcology.refreshRuntimeConfig()
+                GD.print("Config refreshed!")
+            } else {
+                Serialization.configMapper.writeValue(ecologyConfig, EcologyGlobals)
+                GD.print("No ecology_config.json file found, created one with default values.")
             }
         }
         refreshConfigButton.pressed.connect { reloadConfigFiles() }

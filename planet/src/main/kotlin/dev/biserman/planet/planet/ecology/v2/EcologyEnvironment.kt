@@ -317,12 +317,35 @@ object NicheSelection {
         ecology: CompiledEcology,
         environment: SeasonalCellEnvironment,
         competitionByNiche: DoubleArray = DoubleArray(ecology.niches.size),
+        minimumRelativeIntrinsicFit: Double = 0.0,
+        competitionAffectsSelection: Boolean = true,
     ): Int {
         require(competitionByNiche.size == ecology.niches.size)
+        require(minimumRelativeIntrinsicFit in 0.0..1.0)
+        val bestIntrinsicFit = ecology.niches.indices
+            .asSequence()
+            .filter { nicheIndex ->
+                val habitat = ecology.niches[nicheIndex].habitat
+                environment.habitatAvailability(habitat) > 0.0 &&
+                    !(
+                        !environment.isLand &&
+                            habitat == Habitat.AERIAL &&
+                            !species.pelagicAerialResident
+                        ) &&
+                    !(habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
+            }
+            .maxOfOrNull { species.nicheFit[it] }
+            ?: 0.0
         var bestIndex = -1
         var bestScore = 0.0
         ecology.niches.indices.forEach { nicheIndex ->
             val niche = ecology.niches[nicheIndex]
+            if (
+                species.nicheFit[nicheIndex] <
+                bestIntrinsicFit * minimumRelativeIntrinsicFit
+            ) {
+                return@forEach
+            }
             if (
                 !environment.isLand &&
                 niche.habitat == Habitat.AERIAL &&
@@ -343,7 +366,11 @@ object NicheSelection {
                 species.nicheFit[nicheIndex] *
                     environment.habitatAvailability(niche.habitat) *
                     establishmentResource /
-                    (1.0 + competitionByNiche[nicheIndex])
+                    if (competitionAffectsSelection) {
+                        1.0 + competitionByNiche[nicheIndex]
+                    } else {
+                        1.0
+                    }
             if (score > bestScore) {
                 bestScore = score
                 bestIndex = nicheIndex
