@@ -20,15 +20,30 @@ object PlanetEcology {
         EcologyCompiler.compile(definitions)
     }
 
-    private val runtime: EcologyRuntime by lazy {
-        EcologyRuntime(
-            ecology = compiled,
-            maximumPopulationsPerCell = TileEcosystem.MAXIMUM_POPULATIONS,
-        )
-    }
+    private var runtimeConfig = EcologyRuntimeConfig()
+    private var runtimeInstance: EcologyRuntime? = null
+    private val runtime: EcologyRuntime
+        get() = runtimeInstance ?: newRuntime().also { runtimeInstance = it }
     private var cachedPlanet: Planet? = null
     private var cachedWorld: WorldCache? = null
     private var radiationScratch: MovementScratch? = null
+
+    /**
+     * Makes values reloaded into [EcologyGlobals] effective on the next turn.
+     * Existing ecosystem state is preserved; only the runtime parameter
+     * snapshot is replaced.
+     */
+    fun refreshRuntimeConfig() {
+        EcologyGlobals.validate()
+        runtimeConfig = EcologyRuntimeConfig()
+        runtimeInstance = null
+    }
+
+    private fun newRuntime() = EcologyRuntime(
+        ecology = compiled,
+        config = runtimeConfig,
+        maximumPopulationsPerCell = TileEcosystem.MAXIMUM_POPULATIONS,
+    )
 
     fun clearEcosystems(planet: Planet) {
         planet.planetTiles.values.forEach { it.ecosystem.clear() }
@@ -229,6 +244,32 @@ object PlanetEcology {
             seasonIndex = planet.historyTurn,
             planetSeed = planet.seed,
             scratch = scratch,
+            config = runtimeConfig,
+            canEstablish = { speciesIndex, destinationIndex, nicheIndex ->
+                val destination = communities[destinationIndex]
+                if (destination.find(speciesIndex) >= 0) {
+                    true
+                } else {
+                    val niche = compiled.niches[nicheIndex]
+                    val habitatPopulationCount =
+                        (0 until destination.size).count { populationIndex ->
+                            compiled.niches[destination.nicheIndices[populationIndex]].habitat ==
+                                niche.habitat
+                        }
+                    val establishmentCapacity =
+                        EcologyDiversity.softHabitatCapacity(
+                            environments[destinationIndex],
+                            niche.habitat,
+                        ) * EcologyGlobals.establishmentCapacityMultiplier
+                    habitatPopulationCount < establishmentCapacity &&
+                        annuallySuitable(
+                            cache,
+                            destinationIndex,
+                            speciesIndex,
+                            niche.habitat,
+                        )
+                }
+            },
         )
         communities.forEach(runtime::finalizeLocalExtinctions)
         tiles.indices.forEach { index ->
@@ -354,6 +395,42 @@ object PlanetEcology {
         return value xor (value ushr 16)
     }
 
+    private fun annuallySuitable(
+        cache: WorldCache,
+        tileIndex: Int,
+        speciesIndex: Int,
+        habitat: Habitat,
+    ): Boolean {
+        val cacheIndex = tileIndex * compiled.species.size + speciesIndex
+        val habitatBit = 1 shl habitat.ordinal
+        val knownMask = cache.knownSuitabilityHabitats[cacheIndex].toInt() and 0xFF
+        if (knownMask and habitatBit == 0) {
+            val tile = cache.tiles[tileIndex]
+            val climate = tile.planet.climateMap.getValue(tile.tileId)
+            val result = EcologySuitability.evaluate(
+                species = compiled.species[speciesIndex],
+                ecology = compiled,
+                annualEnvironments = PlanetEcologyEnvironment.annualEnvironments(
+                    tile,
+                    climate,
+                    cache.context,
+                ),
+                habitat = habitat,
+            )
+            cache.knownSuitabilityHabitats[cacheIndex] =
+                (knownMask or habitatBit).toByte()
+            if (result.suitable) {
+                val suitableMask =
+                    cache.suitableHabitats[cacheIndex].toInt() and 0xFF
+                cache.suitableHabitats[cacheIndex] =
+                    (suitableMask or habitatBit).toByte()
+            }
+        }
+        return (
+            cache.suitableHabitats[cacheIndex].toInt() and 0xFF and habitatBit
+            ) != 0
+    }
+
     @Synchronized
     private fun worldCache(planet: Planet): WorldCache {
         val existing = if (cachedPlanet === planet) cachedWorld else null
@@ -390,6 +467,10 @@ object PlanetEcology {
             tiles = tiles,
             context = PlanetEcologyEnvironment.context(planet),
             neighbors = neighbors,
+            knownSuitabilityHabitats =
+                ByteArray(tiles.size * compiled.species.size),
+            suitableHabitats =
+                ByteArray(tiles.size * compiled.species.size),
         ).also {
             cachedPlanet = planet
             cachedWorld = it
@@ -402,6 +483,8 @@ object PlanetEcology {
         val tiles: List<PlanetTile>,
         val context: PlanetEcologyEnvironmentContext,
         val neighbors: Array<IntArray>,
+        val knownSuitabilityHabitats: ByteArray,
+        val suitableHabitats: ByteArray,
     )
 
     private const val RANDOMIZATION_PROCESS = 0x2C71_4A19

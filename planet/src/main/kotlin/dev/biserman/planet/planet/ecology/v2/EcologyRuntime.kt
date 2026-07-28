@@ -68,30 +68,93 @@ class TileCommunity(val capacity: Int = 48) {
 }
 
 data class EcologyRuntimeConfig(
-    val backgroundMortality: Double = 0.012,
-    val stressMortality: Double = 0.42,
-    val maximumStarvationMortality: Double = 0.72,
+    val backgroundMortality: Double = EcologyGlobals.backgroundMortality,
+    val stressMortality: Double = EcologyGlobals.stressMortality,
+    val maximumStarvationMortality: Double =
+        EcologyGlobals.maximumStarvationMortality,
     /**
      * Species assigned to the same broad authored niche still partition food,
      * space, or time in ways this coarse model does not name explicitly.
      * Keeping this below 1 prevents tiny fitness differences from forcing
      * deterministic competitive exclusion.
      */
-    val interspecificNicheCompetition: Double = 0.15,
+    val interspecificNicheCompetition: Double =
+        EcologyGlobals.interspecificNicheCompetition,
     /**
      * Seasonal food throughput may exceed consumer standing biomass even
      * though only a fraction of eaten tissue is assimilated.
      */
-    val maximumConsumedBiomassFraction: Double = 0.75,
-    val dormantEntryFitness: Double = 0.35,
-    val dormantExitFitness: Double = 0.58,
-    val dormantEntryFraction: Double = 0.88,
-    val dormantExitFraction: Double = 0.55,
+    val maximumConsumedBiomassFraction: Double =
+        EcologyGlobals.maximumConsumedBiomassFraction,
+    val dormantEntryFitness: Double = EcologyGlobals.dormantEntryFitness,
+    val dormantExitFitness: Double = EcologyGlobals.dormantExitFitness,
+    val dormantEntryFraction: Double = EcologyGlobals.dormantEntryFraction,
+    val dormantExitFraction: Double = EcologyGlobals.dormantExitFraction,
+    /**
+     * Each authored habitat represents a finite amount of unmodeled spatial,
+     * temporal, and dietary niche space. Above this soft capacity, established
+     * and especially low-abundance populations suffer competitive displacement.
+     */
+    val habitatDiversityBaseSlots: Double =
+        EcologyGlobals.habitatDiversityBaseSlots,
+    val habitatDiversityAvailabilitySlots: Double =
+        EcologyGlobals.habitatDiversityAvailabilitySlots,
+    val maximumHabitatDiversityMortality: Double =
+        EcologyGlobals.maximumHabitatDiversityMortality,
+    val strongestCompetitorMortalityFraction: Double =
+        EcologyGlobals.strongestCompetitorMortalityFraction,
     // One 40,000 km² tile may hold only a few viable huge animals. The later
     // regional extinction pass is responsible for treating a handful spread
     // across several tiles as non-viable.
-    val minimumViableIndividuals: Double = 2.0,
-)
+    val minimumViableIndividuals: Double =
+        EcologyGlobals.minimumViableIndividuals,
+    val unassistedRadiationChancePerSeason: Double =
+        EcologyGlobals.unassistedRadiationChancePerSeason,
+    val migrationRadiationChancePerSeason: Double =
+        EcologyGlobals.migrationRadiationChancePerSeason,
+    val neighborRadiationChancePerSeason: Double =
+        EcologyGlobals.neighborRadiationChancePerSeason,
+    val minimumRelativeRadiationNicheFit: Double =
+        EcologyGlobals.minimumRelativeRadiationNicheFit,
+) {
+    init {
+        require(backgroundMortality in 0.0..1.0)
+        require(stressMortality in 0.0..1.0)
+        require(maximumStarvationMortality in 0.0..1.0)
+        require(interspecificNicheCompetition >= 0.0)
+        require(maximumConsumedBiomassFraction in 0.0..1.0)
+        require(dormantEntryFitness in 0.0..1.0)
+        require(dormantExitFitness in 0.0..1.0)
+        require(dormantEntryFraction in 0.0..1.0)
+        require(dormantExitFraction in 0.0..1.0)
+        require(habitatDiversityBaseSlots >= 0.0)
+        require(habitatDiversityAvailabilitySlots >= 0.0)
+        require(maximumHabitatDiversityMortality in 0.0..1.0)
+        require(strongestCompetitorMortalityFraction in 0.0..1.0)
+        require(minimumViableIndividuals >= 0.0)
+        require(unassistedRadiationChancePerSeason in 0.0..1.0)
+        require(migrationRadiationChancePerSeason in 0.0..1.0)
+        require(neighborRadiationChancePerSeason in 0.0..1.0)
+        require(minimumRelativeRadiationNicheFit in 0.0..1.0)
+    }
+}
+
+object EcologyDiversity {
+    fun softHabitatCapacity(
+        environment: SeasonalCellEnvironment,
+        habitat: Habitat,
+        baseSlots: Double = EcologyGlobals.habitatDiversityBaseSlots,
+        availabilitySlots: Double =
+            EcologyGlobals.habitatDiversityAvailabilitySlots,
+    ): Double {
+        val availability = environment.habitatAvailability(habitat)
+        return if (availability <= 0.0) {
+            0.0
+        } else {
+            baseSlots + availabilitySlots * availability
+        }
+    }
+}
 
 class CellTurnFluxes {
     var carrionBiomass: Double = 0.0
@@ -144,8 +207,11 @@ class EcologyRuntime(
     private val nextActive = DoubleArray(maximumPopulationsPerCell)
     private val nextReserves = DoubleArray(maximumPopulationsPerCell)
     private val nextDormant = DoubleArray(maximumPopulationsPerCell)
+    private val competitiveStanding = DoubleArray(maximumPopulationsPerCell)
     private val normalizedBiomassByNicheAndSize =
         DoubleArray(ecology.niches.size * SizeClass.entries.size)
+    private val populationCountByHabitat = IntArray(Habitat.entries.size)
+    private val bestCompetitiveStandingByHabitat = DoubleArray(Habitat.entries.size)
 
     fun advanceSeason(
         community: TileCommunity,
@@ -160,6 +226,7 @@ class EcologyRuntime(
         }
         clearScratch(community.size)
         prepareDormancyAndFitness(community, environment)
+        accumulateHabitatDiversity(community, environment)
         accumulateNicheBiomass(community)
         accumulateInteractions(community, environment)
         updatePopulations(community, environment, fluxes)
@@ -173,6 +240,36 @@ class EcologyRuntime(
         java.util.Arrays.fill(interactionGains, 0, populationCount, 0.0)
         java.util.Arrays.fill(interactionLosses, 0, populationCount, 0.0)
         java.util.Arrays.fill(relationshipBenefits, 0, populationCount, 0.0)
+        java.util.Arrays.fill(competitiveStanding, 0, populationCount, 0.0)
+        java.util.Arrays.fill(populationCountByHabitat, 0)
+        java.util.Arrays.fill(bestCompetitiveStandingByHabitat, 0.0)
+    }
+
+    private fun accumulateHabitatDiversity(
+        community: TileCommunity,
+        environment: SeasonalCellEnvironment,
+    ) {
+        for (populationIndex in 0 until community.size) {
+            val species = ecology.species[community.speciesIndices[populationIndex]]
+            val nicheIndex = community.nicheIndices[populationIndex]
+            val niche = ecology.niches[nicheIndex]
+            val habitatIndex = niche.habitat.ordinal
+            populationCountByHabitat[habitatIndex]++
+
+            val carryingCapacity =
+                EcologyBiomass.carryingCapacityKg(species, niche, environment)
+            val relativeAbundance =
+                (effectiveActive[populationIndex] / max(1.0, carryingCapacity))
+                    .coerceIn(0.0, 1.0)
+            val intrinsicFit = species.nicheFit[nicheIndex].coerceIn(0.0, 1.0)
+            val standing =
+                fitness[populationIndex] *
+                    (0.55 + intrinsicFit * 0.45) *
+                    (0.25 + sqrt(relativeAbundance) * 0.75)
+            competitiveStanding[populationIndex] = standing
+            bestCompetitiveStandingByHabitat[habitatIndex] =
+                max(bestCompetitiveStandingByHabitat[habitatIndex], standing)
+        }
     }
 
     private fun prepareDormancyAndFitness(
@@ -482,6 +579,39 @@ class EcologyRuntime(
                 active * config.stressMortality * stress * stress * stress * stress
             val backgroundLoss = active * config.backgroundMortality
             val predationLoss = min(active, interactionLosses[populationIndex])
+            val softDiversityCapacity = EcologyDiversity.softHabitatCapacity(
+                environment = environment,
+                habitat = niche.habitat,
+                baseSlots = config.habitatDiversityBaseSlots,
+                availabilitySlots = config.habitatDiversityAvailabilitySlots,
+            )
+            val excessDiversity =
+                max(
+                    0.0,
+                    populationCountByHabitat[niche.habitat.ordinal] -
+                        softDiversityCapacity,
+                )
+            val diversityPressure =
+                if (softDiversityCapacity <= 0.0 || excessDiversity <= 0.0) {
+                    0.0
+                } else {
+                    val excessRatio = excessDiversity / softDiversityCapacity
+                    excessRatio / (1.0 + excessRatio)
+                }
+            val bestStanding =
+                bestCompetitiveStandingByHabitat[niche.habitat.ordinal]
+            val relativeStanding =
+                if (bestStanding <= 0.0) 0.0
+                else (competitiveStanding[populationIndex] / bestStanding).coerceIn(0.0, 1.0)
+            val competitiveDisadvantage =
+                config.strongestCompetitorMortalityFraction +
+                    (1.0 - config.strongestCompetitorMortalityFraction) *
+                    (1.0 - relativeStanding)
+            val diversityLoss =
+                active *
+                    config.maximumHabitatDiversityMortality *
+                    diversityPressure *
+                    competitiveDisadvantage
 
             var reserves = community.reserves[populationIndex]
             var energyBalance = grossAssimilation - maintenance
@@ -508,7 +638,14 @@ class EcologyRuntime(
                 }
             }
 
-            val totalLoss = min(active + growth, stressLoss + backgroundLoss + predationLoss + starvationLoss)
+            val totalLoss = min(
+                active + growth,
+                stressLoss +
+                    backgroundLoss +
+                    predationLoss +
+                    starvationLoss +
+                    diversityLoss,
+            )
             val updatedActive = max(0.0, active + growth - totalLoss)
             nextActive[populationIndex] = updatedActive
             nextReserves[populationIndex] = min(reserves, updatedActive * species.reserveCapacity)

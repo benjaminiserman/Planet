@@ -266,6 +266,32 @@ class EcologyRuntimeTest {
     }
 
     @Test
+    fun `soft habitat diversity pressure removes weak populations before the hard cap`() {
+        val definitions = List(24) { index -> landProducer(id = "producer-$index") }
+        val ecology = EcologyCompiler.compile(definitions)
+        val environment = landEnvironment()
+        val niche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.PHOTOSYNTHESIS)
+        val community = TileCommunity().also { community ->
+            definitions.indices.forEach { speciesIndex ->
+                community.add(
+                    speciesIndex = speciesIndex,
+                    nicheIndex = niche,
+                    activeBiomass = if (speciesIndex == 0) 1_000_000_000.0 else 10_000.0,
+                )
+            }
+        }
+
+        val runtime = EcologyRuntime(ecology)
+        repeat(200) {
+            runtime.advanceSeason(community, environment)
+        }
+
+        assertTrue(community.size < definitions.size)
+        assertTrue(community.size < 48)
+        assertTrue(community.find(0) >= 0)
+    }
+
+    @Test
     fun `large predator becomes locally extinct after its last modeled prey disappears`() {
         val ecology = EcologyCompiler.compile(listOf(landProducer(), grazer(), predator()))
         val community = community(ecology, listOf(0, 1, 2))

@@ -88,6 +88,12 @@ object EcologyMovement {
         seasonIndex: Long,
         planetSeed: Int,
         scratch: MovementScratch,
+        config: EcologyRuntimeConfig = EcologyRuntimeConfig(),
+        canEstablish: (
+            speciesIndex: Int,
+            destinationTile: Int,
+            nicheIndex: Int,
+        ) -> Boolean = { _, _, _ -> true },
     ) {
         require(communities.size == environments.size)
         require(communities.size == neighbors.size)
@@ -100,11 +106,14 @@ object EcologyMovement {
                 val species = ecology.species[speciesIndex]
                 if (species.kind == SpeciesKind.INVARIANT) continue
                 val chance = when (species.dispersalKind) {
-                    DispersalKind.NEIGHBOR -> 0.14
+                    DispersalKind.NEIGHBOR ->
+                        config.neighborRadiationChancePerSeason
                     DispersalKind.SHORT_MIGRATION,
                     DispersalKind.REGIONAL_MIGRATION,
-                    DispersalKind.LONG_MIGRATION -> 0.08
-                    DispersalKind.NONE -> 0.05
+                    DispersalKind.LONG_MIGRATION ->
+                        config.migrationRadiationChancePerSeason
+                    DispersalKind.NONE ->
+                        config.unassistedRadiationChancePerSeason
                 }
                 val hash = radiationHash(planetSeed, seasonIndex, originTile, speciesIndex)
                 if (hashToUnit(hash) >= chance) continue
@@ -118,18 +127,17 @@ object EcologyMovement {
                     val candidate = adjacent[(start + offset) % adjacent.size]
                     val target = communities[candidate]
                     if (target.find(speciesIndex) < 0 && target.size >= target.capacity) continue
-                    Arrays.fill(scratch.competitionByNiche, 0.0)
-                    for (targetPopulation in 0 until target.size) {
-                        scratch.competitionByNiche[target.nicheIndices[targetPopulation]] +=
-                            target.activeBiomass[targetPopulation]
-                    }
                     val candidateNiche = NicheSelection.choose(
                         species,
                         ecology,
                         environments[candidate],
                         scratch.competitionByNiche,
+                        minimumRelativeIntrinsicFit =
+                            config.minimumRelativeRadiationNicheFit,
+                        competitionAffectsSelection = false,
                     )
                     if (candidateNiche < 0) continue
+                    if (!canEstablish(speciesIndex, candidate, candidateNiche)) continue
                     val candidateHabitat = ecology.niches[candidateNiche].habitat
                     if (
                         EcologyFitness.combined(
