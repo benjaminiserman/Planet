@@ -97,22 +97,21 @@ class EcologyWorldEcosystemHealthTest {
             when (result.name) {
                 "Boreal forest" -> {
                     val spruceBiomass =
-                        result.finalBiomassById.getOrDefault("picea-mariana", 0.0) +
-                            result.finalBiomassById.getOrDefault("abies-balsamea", 0.0)
-                    if (result.finalBiomassById.getOrDefault("spruce-budworm", 0.0) >= spruceBiomass) {
-                        failures += "${result.name} had more spruce budworm biomass than its two modeled spruces"
+                        result.finalBiomassById.getOrDefault("scots-pine", 0.0)
+                    if (result.finalBiomassById.getOrDefault("red-squirrel", 0.0) >= spruceBiomass) {
+                        failures += "${result.name} had more red squirrel biomass than its modeled pine"
                     }
                     if (
-                        result.finalBiomassById.getOrDefault("canada-lynx", 0.0) >=
+                        result.finalBiomassById.getOrDefault("red-fox", 0.0) >=
                         result.finalBiomassById.getOrDefault("snowshoe-hare", 0.0)
                     ) {
-                        failures += "${result.name} had at least as much lynx biomass as snowshoe hare biomass"
+                        failures += "${result.name} had at least as much red fox biomass as snowshoe hare biomass"
                     }
                 }
                 "Himalayan alpine meadow" -> {
                     val namedPreyBiomass =
-                        result.finalBiomassById.getOrDefault("plateau-pika", 0.0) +
-                            result.finalBiomassById.getOrDefault("bharal", 0.0)
+                        result.finalBiomassById.getOrDefault("snowshoe-hare", 0.0) +
+                            result.finalBiomassById.getOrDefault("white-tailed-deer", 0.0)
                     if (result.finalBiomassById.getOrDefault("snow-leopard", 0.0) >= namedPreyBiomass) {
                         failures += "${result.name} had at least as much snow leopard biomass as named prey biomass"
                     }
@@ -507,92 +506,16 @@ class EcologyWorldEcosystemHealthTest {
             includeAeroplankton = tileValues["includeAeroplankton"]?.toBoolean() ?: false,
         )
 
-        val speciesPattern = Regex(
-            """sp\("([^"]+)", "([^"]+)", S\.([A-Z]+), (true|false), listOf\(([^)]*)\)(?:, B\.([A-Z_]+))?(?:, camouflage = B\.([A-Z_]+))?\)""",
-        )
-        val species = speciesPattern.findAll(source).map { match ->
-            val traits =
-                Regex("""C\.([A-Z_]+)""")
-                    .findAll(match.groupValues[5])
-                    .map { CommonTrait.valueOf(it.groupValues[1]) }
-                    .toMutableList<SpeciesTrait>()
-            if ("invasiveMesopredatorSpecialization" in match.groupValues[5]) {
-                traits += TargetedRelationshipTrait(
-                    displayName = "mesopredator hunting specialization",
-                    description =
-                        "The invader recognizes and efficiently hunts the resident predator as unusually vulnerable prey.",
-                    maintenanceCost = 0.04,
-                    relationships = listOf(
-                        RelationshipEffect.SupplementalFood(
-                            SpeciesSelector.ExactSpecies("control-mesopredator"),
-                            attackRate = 2.00,
-                            assimilationEfficiency = 0.85,
-                        ),
-                        RelationshipEffect.RequiresTarget(
-                            SpeciesSelector.ExactSpecies("control-mesopredator"),
-                        ),
-                    ),
-                )
+        val catalogById = EarthSpeciesCatalog.ALL.associateBy { it.id }
+        val species = Regex("""earth\("([^"]+)"\)""")
+            .findAll(source)
+            .map { match ->
+                val id = match.groupValues[1]
+                requireNotNull(catalogById[id]) {
+                    "$name references $id, which is not in EarthSpeciesCatalog.ALL"
+                }
             }
-            if ("wolfPackHunting" in match.groupValues[5]) {
-                traits += TargetedRelationshipTrait(
-                    displayName = "cooperative moose hunting",
-                    description =
-                        "A coordinated pack can isolate and exhaust prey much larger than any individual hunter.",
-                    maintenanceCost = 0.05,
-                    relationships = listOf(
-                        RelationshipEffect.SupplementalFood(
-                            SpeciesSelector.ExactSpecies("moose"),
-                            attackRate = 0.002,
-                            assimilationEfficiency = 0.78,
-                        ),
-                    ),
-                )
-            }
-            if ("islandBirdHunting" in match.groupValues[5]) {
-                traits += TargetedRelationshipTrait(
-                    displayName = "ground-nest hunting",
-                    description =
-                        "Scent tracking and exploratory hunting expose large, poorly defended ground nests.",
-                    maintenanceCost = 0.03,
-                    relationships = listOf(
-                        RelationshipEffect.SupplementalFood(
-                            SpeciesSelector.ExactSpecies("island-ground-bird"),
-                            attackRate = 0.62,
-                            assimilationEfficiency = 0.82,
-                        ),
-                    ),
-                )
-            }
-            if ("hostSpecialization" in match.groupValues[5]) {
-                traits += TargetedRelationshipTrait(
-                    displayName = "obligate host feeding",
-                    description =
-                        "The mouthparts and life cycle are specialized around feeding from one particular host species.",
-                    maintenanceCost = 1.20,
-                    relationships = listOf(
-                        RelationshipEffect.ParasiteOf(
-                            SpeciesSelector.ExactSpecies("host-shrub"),
-                            drainRate = 0.12,
-                        ),
-                        RelationshipEffect.RequiresTarget(
-                            SpeciesSelector.ExactSpecies("host-shrub"),
-                        ),
-                    ),
-                )
-            }
-            SpeciesDefinition(
-                id = match.groupValues[1],
-                displayName = match.groupValues[2],
-                sizeClass = SizeClass.valueOf(match.groupValues[3]),
-                motile = match.groupValues[4].toBoolean(),
-                traits = traits,
-                photosyntheticColor =
-                    match.groupValues[6].takeIf { it.isNotEmpty() }?.let(BiologicalColor::valueOf),
-                camouflageColor =
-                    match.groupValues[7].takeIf { it.isNotEmpty() }?.let(BiologicalColor::valueOf),
-            )
-        }.toList()
+            .toList()
         require(species.isNotEmpty()) { "No species parsed for $name" }
 
         val introductions = Regex(

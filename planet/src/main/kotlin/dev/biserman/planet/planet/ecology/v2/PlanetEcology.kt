@@ -129,11 +129,24 @@ object PlanetEcology {
             TARGET_RANDOM_EVOLVING_SPECIES - 2 +
                 random.nextInt(5)
             ).coerceAtMost(scoredCandidates.size)
-        val selectedEvolving = weightedSampleWithoutReplacement(
+        val sampledEvolving = weightedSampleWithoutReplacement(
             candidates = scoredCandidates,
             count = evolvingCount,
             random = random,
         )
+        val suitabilityBySpeciesIndex =
+            scoredCandidates.associate { (species, suitability) -> species.index to suitability }
+        val selectedEvolvingSpecies = EcologyAssembly.completeRequiredTargets(
+            ecology = compiled,
+            selected = sampledEvolving.map { it.first },
+            availableTargets = scoredCandidates.map { it.first },
+            targetScore = { species ->
+                suitabilityBySpeciesIndex.getValue(species.index).score
+            },
+        )
+        val selectedEvolving = selectedEvolvingSpecies.map { species ->
+            species to suitabilityBySpeciesIndex.getValue(species.index)
+        }
         val selected = (
             invariantSpecies.map { species ->
                 species to EcologySuitability.evaluate(
@@ -262,6 +275,11 @@ object PlanetEcology {
                             niche.habitat,
                         ) * EcologyGlobals.establishmentCapacityMultiplier
                     habitatPopulationCount < establishmentCapacity &&
+                        EcologyAssembly.requiredTargetPresent(
+                            compiled,
+                            speciesIndex,
+                            destination,
+                        ) &&
                         annuallySuitable(
                             cache,
                             destinationIndex,
@@ -370,15 +388,20 @@ object PlanetEcology {
 
     private fun initialReefCover(tile: PlanetTile, averageTemperatureC: Double): Double {
         val depth = (tile.planet.seaLevel - tile.elevation).coerceAtLeast(0.0)
-        return if (
+        val climateFit = if (
             !tile.isAboveWater &&
-            depth <= 80.0 &&
             averageTemperatureC in 20.0..31.0
         ) {
-            0.30
+            1.0
         } else {
             0.0
         }
+        return 0.30 * climateFit *
+            EcologyFitness.waterDepth(
+                depthM = depth,
+                optimalMaximumM = 30.0,
+                absoluteMaximumM = 80.0,
+            )
     }
 
     private fun scopedSeed(

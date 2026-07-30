@@ -14,6 +14,15 @@ data class PlanetEcologyEnvironmentContext(
 object PlanetEcologyEnvironment {
     private const val MAJOR_RIVER_UPSTREAM_SEGMENTS = 24
 
+    /**
+     * Coarse annual proxy for an ocean that retains a meaningful sea-ice
+     * compartment: most monthly means freeze, and summer never becomes warm.
+     */
+    fun supportsSeaIceHabitat(climate: ClimateDatum): Boolean =
+        climate.months.count { it.averageTemperature <= 0.0 } >
+            climate.months.size / 2 &&
+            climate.months.none { it.averageTemperature > 10.0 }
+
     fun context(planet: Planet): PlanetEcologyEnvironmentContext {
         val maximumInsolation = planet.climateMap.values
             .asSequence()
@@ -48,6 +57,7 @@ object PlanetEcologyEnvironment {
         val anomaly = EcologyClimateVariability.anomaly(tile.tileId, year)
         val isLand = tile.isAboveWater
         val adjacentToOcean = isLand && tile.neighbors.any { !it.isAboveWater }
+        val adjacentToLand = !isLand && tile.neighbors.any { it.isAboveWater }
         val adjacentToMajorRiver = isLand && tile.tileId in context.majorRiverTileIds
         val waterDepthM = if (isLand) 0.0 else (tile.planet.seaLevel - tile.elevation).coerceAtLeast(0.0)
         val stone = tile.stoneColumn.surface.stoneComponent
@@ -64,6 +74,7 @@ object PlanetEcologyEnvironment {
             surfaceAcidityModifier = stone.acidityModifier,
             isLand = isLand,
             adjacentToOcean = adjacentToOcean,
+            adjacentToLand = adjacentToLand,
             adjacentToMajorRiver = adjacentToMajorRiver,
             waterDepthM = waterDepthM,
             // Depth decides whether a dark compartment exists; illumination
@@ -73,6 +84,9 @@ object PlanetEcologyEnvironment {
             usefulSunlightReachesWater =
                 !isLand &&
                     sample.insolation / context.maximumInsolationWm2 > 0.02,
+            permanentSeaIce =
+                !isLand &&
+                    supportsSeaIceHabitat(climate),
             canopyCover = estimatedCanopyCover(climate, isLand),
             reefCover = tile.ecosystem.reefCover.coerceIn(0.0, 1.0),
             starLight = StarLight.YELLOW,

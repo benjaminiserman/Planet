@@ -55,6 +55,81 @@ class EcologyRuntimeTest {
     }
 
     @Test
+    fun `cold dark leaf dormancy does not shelter an oak from a hot desert`() {
+        val oak = EarthSpeciesCatalog.PRODUCERS_AND_FUNGI.single { it.id == "english-oak" }
+        val ecology = EcologyCompiler.compile(listOf(oak))
+        val initialEnvironment = landEnvironment(temperatureC = 24.0)
+        val niche = NicheSelection.choose(ecology.species.single(), ecology, initialEnvironment)
+        val community = TileCommunity().also {
+            it.add(0, niche, activeBiomass = 1.0e9)
+        }
+        val desert = HersfeldtClimatePresets.DESERT
+
+        repeat(400) { season ->
+            val sample = desert.climateDatum(13).sampleAt(season / 4.0)
+            val environment = SeasonalCellEnvironment.create(
+                areaKm2 = 40_000.0,
+                temperatureC = sample.averageTemperature,
+                annualAverageTemperatureC = desert.months.map { it.averageTemperature }.average(),
+                insolation = (sample.insolation / 345.0).coerceIn(0.0, 1.0),
+                precipitationMm = sample.precipitation,
+                isLand = true,
+            )
+            EcologyRuntime(ecology).advanceSeason(community, environment)
+        }
+
+        assertEquals(-1, community.find(0))
+    }
+
+    @Test
+    fun `cold dark leaf dormancy still protects an oak in winter`() {
+        val oak = EarthSpeciesCatalog.PRODUCERS_AND_FUNGI.single { it.id == "english-oak" }
+        val ecology = EcologyCompiler.compile(listOf(oak))
+        val mild = landEnvironment(temperatureC = 18.0)
+        val niche = NicheSelection.choose(ecology.species.single(), ecology, mild)
+        val community = TileCommunity().also {
+            it.add(0, niche, activeBiomass = 1.0e6)
+        }
+        val winter = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 8.0,
+            annualAverageTemperatureC = 10.0,
+            insolation = 0.20,
+            precipitationMm = 80.0,
+            isLand = true,
+        )
+
+        EcologyRuntime(ecology).advanceSeason(community, winter)
+
+        assertTrue(community.dormantBiomass[0] > community.activeBiomass[0])
+    }
+
+    @Test
+    fun `carpet plants disappear without any thawed season`() {
+        val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.CARPET_PLANTS))
+        val species = ecology.species.single()
+        val niche = NicheSelection.choose(species, ecology, landEnvironment())
+        val community = TileCommunity().also {
+            it.add(species.index, niche, activeBiomass = 1.0e9)
+        }
+        val permanentlyFrozen = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = -5.0,
+            annualAverageTemperatureC = -5.0,
+            insolation = 0.45,
+            precipitationMm = 20.0,
+            isLand = true,
+        )
+        val runtime = EcologyRuntime(ecology)
+
+        repeat(1_600) {
+            runtime.advanceSeason(community, permanentlyFrozen)
+        }
+
+        assertEquals(-1, community.find(species.index))
+    }
+
+    @Test
     fun `reef builders emit cover only from aquatic habitat`() {
         val species = aquaticProducer(extraTraits = listOf(CommonTrait.REEF_BUILDING))
         val ecology = EcologyCompiler.compile(listOf(species))

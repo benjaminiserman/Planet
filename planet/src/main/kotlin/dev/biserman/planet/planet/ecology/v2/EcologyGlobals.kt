@@ -15,6 +15,9 @@ object EcologyGlobals {
     /** Maximum seasonal mortality caused by environmental stress; actual loss scales with stress⁴. */
     var stressMortality = 0.42
 
+    /** Active biomass lost in one season beyond the species' lethal temperature boundary. */
+    var lethalTemperatureMortality = 0.90
+
     /** Maximum fraction of active biomass that starvation can remove in one season. */
     var maximumStarvationMortality = 0.72
 
@@ -55,7 +58,7 @@ object EcologyGlobals {
     var unassistedRadiationChancePerSeason = 0.002
 
     /** Seasonal neighboring-colonization chance for species with a migration trait. */
-    var migrationRadiationChancePerSeason = 0.006
+    var migrationRadiationChancePerSeason = 0.06
 
     /** Seasonal neighboring-colonization chance for species specialized for local dispersal. */
     var neighborRadiationChancePerSeason = 0.012
@@ -76,6 +79,7 @@ object EcologyGlobals {
     fun validate() {
         require(backgroundMortality in 0.0..1.0)
         require(stressMortality in 0.0..1.0)
+        require(lethalTemperatureMortality in 0.0..1.0)
         require(maximumStarvationMortality in 0.0..1.0)
         require(interspecificNicheCompetition >= 0.0)
         require(maximumConsumedBiomassFraction in 0.0..1.0)

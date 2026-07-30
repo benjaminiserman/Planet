@@ -6,6 +6,61 @@ import kotlin.test.assertTrue
 
 class EarthSpeciesCatalogTest {
     @Test
+    fun `catalog corrections keep feeding and insulation anatomy explicit`() {
+        val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
+        val walrus = requireNotNull(definitions["walrus"])
+        val manatee = requireNotNull(definitions["west-indian-manatee"])
+
+        assertTrue(CommonTrait.BENTHIC_SUCTION_FEEDING in walrus.traits)
+        assertTrue(CommonTrait.SIEVE_TEETH !in walrus.traits)
+        assertTrue(CommonTrait.BLUBBER !in manatee.traits)
+        assertTrue("tardigrade" !in definitions)
+
+        val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
+        val compiledWalrus = ecology.species.single { it.id == "walrus" }
+        assertEquals(
+            0.0,
+            compiledWalrus.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal],
+        )
+        assertTrue(
+            compiledWalrus.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0,
+        )
+    }
+
+    @Test
+    fun `open country herding and benthic suction feeding cover matching animals`() {
+        val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
+        val openCountryHerders = setOf(
+            "plains-zebra",
+            "blue-wildebeest",
+            "thomsons-gazelle",
+            "red-kangaroo",
+            "american-bison",
+            "common-ostrich",
+        )
+        val benthicSuctionFeeders = setOf("walrus", "common-carp")
+
+        openCountryHerders.forEach { speciesId ->
+            assertTrue(
+                CommonTrait.OPEN_COUNTRY_HERDING in requireNotNull(definitions[speciesId]).traits,
+                speciesId,
+            )
+        }
+        benthicSuctionFeeders.forEach { speciesId ->
+            assertTrue(
+                CommonTrait.BENTHIC_SUCTION_FEEDING in
+                    requireNotNull(definitions[speciesId]).traits,
+                speciesId,
+            )
+        }
+
+        val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
+        val carp = ecology.species.single { it.id == "common-carp" }
+        assertTrue(carp.strategySupport[EcoStrategy.GENERALIST_FORAGING.ordinal] > 0.0)
+        assertEquals(0.0, carp.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal])
+    }
+
+    @Test
     fun `marine freshwater and euryhaline species compile to distinct water chemistry`() {
         val definitions = listOf(
             EarthSpeciesCatalog.MAMMALS.single { it.id == "blue-whale" },
@@ -96,6 +151,7 @@ class EarthSpeciesCatalogTest {
         val community = TileCommunity()
         ecology.species.forEach { species ->
             val nicheIndex = NicheSelection.choose(species, ecology, tropicalReef)
+            if (nicheIndex < 0) return@forEach
             val capacity = EcologyBiomass.carryingCapacityKg(
                 species,
                 ecology.niches[nicheIndex],
@@ -131,7 +187,7 @@ class EarthSpeciesCatalogTest {
         assertTrue(EarthSpeciesCatalog.BIRDS.size >= 20)
         assertTrue(EarthSpeciesCatalog.REPTILES_AND_AMPHIBIANS.size >= 15)
         assertTrue(EarthSpeciesCatalog.FISH.size >= 18)
-        assertTrue(EarthSpeciesCatalog.INVERTEBRATES.size >= 25)
+        assertTrue(EarthSpeciesCatalog.INVERTEBRATES.size >= 24)
         assertTrue(EarthSpeciesCatalog.PRODUCERS_AND_FUNGI.size >= 20)
 
         val ecology = EcologyCompiler.compile(definitions)
@@ -150,8 +206,6 @@ class EarthSpeciesCatalogTest {
         val expected = setOf(
             "african-elephant",
             "african-lion",
-            "domestic-dog",
-            "domestic-cat",
             "blue-whale",
             "bald-eagle",
             "emperor-penguin",

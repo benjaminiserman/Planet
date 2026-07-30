@@ -39,6 +39,7 @@ enum class EcoStrategy(
             Habitat.COASTAL,
             Habitat.SUNLIT_WATER,
             Habitat.DARK_WATER,
+            Habitat.SEA_ICE,
         ),
     ),
     PURSUIT_PREDATION(
@@ -50,11 +51,19 @@ enum class EcoStrategy(
             Habitat.COASTAL,
             Habitat.SUNLIT_WATER,
             Habitat.DARK_WATER,
+            Habitat.SEA_ICE,
         ),
     ),
     SCAVENGING(
         "scavenging",
-        setOf(Habitat.LAND_SURFACE, Habitat.COASTAL, Habitat.SUNLIT_WATER, Habitat.DARK_WATER, Habitat.AERIAL),
+        setOf(
+            Habitat.LAND_SURFACE,
+            Habitat.COASTAL,
+            Habitat.SUNLIT_WATER,
+            Habitat.DARK_WATER,
+            Habitat.SEA_ICE,
+            Habitat.AERIAL,
+        ),
     ),
     DECOMPOSITION(
         "decomposition",

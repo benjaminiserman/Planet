@@ -28,6 +28,8 @@ class SeasonalCellEnvironment private constructor(
     val snowOrIce: Boolean,
     val starLight: StarLight,
     val isLand: Boolean,
+    val adjacentToLand: Boolean,
+    val waterDepthM: Double,
     val resources: FunctionalResources,
     private val habitatAvailability: DoubleArray,
 ) {
@@ -61,6 +63,8 @@ class SeasonalCellEnvironment private constructor(
             snowOrIce = snowOrIce,
             starLight = starLight,
             isLand = isLand,
+            adjacentToLand = adjacentToLand,
+            waterDepthM = waterDepthM,
             resources = resources,
             habitatAvailability = habitatAvailability.copyOf(),
         )
@@ -77,9 +81,11 @@ class SeasonalCellEnvironment private constructor(
             surfaceAcidityModifier: Double = 0.0,
             isLand: Boolean,
             adjacentToOcean: Boolean = false,
+            adjacentToLand: Boolean = false,
             adjacentToMajorRiver: Boolean = false,
             waterDepthM: Double = 0.0,
             usefulSunlightReachesWater: Boolean = true,
+            permanentSeaIce: Boolean = false,
             canopyCover: Double = 0.0,
             reefCover: Double = 0.0,
             starLight: StarLight = StarLight.YELLOW,
@@ -91,6 +97,8 @@ class SeasonalCellEnvironment private constructor(
             require(surfaceMoistureCapacityMultiplier > 0.0)
             require(canopyCover in 0.0..1.0)
             require(reefCover in 0.0..1.0)
+            require(waterDepthM >= 0.0)
+            require(!permanentSeaIce || !isLand)
 
             val evaporationDemand = 45.0 + max(temperatureC, 0.0) * 3.2 + insolation * 95.0
             val retainedPrecipitation = precipitationMm * surfaceMoistureCapacityMultiplier
@@ -108,6 +116,9 @@ class SeasonalCellEnvironment private constructor(
                 if (adjacentToOcean) habitats[Habitat.COASTAL.ordinal] = 0.48
             } else {
                 habitats[Habitat.AERIAL.ordinal] = 0.30
+                if (permanentSeaIce) {
+                    habitats[Habitat.SEA_ICE.ordinal] = 0.80
+                }
                 if (usefulSunlightReachesWater) {
                     habitats[Habitat.SUNLIT_WATER.ordinal] = 1.0
                 }
@@ -138,6 +149,8 @@ class SeasonalCellEnvironment private constructor(
                 snowOrIce = snowOrIce,
                 starLight = starLight,
                 isLand = isLand,
+                adjacentToLand = adjacentToLand,
+                waterDepthM = waterDepthM,
                 resources = resources,
                 habitatAvailability = habitats,
             )
@@ -218,14 +231,58 @@ object EcologyFitness {
         environment: SeasonalCellEnvironment,
         habitat: Habitat,
     ): Double =
-        thermal(species, environment) *
+        habitat(species, environment, habitat) *
+            thermal(species, environment) *
             water(species, environment, habitat) *
-            light(species, environment, habitat)
+            light(species, environment, habitat) *
+            vegetationStructure(species, environment, habitat)
+
+    fun vegetationStructure(
+        species: CompiledSpecies,
+        environment: SeasonalCellEnvironment,
+        habitat: Habitat,
+    ): Double {
+        if (habitat != Habitat.LAND_SURFACE) return 1.0
+        return (
+            1.0 -
+                environment.canopyCover *
+                species.denseCanopyForagingPenalty
+            ).coerceIn(0.0, 1.0)
+    }
+
+    fun habitat(
+        species: CompiledSpecies,
+        environment: SeasonalCellEnvironment,
+        habitat: Habitat,
+    ): Double {
+        if (species.requiresAdjacentLand && !environment.adjacentToLand) return 0.0
+        if (!habitat.aquatic || species.absoluteMaximumWaterDepthM.isInfinite()) return 1.0
+        return waterDepth(
+            environment.waterDepthM,
+            species.optimalMaximumWaterDepthM,
+            species.absoluteMaximumWaterDepthM,
+        )
+    }
+
+    fun waterDepth(
+        depthM: Double,
+        optimalMaximumM: Double,
+        absoluteMaximumM: Double,
+    ): Double = when {
+        depthM <= optimalMaximumM -> 1.0
+        depthM >= absoluteMaximumM -> 0.0
+        else ->
+            (absoluteMaximumM - depthM) /
+                (absoluteMaximumM - optimalMaximumM)
+    }.coerceIn(0.0, 1.0)
 
     fun thermal(
         species: CompiledSpecies,
         environment: SeasonalCellEnvironment,
     ): Double {
+        if (environment.temperatureC < species.minimumActiveTemperatureC) {
+            return 0.0
+        }
         val passiveFit = seasonalTemperature(
             species,
             environment.temperatureC,
@@ -237,7 +294,7 @@ object EcologyFitness {
                 when {
                     passiveFit <= 0.0 -> 0.0
                     environment.temperatureC < species.temperatureOptimalLow ->
-                        0.65 + passiveFit * 0.35
+                        passiveFit.pow(0.55)
                     environment.temperatureC > species.temperatureOptimalHigh ->
                         passiveFit.pow(0.80)
                     else -> 1.0
@@ -327,6 +384,7 @@ object NicheSelection {
             .filter { nicheIndex ->
                 val habitat = ecology.niches[nicheIndex].habitat
                 environment.habitatAvailability(habitat) > 0.0 &&
+                    EcologyFitness.habitat(species, environment, habitat) > 0.0 &&
                     !(
                         !environment.isLand &&
                             habitat == Habitat.AERIAL &&
@@ -344,6 +402,9 @@ object NicheSelection {
                 species.nicheFit[nicheIndex] <
                 bestIntrinsicFit * minimumRelativeIntrinsicFit
             ) {
+                return@forEach
+            }
+            if (EcologyFitness.habitat(species, environment, niche.habitat) <= 0.0) {
                 return@forEach
             }
             if (

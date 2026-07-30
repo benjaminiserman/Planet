@@ -43,6 +43,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.FERMENTING_HINDGUT,
             CommonTrait.SWEAT_GLANDS,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             CommonTrait.REGIONAL_MIGRATION,
             camouflage = BiologicalColor.PALE
         ),
@@ -54,6 +55,7 @@ object EarthSpeciesCatalog {
             CommonTrait.TERRESTRIAL_LOCOMOTION,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.RUMINANT_STOMACH,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             CommonTrait.REGIONAL_MIGRATION,
             camouflage = BiologicalColor.BROWN
         ),
@@ -66,6 +68,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.RUMINANT_STOMACH,
             CommonTrait.BARE_HEAT_DISSIPATING_SKIN,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -166,7 +169,7 @@ object EarthSpeciesCatalog {
             SizeClass.LARGE,
             CommonTrait.ENDOTHERMY,
             CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.AQUATIC_FLIPPERS,
+            CommonTrait.SEA_ICE_LOCOMOTION,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.DENSE_FUR,
             CommonTrait.BLUBBER,
@@ -195,6 +198,7 @@ object EarthSpeciesCatalog {
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.DENSE_FUR,
+            CommonTrait.SEASONAL_WINTER_COAT,
             CommonTrait.FAT_RESERVES,
             camouflage = BiologicalColor.PALE
         ),
@@ -276,6 +280,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.FERMENTING_HINDGUT,
             CommonTrait.FOOD_DERIVED_WATER,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -287,6 +292,10 @@ object EarthSpeciesCatalog {
             CommonTrait.BROWSING_MOUTHPARTS,
             CommonTrait.FERMENTING_HINDGUT,
             CommonTrait.EXTENDED_BROOD_CARE,
+            obligateBrowser(
+                foodSpeciesId = "eucalyptus",
+                displayName = "eucalyptus leaf specialization",
+            ),
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -298,6 +307,10 @@ object EarthSpeciesCatalog {
             CommonTrait.BROWSING_MOUTHPARTS,
             CommonTrait.DENSE_FUR,
             CommonTrait.FERMENTING_HINDGUT,
+            obligateBrowser(
+                foodSpeciesId = "giant-bamboo",
+                displayName = "bamboo feeding specialization",
+            ),
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -321,6 +334,7 @@ object EarthSpeciesCatalog {
             CommonTrait.DENSE_FUR,
             CommonTrait.SEASONAL_WINTER_COAT,
             CommonTrait.CAMOUFLAGE_PATTERN,
+            CommonTrait.FAT_RESERVES,
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -343,6 +357,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.RUMINANT_STOMACH,
             CommonTrait.DENSE_FUR,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             CommonTrait.REGIONAL_MIGRATION,
             camouflage = BiologicalColor.BROWN
         ),
@@ -356,69 +371,6 @@ object EarthSpeciesCatalog {
             CommonTrait.RUMINANT_STOMACH,
             CommonTrait.WATER_STORAGE_TISSUE,
             CommonTrait.BARE_HEAT_DISSIPATING_SKIN,
-            camouflage = BiologicalColor.BROWN
-        ),
-        animal(
-            "domestic-horse",
-            "Domestic horse",
-            SizeClass.LARGE,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.FERMENTING_HINDGUT,
-            CommonTrait.SWEAT_GLANDS,
-            camouflage = BiologicalColor.BROWN
-        ),
-        animal(
-            "domestic-cow",
-            "Domestic cow",
-            SizeClass.LARGE,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.RUMINANT_STOMACH,
-            camouflage = BiologicalColor.BROWN
-        ),
-        animal(
-            "domestic-sheep",
-            "Domestic sheep",
-            SizeClass.MEDIUM,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.RUMINANT_STOMACH,
-            CommonTrait.DENSE_FUR,
-            camouflage = BiologicalColor.PALE
-        ),
-        animal(
-            "domestic-pig",
-            "Domestic pig",
-            SizeClass.MEDIUM,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.AMBUSH_MUSCULATURE,
-            CommonTrait.FERMENTING_HINDGUT,
-            camouflage = BiologicalColor.BROWN
-        ),
-        animal(
-            "domestic-dog",
-            "Domestic dog",
-            SizeClass.MEDIUM,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.PURSUIT_LIMBS,
-            CommonTrait.COOPERATIVE_HUNTING,
-            camouflage = BiologicalColor.BROWN
-        ),
-        animal(
-            "domestic-cat",
-            "Domestic cat",
-            SizeClass.MEDIUM,
-            CommonTrait.ENDOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.AMBUSH_MUSCULATURE,
-            CommonTrait.CLIMBING_LIMBS,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -453,7 +405,6 @@ object EarthSpeciesCatalog {
             SizeClass.LARGE,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
-            CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.BLUBBER,
@@ -466,7 +417,6 @@ object EarthSpeciesCatalog {
             SizeClass.LARGE,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
-            CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.ECHOLOCATION,
@@ -479,7 +429,6 @@ object EarthSpeciesCatalog {
             SizeClass.LARGE,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
-            CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.BLUBBER,
             camouflage = BiologicalColor.PALE
@@ -501,7 +450,7 @@ object EarthSpeciesCatalog {
             SizeClass.LARGE,
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
-            CommonTrait.SIEVE_TEETH,
+            CommonTrait.BENTHIC_SUCTION_FEEDING,
             CommonTrait.BLUBBER,
             CommonTrait.COASTAL_CLINGING_FEET,
             camouflage = BiologicalColor.BROWN
@@ -513,7 +462,6 @@ object EarthSpeciesCatalog {
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.BLUBBER,
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -776,6 +724,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
+            CommonTrait.SEA_ICE_ROOKERY,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.INSULATING_PLUMAGE,
             CommonTrait.WATERPROOF_PLUMAGE,
@@ -792,6 +741,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.LEAPING_LEGS,
             CommonTrait.BARE_HEAT_DISSIPATING_SKIN,
+            CommonTrait.OPEN_COUNTRY_HERDING,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -1015,6 +965,8 @@ object EarthSpeciesCatalog {
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
             CommonTrait.TERRESTRIAL_LOCOMOTION,
+            CommonTrait.SUBTERRANEAN_BURROWING,
+            CommonTrait.HEAT_STABLE_ENZYMES,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.VENOM_DELIVERY,
             CommonTrait.FOOD_DERIVED_WATER,
@@ -1025,6 +977,7 @@ object EarthSpeciesCatalog {
             "Green sea turtle",
             SizeClass.LARGE,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.PROTECTIVE_SHELL,
@@ -1114,6 +1067,7 @@ object EarthSpeciesCatalog {
             "Whale shark",
             SizeClass.HUGE,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.GILL_PADS,
@@ -1150,6 +1104,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ECTOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.EURYHALINE_OSMOREGULATION,
+            CommonTrait.COLD_ACTIVE_ENZYMES,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.LONG_MIGRATION,
             camouflage = BiologicalColor.PALE
@@ -1159,6 +1114,7 @@ object EarthSpeciesCatalog {
             "Ocellaris clownfish",
             SizeClass.SMALL,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GILL_PADS,
             CommonTrait.REEF_NESTING,
@@ -1237,6 +1193,7 @@ object EarthSpeciesCatalog {
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.FRESHWATER_OSMOREGULATION,
             CommonTrait.GRAZING_MOUTHPARTS,
+            CommonTrait.BENTHIC_SUCTION_FEEDING,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -1253,6 +1210,7 @@ object EarthSpeciesCatalog {
             "Coral grouper",
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.REEF_CAMOUFLAGE,
@@ -1263,6 +1221,7 @@ object EarthSpeciesCatalog {
             "Bumphead parrotfish",
             SizeClass.LARGE,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.REEF_BORING,
@@ -1284,7 +1243,6 @@ object EarthSpeciesCatalog {
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
-            CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.ANTIFREEZE_PROTEINS,
@@ -1299,6 +1257,7 @@ object EarthSpeciesCatalog {
             "Common octopus",
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.JET_PROPULSION,
             CommonTrait.GRASPING_TENTACLES,
             CommonTrait.SUCTION_CUPS,
@@ -1333,6 +1292,7 @@ object EarthSpeciesCatalog {
             "Crown-of-thorns starfish",
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.COASTAL_CLINGING_FEET,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.TOXIC_SKIN,
@@ -1344,6 +1304,7 @@ object EarthSpeciesCatalog {
             "Blue crab",
             SizeClass.MEDIUM,
             CommonTrait.ECTOTHERMY,
+            CommonTrait.WARM_WATER_ENZYMES,
             CommonTrait.COASTAL_CLINGING_FEET,
             CommonTrait.CRUSHING_CLAWS,
             CommonTrait.GRAZING_MOUTHPARTS,
@@ -1378,7 +1339,9 @@ object EarthSpeciesCatalog {
             BiologicalColor.BROWN,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.SUBSTRATE_HOLDFAST,
-            CommonTrait.REEF_BUILDING
+            CommonTrait.REEF_BUILDING,
+            CommonTrait.SHALLOW_WATER_PHOTOSYMBIOSIS,
+            CommonTrait.WARM_WATER_ENZYMES
         ),
         sessile(
             "eastern-oyster",
@@ -1386,7 +1349,8 @@ object EarthSpeciesCatalog {
             SizeClass.SMALL,
             null,
             CommonTrait.SUBSTRATE_HOLDFAST,
-            CommonTrait.GILL_PADS
+            CommonTrait.GILL_PADS,
+            CommonTrait.WARM_WATER_ENZYMES
         ),
         sessile(
             "blue-mussel",
@@ -1475,6 +1439,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ECTOTHERMY,
             CommonTrait.POWERED_FLIGHT,
             CommonTrait.GRAZING_MOUTHPARTS,
+            CommonTrait.HEAT_STABLE_ENZYMES,
             CommonTrait.REGIONAL_MIGRATION,
             camouflage = BiologicalColor.BROWN
         ),
@@ -1506,6 +1471,7 @@ object EarthSpeciesCatalog {
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.VENOM_DELIVERY,
             CommonTrait.ARMORED_HIDE,
+            CommonTrait.HEAT_STABLE_ENZYMES,
             camouflage = BiologicalColor.BLACK
         ),
         animal(
@@ -1527,16 +1493,6 @@ object EarthSpeciesCatalog {
             CommonTrait.SAP_SUCKING_PROBOSCIS,
             CommonTrait.BURROWING_EGGS,
             camouflage = BiologicalColor.BLACK
-        ),
-        animal(
-            "tardigrade",
-            "Tardigrade",
-            SizeClass.MINUSCULE,
-            CommonTrait.ECTOTHERMY,
-            CommonTrait.TERRESTRIAL_LOCOMOTION,
-            CommonTrait.GRAZING_MOUTHPARTS,
-            CommonTrait.WHOLE_BODY_ANHYDROBIOSIS,
-            camouflage = BiologicalColor.PALE
         ),
         animal(
             "giant-centipede",
@@ -1571,6 +1527,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ROOTED_BODY,
             CommonTrait.CANOPY_GROWTH,
             CommonTrait.SEASONAL_LEAF_DORMANCY,
+            CommonTrait.FROST_HARDENED_TISSUES,
             CommonTrait.DEEP_ROOT_SYSTEM
         ),
         sessile(
@@ -1604,6 +1561,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ROOTED_BODY,
             CommonTrait.CANOPY_GROWTH,
             CommonTrait.DEEP_ROOT_SYSTEM,
+            CommonTrait.WAXY_CUTICLE,
             CommonTrait.DROUGHT_DECIDUOUS_LEAVES
         ),
         sessile(
@@ -1614,7 +1572,8 @@ object EarthSpeciesCatalog {
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,
             CommonTrait.CANOPY_GROWTH,
-            CommonTrait.SALT_EXCLUDING_ROOTS
+            CommonTrait.SALT_EXCLUDING_ROOTS,
+            CommonTrait.WAXY_CUTICLE
         ),
         sessile(
             "saguaro",
@@ -1657,6 +1616,16 @@ object EarthSpeciesCatalog {
             CommonTrait.DESICCATION_RESISTANT_PROPAGULES
         ),
         sessile(
+            "eucalyptus",
+            "Eucalyptus tree",
+            SizeClass.LARGE,
+            BiologicalColor.GREEN,
+            CommonTrait.PHOTOSYNTHETIC_SURFACE,
+            CommonTrait.ROOTED_BODY,
+            CommonTrait.CANOPY_GROWTH,
+            CommonTrait.DEEP_ROOT_SYSTEM
+        ),
+        sessile(
             "giant-bamboo",
             "Giant bamboo",
             SizeClass.LARGE,
@@ -1674,7 +1643,8 @@ object EarthSpeciesCatalog {
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,
             CommonTrait.SHADE_FRONDS,
-            CommonTrait.PERENNIAL_STORAGE_TISSUE
+            CommonTrait.PERENNIAL_STORAGE_TISSUE,
+            CommonTrait.SEASONAL_LEAF_DORMANCY
         ),
         sessile(
             "sphagnum-moss",
@@ -1767,7 +1737,7 @@ object EarthSpeciesCatalog {
         name: String,
         sizeClass: SizeClass,
         thermalStrategy: CommonTrait,
-        vararg adaptations: CommonTrait,
+        vararg adaptations: SpeciesTrait,
         camouflage: BiologicalColor? = null,
         biochemistry: CommonTrait = CommonTrait.TEMPERATE_BIOCHEMISTRY,
     ) = SpeciesDefinition(
@@ -1784,7 +1754,7 @@ object EarthSpeciesCatalog {
         name: String,
         sizeClass: SizeClass,
         photosyntheticColor: BiologicalColor?,
-        vararg adaptations: CommonTrait,
+        vararg adaptations: SpeciesTrait,
     ) = SpeciesDefinition(
         id = id,
         displayName = name,
@@ -1792,5 +1762,22 @@ object EarthSpeciesCatalog {
         motile = false,
         traits = listOf(CommonTrait.TEMPERATE_BIOCHEMISTRY) + adaptations,
         photosyntheticColor = photosyntheticColor,
+    )
+
+    private fun obligateBrowser(
+        foodSpeciesId: String,
+        displayName: String,
+    ) = TargetedRelationshipTrait(
+        displayName = displayName,
+        description =
+            "Digestive and feeding anatomy is specialized around one locally available producer lineage.",
+        relationships = listOf(
+            RelationshipEffect.ObligateFood(
+                target = SpeciesSelector.ExactSpecies(foodSpeciesId),
+                attackRate = 0.0015,
+                assimilationEfficiency = 0.65,
+            ),
+        ),
+        maintenanceCost = 0.04,
     )
 }
