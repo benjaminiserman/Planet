@@ -8,6 +8,7 @@
   "habitatDiversityAvailabilitySlots": 7.0,
   "habitatDiversityBaseSlots": 3.0,
   "interspecificNicheCompetition": 0.15,
+  "lethalTemperatureMortality": 0.9,
   "maximumConsumedBiomassFraction": 0.75,
   "maximumHabitatDiversityMortality": 0.9,
   "maximumStarvationMortality": 0.72,

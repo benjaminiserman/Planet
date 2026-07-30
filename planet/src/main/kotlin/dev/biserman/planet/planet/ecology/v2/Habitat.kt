@@ -14,10 +14,11 @@ enum class Habitat(
     COASTAL("coastal", true),
     SUNLIT_WATER("sunlit-water", true),
     DARK_WATER("dark-water", true),
+    SEA_ICE("sea-ice", false),
     AERIAL("aerial", false);
 
     fun availableLight(insolation: Double, canopyCover: Double): Double = when (this) {
-        CANOPY, AERIAL -> insolation
+        CANOPY, SEA_ICE, AERIAL -> insolation
         LAND_SURFACE -> insolation * (1.0 - canopyCover * 0.72)
         COASTAL, FRESHWATER, SUNLIT_WATER -> insolation * (1.0 - canopyCover * 0.15)
         DARK_WATER -> 0.0
@@ -40,7 +41,7 @@ enum class Habitat(
             CANOPY ->
                 if (color == BiologicalColor.GREEN || color == BiologicalColor.BROWN) 0.28 else 0.05
 
-            LAND_SURFACE ->
+            LAND_SURFACE, SEA_ICE ->
                 if (color == BiologicalColor.BROWN || color == BiologicalColor.PALE) 0.24 else 0.05
 
             FRESHWATER, COASTAL, SUNLIT_WATER, DARK_WATER ->

@@ -95,6 +95,13 @@ object HersfeldtClimatePresets {
         insolations = listOf(0.0, 8.0, 55.0, 125.0, 195.0, 245.0, 235.0, 175.0, 95.0, 30.0, 2.0, 0.0),
         precipitation = listOf(18.0, 15.0, 15.0, 18.0, 22.0, 28.0, 32.0, 30.0, 25.0, 22.0, 20.0, 18.0),
     )
+    val PERMANENT_SEA_ICE = ocean(
+        "permanent-sea-ice",
+        "Permanent coastal sea ice",
+        temperatures = listOf(-9.0, -10.0, -9.0, -7.0, -4.0, -2.0, -1.0, -1.5, -3.5, -6.0, -8.0, -9.0),
+        insolations = listOf(0.0, 4.0, 40.0, 105.0, 175.0, 220.0, 210.0, 150.0, 75.0, 18.0, 0.0, 0.0),
+        precipitation = listOf(14.0, 12.0, 12.0, 14.0, 18.0, 24.0, 28.0, 27.0, 22.0, 18.0, 16.0, 14.0),
+    )
     val DEEP_OCEAN = ocean(
         "deep-ocean",
         "Dark deep ocean",
@@ -106,7 +113,7 @@ object HersfeldtClimatePresets {
     val LAND: List<HersfeldtClimatePreset> =
         listOf(OCEANIC_TEMPERATE, DESERT, SAVANNA, JUNGLE, BOREAL, TUNDRA, ICE_CAP)
     val OCEAN: List<HersfeldtClimatePreset> =
-        listOf(TROPICAL_REEF, TEMPERATE_SHELF, POLAR_SEA, DEEP_OCEAN)
+        listOf(TROPICAL_REEF, TEMPERATE_SHELF, POLAR_SEA, PERMANENT_SEA_ICE, DEEP_OCEAN)
     val ALL: List<HersfeldtClimatePreset> = LAND + OCEAN
 
     private fun land(

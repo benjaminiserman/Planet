@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet.ecology.v2
 
+import dev.biserman.planet.planet.climate.ClimateDatum
+import dev.biserman.planet.planet.climate.ClimateDatumSample
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -7,10 +9,10 @@ import kotlin.test.assertTrue
 
 class HersfeldtClimatePresetsTest {
     @Test
-    fun `catalog contains the notebook climates and four ocean climates`() {
+    fun `catalog contains the notebook climates and five ocean climates`() {
         assertEquals(7, HersfeldtClimatePresets.LAND.size)
-        assertEquals(4, HersfeldtClimatePresets.OCEAN.size)
-        assertEquals(11, HersfeldtClimatePresets.ALL.size)
+        assertEquals(5, HersfeldtClimatePresets.OCEAN.size)
+        assertEquals(12, HersfeldtClimatePresets.ALL.size)
         assertEquals(
             setOf(
                 "oceanic-temperate",
@@ -51,6 +53,40 @@ class HersfeldtClimatePresetsTest {
         assertTrue(HersfeldtClimatePresets.TROPICAL_REEF.months.all { it.insolation > 0.0 })
         assertTrue(HersfeldtClimatePresets.DEEP_OCEAN.months.all { it.insolation == 0.0 })
         assertTrue(HersfeldtClimatePresets.POLAR_SEA.months.any { it.averageTemperature < 0.0 })
+        assertTrue(HersfeldtClimatePresets.PERMANENT_SEA_ICE.months.all { it.averageTemperature < 0.0 })
         assertTrue(HersfeldtClimatePresets.TEMPERATE_SHELF.months.any { it.averageTemperature >= 18.0 })
     }
+
+    @Test
+    fun `sea ice requires a freezing majority and no warm summer`() {
+        assertTrue(
+            PlanetEcologyEnvironment.supportsSeaIceHabitat(
+                climate(listOf(-8.0, -7.0, -5.0, -2.0, 0.0, 0.0, 0.0, 4.0, 8.0, 10.0, 3.0, 1.0)),
+            ),
+        )
+        assertFalse(
+            PlanetEcologyEnvironment.supportsSeaIceHabitat(
+                climate(listOf(-8.0, -7.0, -5.0, -2.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0)),
+            ),
+            "Exactly half the year at or below freezing is insufficient",
+        )
+        assertFalse(
+            PlanetEcologyEnvironment.supportsSeaIceHabitat(
+                climate(listOf(-8.0, -7.0, -5.0, -2.0, 0.0, 0.0, 0.0, 2.0, 4.0, 8.0, 10.1, 1.0)),
+            ),
+            "A month above 10 C excludes the sea-ice habitat",
+        )
+    }
+
+    private fun climate(temperatures: List<Double>): ClimateDatum =
+        ClimateDatum(
+            1,
+            temperatures.map { temperature ->
+                ClimateDatumSample(
+                    averageTemperature = temperature,
+                    insolation = 100.0,
+                    precipitation = 20.0,
+                )
+            },
+        )
 }

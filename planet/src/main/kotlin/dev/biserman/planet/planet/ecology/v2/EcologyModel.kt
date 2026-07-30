@@ -35,6 +35,8 @@ enum class DormancyKind {
     PROPAGULE,
     BURROWED_EGGS,
     SEASONAL_TORPOR,
+    COLD_DARK_LEAF_DORMANCY,
+    DROUGHT_DECIDUOUS,
     WHOLE_BODY_DESICCATION,
 }
 
@@ -85,6 +87,12 @@ sealed interface TraitEffect {
         val colderC: Double = 0.0,
         val hotterC: Double = 0.0,
     ) : TraitEffect
+    data class MinimumActiveTemperature(val temperatureC: Double) : TraitEffect
+    data class FrozenDormantSurvival(val fractionPerSeason: Double) : TraitEffect {
+        init {
+            require(fractionPerSeason in 0.0..1.0)
+        }
+    }
     data class ThermalRegulation(val strategy: ThermalStrategy) : TraitEffect
     data class SeasonalColdTolerance(
         val maximumBonusC: Double,
@@ -96,9 +104,23 @@ sealed interface TraitEffect {
         val optimalMaximumChange: Double,
         val absoluteMaximumChange: Double,
     ) : TraitEffect
+    data class WaterDepthTolerance(
+        val optimalMaximumM: Double,
+        val absoluteMaximumM: Double,
+    ) : TraitEffect {
+        init {
+            require(optimalMaximumM >= 0.0)
+            require(absoluteMaximumM > optimalMaximumM)
+        }
+    }
 
     data class InsolationOptimum(val change: Double) : TraitEffect
     data class CanopyLightEfficiency(val change: Double) : TraitEffect
+    data class DenseCanopyForagingPenalty(val maximumPenalty: Double) : TraitEffect {
+        init {
+            require(maximumPenalty in 0.0..1.0)
+        }
+    }
     data class CaptureAbility(val change: Double) : TraitEffect
     data class Defense(val change: Double) : TraitEffect
     data class Camouflage(val habitat: Habitat, val change: Double) : TraitEffect
@@ -114,6 +136,8 @@ sealed interface TraitEffect {
     data object BroadSalinityTolerance : TraitEffect
     data object PelagicAerialResidency : TraitEffect
     data object DarkWaterAdaptation : TraitEffect
+    data class ObligateResidentHabitat(val habitat: Habitat) : TraitEffect
+    data object RequiresAdjacentLand : TraitEffect
     data class MaintenanceCost(val fraction: Double) : TraitEffect
 }
 
@@ -123,6 +147,17 @@ sealed interface SpeciesSelector {
 }
 
 sealed interface RelationshipEffect {
+    /**
+     * All ordinary feeding edges are replaced by the selected food taxa. At
+     * least one selected target must be locally present for the consumer to
+     * remain active.
+     */
+    data class ObligateFood(
+        val target: SpeciesSelector,
+        val attackRate: Double,
+        val assimilationEfficiency: Double,
+    ) : RelationshipEffect
+
     data class SupplementalFood(
         val target: SpeciesSelector,
         val attackRate: Double,

@@ -21,6 +21,7 @@ data class SpeciesSuitability(
 object EcologySuitability {
     const val MINIMUM_ACTIVE_FITNESS = 0.35
     private const val MINIMUM_ANNUAL_MEAN_FITNESS = 0.22
+    private const val MINIMUM_DORMANT_ANNUAL_MEAN_FITNESS = 0.15
     private const val MINIMUM_VIABLE_SEASON_FRACTION = 0.25
 
     fun evaluate(
@@ -85,20 +86,50 @@ object EcologySuitability {
         val viableFraction =
             candidate.seasonalFitness.count { it >= MINIMUM_ACTIVE_FITNESS }.toDouble() /
                 candidate.seasonalFitness.size
+        val torporExceedsColdProtection =
+            species.dormancyKind == DormancyKind.SEASONAL_TORPOR &&
+                annualEnvironments.any {
+                    it.temperatureC <=
+                        species.temperatureOuterLow - SEASONAL_TORPOR_COLD_BUFFER_C
+                }
+        val lifecycleCanProtectWorstSeason = when (species.dormancyKind) {
+            DormancyKind.NONE -> false
+            DormancyKind.SEASONAL_TORPOR -> !torporExceedsColdProtection
+            else -> true
+        }
         val seasonalLifecycle =
-            species.dormancyKind != DormancyKind.NONE &&
+            lifecycleCanProtectWorstSeason &&
                 best >= 0.50 &&
                 viableFraction > 0.0
+        val unprotectedLethalSeason =
+            !lifecycleCanProtectWorstSeason &&
+                annualEnvironments.any {
+                    EcologyFitness.thermal(species, it) <= 0.0
+                }
+        val minimumAnnualMean =
+            if (seasonalLifecycle) {
+                MINIMUM_DORMANT_ANNUAL_MEAN_FITNESS
+            } else {
+                MINIMUM_ANNUAL_MEAN_FITNESS
+            }
         val suitable =
-            best >= MINIMUM_ACTIVE_FITNESS &&
-                mean >= MINIMUM_ANNUAL_MEAN_FITNESS &&
+            !torporExceedsColdProtection &&
+                !unprotectedLethalSeason &&
+                best >= MINIMUM_ACTIVE_FITNESS &&
+                mean >= minimumAnnualMean &&
                 (
                     viableFraction >= MINIMUM_VIABLE_SEASON_FRACTION ||
                         seasonalLifecycle
                     )
         val issues = buildList {
+            if (torporExceedsColdProtection) {
+                add("winter cold exceeds seasonal torpor protection")
+            }
+            if (unprotectedLethalSeason) {
+                add("season outside lethal temperature range without a protective lifecycle")
+            }
             if (best < MINIMUM_ACTIVE_FITNESS) add("no viable active season")
-            if (mean < MINIMUM_ANNUAL_MEAN_FITNESS) add("annual climate fitness is too low")
+            if (mean < minimumAnnualMean) add("annual climate fitness is too low")
             if (
                 viableFraction < MINIMUM_VIABLE_SEASON_FRACTION &&
                 !seasonalLifecycle
@@ -135,4 +166,6 @@ object EcologySuitability {
                 (0.5 + seasonalFitness.max() * 0.5) *
                 (0.5 + structuralFit * 0.5)
     }
+
+    private const val SEASONAL_TORPOR_COLD_BUFFER_C = 5.0
 }

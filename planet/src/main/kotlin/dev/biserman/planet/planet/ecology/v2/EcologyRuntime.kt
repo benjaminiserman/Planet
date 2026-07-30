@@ -70,6 +70,8 @@ class TileCommunity(val capacity: Int = 48) {
 data class EcologyRuntimeConfig(
     val backgroundMortality: Double = EcologyGlobals.backgroundMortality,
     val stressMortality: Double = EcologyGlobals.stressMortality,
+    val lethalTemperatureMortality: Double =
+        EcologyGlobals.lethalTemperatureMortality,
     val maximumStarvationMortality: Double =
         EcologyGlobals.maximumStarvationMortality,
     /**
@@ -120,6 +122,7 @@ data class EcologyRuntimeConfig(
     init {
         require(backgroundMortality in 0.0..1.0)
         require(stressMortality in 0.0..1.0)
+        require(lethalTemperatureMortality in 0.0..1.0)
         require(maximumStarvationMortality in 0.0..1.0)
         require(interspecificNicheCompetition >= 0.0)
         require(maximumConsumedBiomassFraction in 0.0..1.0)
@@ -282,7 +285,8 @@ class EcologyRuntime(
             val habitatPresent =
                 species.nicheFit[community.nicheIndices[populationIndex]] > 0.0 &&
                     environment.habitatAvailability(niche.habitat) > 0.0
-            val requiredTargetPresent = requiredTargetPresent(species.index, community)
+            val requiredTargetPresent =
+                EcologyAssembly.requiredTargetPresent(ecology, species.index, community)
             val populationFitness =
                 if (!habitatPresent || !requiredTargetPresent) {
                     0.0
@@ -296,11 +300,68 @@ class EcologyRuntime(
 
             var active = community.activeBiomass[populationIndex]
             var dormant = community.dormantBiomass[populationIndex] * species.dormantSurvival
+            if (environment.temperatureC < species.minimumActiveTemperatureC) {
+                dormant *= species.frozenDormantSurvival
+            }
+            if (
+                species.dormancyKind == DormancyKind.SEASONAL_TORPOR &&
+                environment.temperatureC <= species.temperatureOuterLow -
+                SEASONAL_TORPOR_COLD_BUFFER_C
+            ) {
+                // Torpor saves energy through ordinary winters; it does not
+                // grant tropical and subtropical animals polar physiology.
+                val degreesBeyondProtection =
+                    species.temperatureOuterLow -
+                        SEASONAL_TORPOR_COLD_BUFFER_C -
+                        environment.temperatureC
+                val lethalColdLoss =
+                    (
+                        0.35 +
+                            degreesBeyondProtection /
+                            SEASONAL_TORPOR_LETHAL_RAMP_C *
+                            0.60
+                        ).coerceIn(0.35, 0.95)
+                dormant *= 1.0 - lethalColdLoss
+            }
+            if (
+                species.dormancyKind == DormancyKind.COLD_DARK_LEAF_DORMANCY &&
+                (
+                    environment.temperatureC <=
+                        species.temperatureOuterLow - DORMANT_LEAF_COLD_PROTECTION_C ||
+                        environment.temperatureC >= species.temperatureOuterHigh
+                    )
+            ) {
+                // Dormant buds and woody tissues tolerate substantially more
+                // cold than active foliage, but dormancy is not immunity to an
+                // arbitrarily cold climate or to lethal heat.
+                dormant *= 1.0 - config.stressMortality
+            }
             val canEnterDormancy =
                 species.dormancyKind != DormancyKind.NONE &&
                     !(species.dormancyKind == DormancyKind.WHOLE_BODY_DESICCATION &&
                         niche.habitat in EcologyFitness.aquaticHabitats)
-            if (populationFitness < config.dormantEntryFitness && canEnterDormancy) {
+            val dormancyCondition = when (species.dormancyKind) {
+                DormancyKind.COLD_DARK_LEAF_DORMANCY ->
+                    environment.temperatureC >
+                        species.temperatureOuterLow - DORMANT_LEAF_COLD_PROTECTION_C &&
+                        (
+                            environment.temperatureC < species.temperatureOptimalLow ||
+                                environment.insolation < 0.45
+                            )
+                DormancyKind.DROUGHT_DECIDUOUS ->
+                    EcologyFitness.thermal(species, environment) > 0.0 &&
+                        EcologyFitness.water(species, environment, niche.habitat) <
+                            config.dormantEntryFitness
+                DormancyKind.SEASONAL_TORPOR ->
+                    environment.temperatureC >
+                        species.temperatureOuterLow - SEASONAL_TORPOR_COLD_BUFFER_C
+                else -> true
+            }
+            if (
+                populationFitness < config.dormantEntryFitness &&
+                canEnterDormancy &&
+                dormancyCondition
+            ) {
                 val entering = active * config.dormantEntryFraction
                 active -= entering
                 dormant += entering
@@ -312,24 +373,6 @@ class EcologyRuntime(
             effectiveActive[populationIndex] = active
             nextDormant[populationIndex] = dormant
         }
-    }
-
-    private fun requiredTargetPresent(consumerSpeciesIndex: Int, community: TileCommunity): Boolean {
-        val speciesCount = ecology.species.size
-        val rowOffset = consumerSpeciesIndex * speciesCount
-        var hasRequirement = false
-        for (targetSpeciesIndex in 0 until speciesCount) {
-            if (!ecology.interactions.targetRequiredAt(rowOffset + targetSpeciesIndex)) continue
-            hasRequirement = true
-            val populationIndex = community.find(targetSpeciesIndex)
-            if (
-                populationIndex >= 0 &&
-                community.activeBiomass[populationIndex] + community.dormantBiomass[populationIndex] > 0.0
-            ) {
-                return true
-            }
-        }
-        return !hasRequirement
     }
 
     private fun accumulateNicheBiomass(community: TileCommunity) {
@@ -562,12 +605,16 @@ class EcologyRuntime(
             // thrive while still allowing recovery during a suitable season.
             val physiologicalAssimilation =
                 if (environmentalFitness < 0.35) 0.0 else sqrt(environmentalFitness)
+            val interactionCapacityRemaining =
+                (1.0 - active / max(1.0, carryingBiomass)).coerceIn(0.0, 1.0)
             val grossAssimilation =
                 backgroundAssimilation +
                     (
                         interactionGains[populationIndex] +
                             relationshipBenefits[populationIndex]
-                        ) * physiologicalAssimilation
+                        ) *
+                    physiologicalAssimilation *
+                    interactionCapacityRemaining
             val maintenanceFraction = species.maintenanceDemand / species.massKg
             val maintenance = active * maintenanceFraction
             val stress = 1.0 - environmentalFitness
@@ -576,7 +623,11 @@ class EcologyRuntime(
             // physiological stress so the same dry or cool season is not charged
             // twice at full strength.
             val stressLoss =
-                active * config.stressMortality * stress * stress * stress * stress
+                if (EcologyFitness.thermal(species, environment) <= 0.0) {
+                    active * config.lethalTemperatureMortality
+                } else {
+                    active * config.stressMortality * stress * stress * stress * stress
+                }
             val backgroundLoss = active * config.backgroundMortality
             val predationLoss = min(active, interactionLosses[populationIndex])
             val softDiversityCapacity = EcologyDiversity.softHabitatCapacity(
@@ -713,6 +764,12 @@ class EcologyRuntime(
 
     private fun finiteNonNegative(value: Double): Double =
         if (value.isFinite()) max(0.0, value) else 0.0
+
+    private companion object {
+        const val DORMANT_LEAF_COLD_PROTECTION_C = 20.0
+        const val SEASONAL_TORPOR_COLD_BUFFER_C = 5.0
+        const val SEASONAL_TORPOR_LETHAL_RAMP_C = 10.0
+    }
 
     private val InteractionKind.lowDensityAccessibilityCoefficient: Double
         get() = when (this) {

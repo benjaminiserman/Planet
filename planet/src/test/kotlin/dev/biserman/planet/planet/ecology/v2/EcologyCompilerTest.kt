@@ -19,8 +19,8 @@ class EcologyCompilerTest {
 
         val compiled = EcologyCompiler.compile(listOf(producer)).species.single()
 
-        assertEquals(-9.0, compiled.temperatureOuterLow)
-        assertEquals(37.0, compiled.temperatureOuterHigh)
+        assertEquals(-4.0, compiled.temperatureOuterLow)
+        assertEquals(27.0, compiled.temperatureOuterHigh)
         assertTrue(compiled.nicheFit.any { it > 0.0 })
         assertTrue(compiled.maintenanceDemand > 0.0)
     }

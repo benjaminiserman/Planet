@@ -24,32 +24,34 @@ class EcologyWorldEcosystemNotebookTest {
         assertEquals(2, scenarioCells.count { "introductions = listOf(" in it })
         assertEquals(2, scenarioCells.count { "climateShifts = listOf(" in it })
         assertEquals(2, scenarioCells.count { "habitatShifts = listOf(" in it })
-        assertEquals(1, scenarioCells.count { "populationRemovals = listOf(" in it })
+        assertEquals(2, scenarioCells.count { "populationRemovals = listOf(" in it })
         assertEquals(7, scenarioCells.count { "expectedExtinctions = setOf(" in it })
         assertEquals(1, scenarioCells.count { "includeAeroplankton = true" in it })
         scenarioCells.forEach { source ->
             assertTrue("seasonalClimate(" in source)
             assertTrue("TileTemplate(" in source)
-            assertTrue("sp(" in source)
+            assertTrue("earth(" in source)
             assertTrue("repeat(4000)" !in source, "The shared harness should own the 1,000-year loop")
         }
     }
 
     @Test
-    fun `notebook uses only implemented common traits`() {
+    fun `notebook uses only Earth species catalog entries`() {
         val notebookPath = Path.of(
             "src/main/kotlin/dev/biserman/planet/notebooks/ecology_v2_world_ecosystems.ipynb",
         )
         val source = ObjectMapper().readTree(notebookPath.readText())["cells"]
             .flatMap { cell -> cell["source"].map { it.asText() } }
             .joinToString("")
-        val referencedTraits = Regex("""C\.([A-Z_]+)""")
+        val referencedSpecies = Regex("""earth\("([^"]+)"\)""")
             .findAll(source)
             .map { it.groupValues[1] }
             .toSet()
-        val implementedTraits = CommonTrait.entries.map { it.name }.toSet()
+        val catalogSpecies = EarthSpeciesCatalog.ALL.map { it.id }.toSet()
 
-        assertTrue(referencedTraits.isNotEmpty())
-        assertEquals(emptySet(), referencedTraits - implementedTraits)
+        assertTrue(referencedSpecies.isNotEmpty())
+        assertEquals(emptySet(), referencedSpecies - catalogSpecies)
+        assertTrue("SpeciesDefinition(" !in source)
+        assertTrue("TargetedRelationshipTrait(" !in source)
     }
 }

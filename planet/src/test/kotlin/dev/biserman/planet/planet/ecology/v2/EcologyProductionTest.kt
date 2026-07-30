@@ -59,12 +59,58 @@ class EcologyProductionTest {
         assertUnsuitable("dromedary-camel", HersfeldtClimatePresets.ICE_CAP)
         assertSuitable("poison-dart-frog", HersfeldtClimatePresets.JUNGLE)
         assertUnsuitable("poison-dart-frog", HersfeldtClimatePresets.DESERT)
-        assertSuitable("emperor-penguin", HersfeldtClimatePresets.POLAR_SEA)
+        assertSuitable("emperor-penguin", HersfeldtClimatePresets.PERMANENT_SEA_ICE)
         assertUnsuitable("emperor-penguin", HersfeldtClimatePresets.TROPICAL_REEF)
         assertSuitable("ocellaris-clownfish", HersfeldtClimatePresets.TROPICAL_REEF)
         assertUnsuitable("ocellaris-clownfish", HersfeldtClimatePresets.POLAR_SEA)
         assertSuitable("deep-sea-anglerfish", HersfeldtClimatePresets.DEEP_OCEAN)
         assertUnsuitable("deep-sea-anglerfish", HersfeldtClimatePresets.TROPICAL_REEF)
+    }
+
+    @Test
+    fun `carpet plants require a thawed growing season`() {
+        assertSuitable(InvariantSpecies.CARPET_PLANTS.id, HersfeldtClimatePresets.TUNDRA)
+        assertUnsuitable(InvariantSpecies.CARPET_PLANTS.id, HersfeldtClimatePresets.ICE_CAP)
+    }
+
+    @Test
+    fun `catalog animals do not gain broad climate ranges from generic physiology`() {
+        assertUnsuitable("bengal-tiger", HersfeldtClimatePresets.DESERT)
+        assertUnsuitable("red-kangaroo", HersfeldtClimatePresets.DESERT)
+
+        listOf(
+            "nile-crocodile",
+            "american-alligator",
+            "bornean-orangutan",
+            "cheetah",
+        ).forEach { speciesId ->
+            assertUnsuitable(speciesId, HersfeldtClimatePresets.BOREAL)
+        }
+
+        val tiger = ecology.species.single { it.id == "bengal-tiger" }
+        val kangaroo = ecology.species.single { it.id == "red-kangaroo" }
+        assertTrue(tiger.minimumWater > 0.0)
+        assertTrue(kangaroo.minimumWater > 0.0)
+    }
+
+    @Test
+    fun `deep diving whales span polar temperate and tropical seas`() {
+        listOf("blue-whale", "humpback-whale").forEach { speciesId ->
+            assertSuitable(speciesId, HersfeldtClimatePresets.POLAR_SEA)
+            assertSuitable(speciesId, HersfeldtClimatePresets.TEMPERATE_SHELF)
+            assertSuitable(speciesId, HersfeldtClimatePresets.TROPICAL_REEF)
+        }
+    }
+
+    @Test
+    fun `open grass grazer fits savanna better than dense jungle`() {
+        val savanna = evaluate("plains-zebra", HersfeldtClimatePresets.SAVANNA)
+        val jungle = evaluate("plains-zebra", HersfeldtClimatePresets.JUNGLE)
+
+        assertTrue(
+            savanna.score > jungle.score * 1.5,
+            "savanna=$savanna jungle=$jungle",
+        )
     }
 
     @Test
@@ -182,6 +228,7 @@ class EcologyProductionTest {
             HersfeldtClimatePresets.TROPICAL_REEF -> 35.0
             HersfeldtClimatePresets.TEMPERATE_SHELF -> 120.0
             HersfeldtClimatePresets.POLAR_SEA -> 250.0
+            HersfeldtClimatePresets.PERMANENT_SEA_ICE -> 250.0
             HersfeldtClimatePresets.DEEP_OCEAN -> 2_500.0
             else -> 0.0
         }
@@ -194,8 +241,14 @@ class EcologyProductionTest {
                 precipitationMm = month.precipitation,
                 isLand = !preset.ocean,
                 adjacentToOcean = coastal,
+                adjacentToLand = preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE,
                 adjacentToMajorRiver = majorRiver,
                 waterDepthM = waterDepth,
+                permanentSeaIce =
+                    preset.ocean &&
+                        PlanetEcologyEnvironment.supportsSeaIceHabitat(
+                            preset.climateDatum(tileId = 1),
+                        ),
                 usefulSunlightReachesWater =
                     preset != HersfeldtClimatePresets.DEEP_OCEAN,
                 canopyCover = canopy,

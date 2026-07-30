@@ -24,6 +24,8 @@ import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
 import dev.biserman.planet.planet.ecology.v2.TileEcosystem
 import dev.biserman.planet.planet.ecology.v2.PlanetEcology
+import dev.biserman.planet.planet.ecology.v2.Habitat
+import dev.biserman.planet.planet.ecology.v2.PlanetEcologyEnvironment
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -379,9 +381,30 @@ class PlanetTile(
 
         "ecology" -> buildString {
             fun Double.scientific2() = "%.1e".format(Locale.ROOT, this)
+            val habitatSummary = planet.climateMap[tileId]?.let { climate ->
+                val environment = PlanetEcologyEnvironment.environment(
+                    tile = this@PlanetTile,
+                    climate = climate,
+                    year = planet.historyTurn / 4.0,
+                    context = PlanetEcologyEnvironment.context(planet),
+                )
+                Habitat.entries
+                    .mapNotNull { habitat ->
+                        environment.habitatAvailability(habitat)
+                            .takeIf { availability -> availability > 0.0 }
+                            ?.let { availability ->
+                                "${habitat.displayName}=${availability.formatDigits(2)}"
+                            }
+                    }
+                    .joinToString(", ")
+            }
             appendLine("species count: ${ecosystem.speciesCount}")
             appendLine("total biomass: ${ecosystem.totalBiomassKg.scientific2()} kg")
             appendLine("reef cover: ${(ecosystem.reefCover * 100.0).formatDigits(1)}%")
+            appendLine(
+                "available habitats: " +
+                    (habitatSummary?.ifEmpty { "none" } ?: "climate unavailable")
+            )
             appendLine(
                 "resources: carrion=${ecosystem.resources.carrion.formatDigits(3)}, " +
                     "detritus=${ecosystem.resources.detritus.formatDigits(3)}, " +

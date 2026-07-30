@@ -7,6 +7,7 @@ import kotlin.random.Random
 data class RandomEcosystemTile(
     val isLand: Boolean,
     val adjacentToOcean: Boolean,
+    val adjacentToLand: Boolean,
     val adjacentToMajorRiver: Boolean,
     val waterDepthM: Double,
     val usefulSunlightReachesWater: Boolean,
@@ -67,7 +68,8 @@ object RandomEcosystemExperiment {
         require(speciesCount in 1..EarthSpeciesCatalog.ALL.size)
         require(seasons > 0)
         val random = Random(seed)
-        val preset = HersfeldtClimatePresets.ALL.random(random)
+        val preset =
+            HersfeldtClimatePresets.ALL[Math.floorMod(seed, HersfeldtClimatePresets.ALL.size)]
         val tile = randomTile(random, preset)
         val climate = presetClimate(seed, preset)
         val initialEnvironment = environmentAt(
@@ -81,10 +83,14 @@ object RandomEcosystemExperiment {
         val candidates = catalogEcology.species.filter { species ->
             NicheSelection.choose(species, catalogEcology, initialEnvironment) >= 0
         }
-        require(candidates.size >= speciesCount) {
-            "Only ${candidates.size} catalog species can physically use this tile"
-        }
-        val selectedCatalogSpecies = candidates.shuffled(random).take(speciesCount)
+        // Extremely restrictive habitats, especially permanent coastal sea
+        // ice, may authentically have fewer than the requested ten candidates.
+        val sampledCatalogSpecies = candidates.shuffled(random).take(speciesCount)
+        val selectedCatalogSpecies = EcologyAssembly.completeRequiredTargets(
+            ecology = catalogEcology,
+            selected = sampledCatalogSpecies,
+            availableTargets = candidates,
+        )
         val selectedDefinitionsById = EarthSpeciesCatalog.ALL.associateBy { it.id }
         val selectedDefinitions = selectedCatalogSpecies.map { selectedDefinitionsById.getValue(it.id) }
         val selectedUsesAerialFilterFeeding = selectedCatalogSpecies.any { species ->
@@ -237,11 +243,13 @@ object RandomEcosystemExperiment {
     ): RandomEcosystemTile {
         val land = !preset.ocean
         val coastal = land && random.nextDouble() < 0.24
+        val adjacentLand = !land && random.nextDouble() < 0.24
         val river = land && random.nextDouble() < 0.20
         val depth = when (preset) {
             HersfeldtClimatePresets.TROPICAL_REEF -> randomBetween(random, 5.0, 65.0)
             HersfeldtClimatePresets.TEMPERATE_SHELF -> randomBetween(random, 20.0, 180.0)
             HersfeldtClimatePresets.POLAR_SEA -> randomBetween(random, 30.0, 800.0)
+            HersfeldtClimatePresets.PERMANENT_SEA_ICE -> randomBetween(random, 30.0, 800.0)
             HersfeldtClimatePresets.DEEP_OCEAN -> randomBetween(random, 600.0, 3_500.0)
             else -> 0.0
         }
@@ -249,6 +257,7 @@ object RandomEcosystemExperiment {
             HersfeldtClimatePresets.TROPICAL_REEF -> true
             HersfeldtClimatePresets.TEMPERATE_SHELF -> depth < 140.0
             HersfeldtClimatePresets.POLAR_SEA -> depth < 160.0
+            HersfeldtClimatePresets.PERMANENT_SEA_ICE -> depth < 160.0
             HersfeldtClimatePresets.DEEP_OCEAN -> false
             else -> false
         }
@@ -260,6 +269,7 @@ object RandomEcosystemExperiment {
         return RandomEcosystemTile(
             isLand = land,
             adjacentToOcean = coastal,
+            adjacentToLand = adjacentLand,
             adjacentToMajorRiver = river,
             waterDepthM = depth,
             usefulSunlightReachesWater = sunlight,
@@ -356,9 +366,13 @@ object RandomEcosystemExperiment {
             surfaceFertilityModifier = tile.fertilityModifier,
             isLand = tile.isLand,
             adjacentToOcean = tile.adjacentToOcean,
+            adjacentToLand = tile.adjacentToLand,
             adjacentToMajorRiver = tile.adjacentToMajorRiver,
             waterDepthM = tile.waterDepthM,
             usefulSunlightReachesWater = tile.usefulSunlightReachesWater,
+            permanentSeaIce =
+                !tile.isLand &&
+                    PlanetEcologyEnvironment.supportsSeaIceHabitat(climate),
             canopyCover = tile.canopyCover,
             reefCover = tile.reefCover,
             starLight = StarLight.entries[Math.floorMod(climate.tileId, StarLight.entries.size)],

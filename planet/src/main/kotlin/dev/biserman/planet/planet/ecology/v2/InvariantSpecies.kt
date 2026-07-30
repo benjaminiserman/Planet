@@ -14,6 +14,7 @@ object InvariantSpecies {
         traits = listOf(
             CommonTrait.TEMPERATE_BIOCHEMISTRY,
             CommonTrait.INVARIANT_RESISTANCE,
+            CommonTrait.THAW_DEPENDENT_GROWTH,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,
         ),

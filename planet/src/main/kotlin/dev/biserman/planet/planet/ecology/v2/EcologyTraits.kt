@@ -97,6 +97,17 @@ enum class CommonTrait(
         ),
         invariantOnly = true,
     ),
+    THAW_DEPENDENT_GROWTH(
+        "thaw-dependent growth",
+        "Living ground cover can overwinter below freezing, but requires liquid water and a thawed growing season to renew its tissues.",
+        listOf(
+            TraitEffect.MinimumActiveTemperature(0.0),
+            TraitEffect.FrozenDormantSurvival(0.98),
+            TraitEffect.ReproductionMultiplier(1.03),
+            TraitEffect.MaintenanceCost(0.02),
+        ),
+        invariantOnly = true,
+    ),
     ECTOTHERMY(
         "ectothermy",
         "Body activity and temperature depend primarily on heat exchanged with the surrounding environment.",
@@ -165,6 +176,14 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.06),
         ),
     ),
+    SEA_ICE_LOCOMOTION(
+        "sea-ice locomotion",
+        "Broad feet, claws, body posture, or equivalent adaptations support travel and hunting across floating sea ice.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.SEA_ICE, 0.72),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
     AQUATIC_FLIPPERS(
         "aquatic flippers",
         "Broad propulsive limbs or fins that support controlled swimming in open water.",
@@ -174,12 +193,27 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.10),
         ),
     ),
+    SEA_ICE_ROOKERY(
+        "sea-ice rookery",
+        "Breeding colonies occupy persistent sea ice close enough to land for repeated access to stable resting and nesting grounds.",
+        listOf(
+            TraitEffect.HabitatSupport(Habitat.SEA_ICE, 0.82),
+            TraitEffect.ObligateResidentHabitat(Habitat.SEA_ICE),
+            TraitEffect.RequiresAdjacentLand,
+            TraitEffect.ReproductionMultiplier(0.94),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
     DEEP_DIVING_PHYSIOLOGY(
         "deep-diving physiology",
         "Pressure-tolerant tissues, collapsible gas spaces, oxygen stores, or equivalent adaptations permit prolonged activity below the sunlit surface layer.",
         listOf(
             TraitEffect.HabitatSupport(Habitat.DARK_WATER, 0.65),
             TraitEffect.DarkWaterAdaptation,
+            // Deep water is usually cooler and less seasonally variable than
+            // the surface represented by the tile's single temperature.
+            TraitEffect.TemperatureOptimalTolerance(hotterC = 4.0),
+            TraitEffect.TemperatureTolerance(hotterC = 8.0),
             TraitEffect.ReserveCapacity(0.08),
             TraitEffect.MaintenanceCost(0.12),
         ),
@@ -347,6 +381,15 @@ enum class CommonTrait(
             TraitEffect.StrategySupport(EcoStrategy.FILTER_FEEDING, 0.80),
             TraitEffect.CaptureAbility(-0.06),
             TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    BENTHIC_SUCTION_FEEDING(
+        "benthic suction-feeding mouth",
+        "A muscular tongue, sealed lips, and a vaulted mouth expose and suction soft-bodied prey from seafloor sediment.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.52),
+            TraitEffect.CaptureAbility(0.10),
+            TraitEffect.MaintenanceCost(0.06),
         ),
     ),
     GRAZING_MOUTHPARTS(
@@ -535,7 +578,7 @@ enum class CommonTrait(
         "seasonal winter coat",
         "Insulation grown in response to the low-insolation portion of the year and shed as light returns.",
         listOf(
-            TraitEffect.SeasonalColdTolerance(maximumBonusC = 10.0, triggerInsolation = 0.58),
+            TraitEffect.SeasonalColdTolerance(maximumBonusC = 18.0, triggerInsolation = 0.58),
             TraitEffect.TemperatureTolerance(hotterC = -1.5),
             TraitEffect.MaintenanceCost(0.07),
         ),
@@ -553,7 +596,7 @@ enum class CommonTrait(
         "prey-derived water",
         "Concentrated kidneys and digestive physiology recover most required water from prey rather than free-standing sources.",
         listOf(
-            TraitEffect.WaterRequirement(-0.25),
+            TraitEffect.WaterRequirement(-0.12),
             TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.08),
             TraitEffect.StrategySupport(EcoStrategy.PURSUIT_PREDATION, 0.08),
             TraitEffect.MaintenanceCost(0.05),
@@ -563,7 +606,7 @@ enum class CommonTrait(
         "food-derived water",
         "Efficient kidneys and digestion obtain nearly all required water from moist food or metabolically produced water.",
         listOf(
-            TraitEffect.WaterRequirement(-0.25),
+            TraitEffect.WaterRequirement(-0.18),
             TraitEffect.ReproductionMultiplier(0.96),
             TraitEffect.MaintenanceCost(0.05),
         ),
@@ -608,7 +651,7 @@ enum class CommonTrait(
         "Photosynthetic surfaces are shed during dry seasons and regrown when water becomes available.",
         listOf(
             TraitEffect.WaterRequirement(-0.12),
-            TraitEffect.Dormancy(DormancyKind.SEASONAL_TORPOR, 0.999),
+            TraitEffect.Dormancy(DormancyKind.DROUGHT_DECIDUOUS, 0.999),
             TraitEffect.ReproductionMultiplier(0.92),
             TraitEffect.MaintenanceCost(0.04),
         ),
@@ -617,7 +660,7 @@ enum class CommonTrait(
         "seasonal leaf dormancy",
         "Growth and exposed foliage are withdrawn during the cold or dark season while protected living tissues persist.",
         listOf(
-            TraitEffect.Dormancy(DormancyKind.SEASONAL_TORPOR, 0.999),
+            TraitEffect.Dormancy(DormancyKind.COLD_DARK_LEAF_DORMANCY, 0.999),
             TraitEffect.ReproductionMultiplier(0.94),
             TraitEffect.MaintenanceCost(0.04),
         ),
@@ -644,7 +687,8 @@ enum class CommonTrait(
         "blubber",
         "A thick subcutaneous fat layer that insulates the body in water and doubles as an energy reserve.",
         listOf(
-            TraitEffect.TemperatureTolerance(colderC = 9.0, hotterC = -4.0),
+//            TraitEffect.TemperatureTolerance(colderC = 9.0, hotterC = -4.0),
+            TraitEffect.TemperatureShift(-10.0),
             TraitEffect.ReserveCapacity(0.28),
             TraitEffect.CaptureAbility(-0.03),
             TraitEffect.MaintenanceCost(0.08),
@@ -666,6 +710,24 @@ enum class CommonTrait(
             TraitEffect.TemperatureShift(-13.0),
             TraitEffect.ReproductionMultiplier(0.90),
             TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    HEAT_STABLE_ENZYMES(
+        "heat-stable enzymes",
+        "Proteins and cell membranes remain functional through sustained hot conditions without shifting the organism's entire biochemical regime.",
+        listOf(
+            TraitEffect.TemperatureTolerance(colderC = -2.0, hotterC = 10.0),
+            TraitEffect.ReproductionMultiplier(0.94),
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    WARM_WATER_ENZYMES(
+        "warm-water enzymes",
+        "Metabolic enzymes and membranes remain stable and active in persistently warm water, at the cost of poor cold performance.",
+        listOf(
+            TraitEffect.TemperatureShift(5.0),
+            TraitEffect.ReproductionMultiplier(0.94),
+            TraitEffect.MaintenanceCost(0.04),
         ),
     ),
     FAT_RESERVES(
@@ -738,6 +800,18 @@ enum class CommonTrait(
             TraitEffect.ReefBuilding(0.08),
             TraitEffect.ReproductionMultiplier(0.90),
             TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    SHALLOW_WATER_PHOTOSYMBIOSIS(
+        "shallow-water photosymbiosis",
+        "Light-dependent symbionts nourish a sessile host anchored close to the illuminated seafloor.",
+        listOf(
+            TraitEffect.WaterDepthTolerance(
+                optimalMaximumM = 30.0,
+                absoluteMaximumM = 80.0,
+            ),
+            TraitEffect.ReproductionMultiplier(0.96),
+            TraitEffect.MaintenanceCost(0.04),
         ),
     ),
     REEF_NESTING(
@@ -1003,6 +1077,15 @@ enum class CommonTrait(
             TraitEffect.Defense(0.18),
             TraitEffect.ReproductionMultiplier(1.08),
             TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    OPEN_COUNTRY_HERDING(
+        "open-country herding",
+        "Social groups rely on long sight lines, collective vigilance, and coordinated travel through open vegetation.",
+        listOf(
+            TraitEffect.DenseCanopyForagingPenalty(0.82),
+            TraitEffect.Defense(0.08),
+            TraitEffect.MaintenanceCost(0.05),
         ),
     ),
     EXTENDED_BROOD_CARE(
