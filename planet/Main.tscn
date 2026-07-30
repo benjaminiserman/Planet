@@ -1,10 +1,10 @@
 [gd_scene load_steps=9 format=3 uid="uid://bqaovyiqpfql0"]
 
-[ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_u3cyc"]
-[ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="3_y2354"]
-[ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="4_m7jmp"]
-[ext_resource type="Script" uid="uid://wubsouopi724" path="res://src/main/kotlin/dev/biserman/planet/gui/StatsGraphPlot.kt" id="5_m7jmp"]
-[ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_y2354"]
+[ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_fos0i"]
+[ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="2_3dxm6"]
+[ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="3_lgr22"]
+[ext_resource type="Script" uid="uid://wubsouopi724" path="res://src/main/kotlin/dev/biserman/planet/gui/StatsGraphPlot.kt" id="4_trn2v"]
+[ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_03owx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
 
@@ -20,11 +20,11 @@ ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.75
 
-[node name="Scene" type="Node3D"]
-script = ExtResource("1_u3cyc")
+[node name="Main" type="Node3D"]
+script = ExtResource("1_fos0i")
 
 [node name="CameraGimbal" type="Node3D" parent="."]
-script = ExtResource("3_y2354")
+script = ExtResource("2_3dxm6")
 
 [node name="InnerGimbal" type="Node3D" parent="CameraGimbal"]
 
@@ -41,7 +41,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("4_m7jmp")
+script = ExtResource("3_lgr22")
 
 [node name="SeedSelection" type="ColorRect" parent="GUI"]
 visible = false
@@ -560,7 +560,7 @@ offset_left = -400.0
 offset_top = -200.0
 grow_horizontal = 0
 grow_vertical = 0
-script = ExtResource("5_m7jmp")
+script = ExtResource("4_trn2v")
 
 [node name="ExportDialog" type="FileDialog" parent="GUI"]
 title = "Export World"
@@ -695,7 +695,7 @@ offset_bottom = 42.0
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 fit_to_longest_item = false
-script = ExtResource("5_y2354")
+script = ExtResource("5_03owx")
 metadata/_custom_type_script = "uid://b2x4bkf12pd11"
 
 [node name="ClearMapButton" type="Button" parent="GUI/SettingsButtons"]
