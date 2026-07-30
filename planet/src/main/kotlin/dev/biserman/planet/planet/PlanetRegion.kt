@@ -1,22 +1,17 @@
 package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.utils.TrackedMutableSet
 import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
-import godot.core.Plane
 import godot.core.Vector3
 import kotlin.math.PI
 import kotlin.math.absoluteValue
 
-class PlanetRegion(
-    val planet: Planet,
-    var tiles: TrackedMutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()
-) {
+class PlanetRegion(val planet: Planet, var tiles: TrackedMutableSet<PlanetTile> = mutableSetOf<PlanetTile>().toTracked()) {
     constructor(planet: Planet, tiles: Iterable<PlanetTile>) : this(planet, tiles.toMutableSet().toTracked())
     constructor(planet: Planet, tiles: Sequence<PlanetTile>) : this(planet, tiles.toMutableSet().toTracked())
 
@@ -26,8 +21,8 @@ class PlanetRegion(
             planetTile.tile.borders.filter { border ->
                 planet.getTile(
                     border.oppositeTile(
-                        planetTile.tile
-                    )
+                        planetTile.tile,
+                    ),
                 ) !in tiles
             }
         }
@@ -47,13 +42,10 @@ class PlanetRegion(
     fun toTopology(): Topology = Topology(
         tiles.map { it.tile },
         tiles.flatMap { it.tile.borders },
-        tiles.flatMap { it.tile.corners }
+        tiles.flatMap { it.tile.corners },
     )
 
-    fun <T> calculateNeighborLengths(
-        planetTileFn: (Tile) -> PlanetTile = { planet.getTile(it) },
-        getFn: (PlanetTile) -> T
-    ): Map<T, Double> {
+    fun <T> calculateNeighborLengths(planetTileFn: (Tile) -> PlanetTile = { planet.getTile(it) }, getFn: (PlanetTile) -> T): Map<T, Double> {
         val neighborsBorderLengths = mutableMapOf<T, Double>()
 
         fun Border.oppositeTile(tile: PlanetTile) = planetTileFn(this.oppositeTile(tile.tile))
@@ -110,9 +102,7 @@ class PlanetRegion(
         return results
     }
 
-    fun <T> floodFillGroupBy(
-        planetTileFn: ((Tile) -> PlanetTile) = { planet.getTile(it) }, keyFn: (PlanetTile) -> T
-    ): Map<T, List<PlanetRegion>> {
+    fun <T> floodFillGroupBy(planetTileFn: ((Tile) -> PlanetTile) = { planet.getTile(it) }, keyFn: (PlanetTile) -> T): Map<T, List<PlanetRegion>> {
         val visited = mutableSetOf<PlanetTile>()
         val results = mutableMapOf<T, MutableList<PlanetRegion>>()
 

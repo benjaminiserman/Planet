@@ -19,22 +19,11 @@ object DebugDraw {
         return meshInstance
     }
 
-    fun (Node).drawVectorMesh(
-        name: String,
-        vectors: List<DebugVector>,
-        color: Color = Color.red,
-        drawDot: Boolean = true
-    ) =
-        vectorMesh(vectors, color, drawDot).withIndex().map { (index, data) ->
-            this.drawMesh("${name}_$index", data.mesh, data.material)
-        }
+    fun (Node).drawVectorMesh(name: String, vectors: List<DebugVector>, color: Color = Color.red, drawDot: Boolean = true) = vectorMesh(vectors, color, drawDot).withIndex().map { (index, data) ->
+        this.drawMesh("${name}_$index", data.mesh, data.material)
+    }
 
-    fun (Node).drawRotVectorMesh(
-        name: String,
-        vectors: List<Pair<DebugVector, Double>>,
-        color: Color = Color.red,
-        drawDot: Boolean = true
-    ) = rotVectorMesh(vectors, color, drawDot).withIndex().map { (index, data) ->
+    fun (Node).drawRotVectorMesh(name: String, vectors: List<Pair<DebugVector, Double>>, color: Color = Color.red, drawDot: Boolean = true) = rotVectorMesh(vectors, color, drawDot).withIndex().map { (index, data) ->
         this.drawMesh("${name}_$index", data.mesh, data.material)
     }
 }

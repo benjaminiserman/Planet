@@ -6,8 +6,7 @@ import dev.biserman.planet.rendering.MeshData
 import godot.api.Node
 import godot.api.StandardMaterial3D
 
-class CellWireframeRenderer(parent: Node, val lift: Double, override val categories: List<String> = listOf()) :
-    DebugRenderer<Planet>(parent) {
+class CellWireframeRenderer(parent: Node, val lift: Double, override val categories: List<String> = listOf()) : DebugRenderer<Planet>(parent) {
     override val name = "cell_wireframe"
 
     override fun generateMeshes(input: Planet): List<MeshData> = listOf(
@@ -15,7 +14,7 @@ class CellWireframeRenderer(parent: Node, val lift: Double, override val categor
             input.topology.makeMesh().apply { this.verts.forEach { it.position *= lift } }.toWireframe(),
             StandardMaterial3D().apply {
                 this.pointSize = 3.5f
-            }
-        )
+            },
+        ),
     )
 }

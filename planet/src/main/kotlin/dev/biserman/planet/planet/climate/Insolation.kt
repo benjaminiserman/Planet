@@ -16,10 +16,10 @@ object Insolation {
         val eccentricAnomaly = solveKeplersEquation(meanAnomaly, eccentricity)
         val trueAnomaly = 2.0 * atan2(
             sqrt(1.0 + eccentricity) * sin(eccentricAnomaly / 2.0),
-            sqrt(1.0 - eccentricity) * cos(eccentricAnomaly / 2.0)
+            sqrt(1.0 - eccentricity) * cos(eccentricAnomaly / 2.0),
         )
         val distanceFactor = (1.0 + eccentricity * cos(trueAnomaly)) /
-                (1.0 - eccentricity * eccentricity)
+            (1.0 - eccentricity * eccentricity)
         return distanceFactor * distanceFactor
     }
 
@@ -28,16 +28,14 @@ object Insolation {
         var eccentricAnomaly = meanAnomaly
         repeat(12) {
             eccentricAnomaly -= (eccentricAnomaly - eccentricity * sin(eccentricAnomaly) - meanAnomaly) /
-                    (1.0 - eccentricity * cos(eccentricAnomaly))
+                (1.0 - eccentricity * cos(eccentricAnomaly))
         }
         return eccentricAnomaly
     }
 
     // Solar declination (radians, Cooper’s formula)
-    fun solarDeclination(dayOfYear: Double): Double {
-        return ClimateRuntimeConfig.axialTiltDegrees.degToRad() *
-                sin(2.0 * PI * (northSpringEquinox + dayOfYear) / yearLength)
-    }
+    fun solarDeclination(dayOfYear: Double): Double = ClimateRuntimeConfig.axialTiltDegrees.degToRad() *
+        sin(2.0 * PI * (northSpringEquinox + dayOfYear) / yearLength)
 
     // Cosine of solar zenith at noon (hour angle = 0)
     fun cosZenith(latitude: Double, dayOfYear: Double): Double {

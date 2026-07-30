@@ -10,11 +10,11 @@ import dev.biserman.planet.history.HistoryCalendar
 import dev.biserman.planet.planet.MapProjections
 import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
-import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
@@ -33,7 +33,7 @@ import java.util.Locale.getDefault
 import kotlin.random.Random
 
 @RegisterClass
-class Gui() : Node() {
+class Gui : Node() {
     enum class Mode { EDIT, PLAY }
 
     val infoboxContainer by lazy { findChild("InfoboxContainer") as TabContainer }
@@ -93,8 +93,10 @@ class Gui() : Node() {
                         .apply {
                             this.verts.forEach { it.position *= 1.001 }
                         }
-                        .toWireframe(), selectedTileMaterial)
-            }
+                        .toWireframe(),
+                    selectedTileMaterial,
+                )
+            },
         )
     }
 
@@ -102,8 +104,12 @@ class Gui() : Node() {
         infoboxContainer.getChildren().forEach { tab ->
             val label = tab.findChild("Label") as? Label
             if (tab is ScrollContainer && label is Label) {
-                label.text = if (selectedTile == null) "" else Main.instance.planet.getTile(selectedTile!!)
-                    .getInfoText(tab.name.toString().lowercase())
+                label.text = if (selectedTile == null) {
+                    ""
+                } else {
+                    Main.instance.planet.getTile(selectedTile!!)
+                        .getInfoText(tab.name.toString().lowercase())
+                }
             }
         }
     }
@@ -237,7 +243,7 @@ class Gui() : Node() {
             MAP_PREVIEW_HEIGHT,
             false,
             Image.Format.RGBA8,
-            PackedByteArray(rgba)
+            PackedByteArray(rgba),
         )
     }
 
@@ -253,7 +259,7 @@ class Gui() : Node() {
             MAP_PREVIEW_HEIGHT,
             useKriging = false,
             sampleRadius = planet.topology.averageRadius * 1.5,
-            dateLine = dateLine
+            dateLine = dateLine,
         ) { tile -> Main.instance.planetRenderer.getColor(tile) }
         val image = projectedMap.toGodotImage() ?: return
 
@@ -304,11 +310,16 @@ class Gui() : Node() {
             simulationOptionButton.addItem(
                 "Run ${
                     simulationName.replaceFirstChar {
-                        if (it.isLowerCase()) it.titlecase(
-                            getDefault()
-                        ) else it.toString()
+                        if (it.isLowerCase()) {
+                            it.titlecase(
+                                getDefault(),
+                            )
+                        } else {
+                            it.toString()
+                        }
                     }
-                } Simulation")
+                } Simulation",
+            )
             simulationOptions[index] = simulationName
         }
         simulationOptionButton.select(0)
@@ -365,7 +376,7 @@ class Gui() : Node() {
                 450,
                 225,
                 useKriging = false,
-                Main.instance.planet.topology.averageRadius * 1.5
+                Main.instance.planet.topology.averageRadius * 1.5,
             ) { tile: PlanetTile -> Main.instance.planetRenderer.getColor(tile) }
             GD.print("Image created")
         }

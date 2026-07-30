@@ -4,12 +4,7 @@ import godot.api.ArrayMesh
 import godot.api.Mesh
 import godot.core.*
 
-data class MutMesh(
-    val verts: MutableList<MutVertex> = mutableListOf(),
-    val edges: MutableList<MutEdge> = mutableListOf(),
-    val tris: MutableList<MutTri> = mutableListOf(),
-    val colors: MutableList<Color> = mutableListOf()
-) {
+data class MutMesh(val verts: MutableList<MutVertex> = mutableListOf(), val edges: MutableList<MutEdge> = mutableListOf(), val tris: MutableList<MutTri> = mutableListOf(), val colors: MutableList<Color> = mutableListOf()) {
     fun toArrayMesh(): ArrayMesh {
         val surfaceArray = VariantArray<Any?>()
         surfaceArray.resize(Mesh.ArrayType.MAX.ordinal)
@@ -33,7 +28,7 @@ data class MutMesh(
         surfaceArray[Mesh.ArrayType.VERTEX.ordinal] = PackedVector3Array(
             this.edges.flatMap { edge ->
                 edge.vertIndexes.map { this.verts[it].position }
-            }.toVariantArray()
+            }.toVariantArray(),
         )
 
         return ArrayMesh().apply { addSurfaceFromArrays(Mesh.PrimitiveType.LINES, surfaceArray) }
@@ -74,7 +69,7 @@ data class MutMesh(
             val normal = calculateNormal(
                 this.verts[tri.vertIndexes[0]].position,
                 this.verts[tri.vertIndexes[1]].position,
-                this.verts[tri.vertIndexes[2]].position
+                this.verts[tri.vertIndexes[2]].position,
             )
 
             for (vertIndex in tri.vertIndexes) {

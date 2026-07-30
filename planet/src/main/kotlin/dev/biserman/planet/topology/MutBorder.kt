@@ -13,16 +13,10 @@ interface Border {
     fun oppositeTile(tile: Tile) = if (tile == tiles[0]) tiles[1] else tiles[0]
 
     companion object {
-
     }
 }
 
-class MutBorder(
-    override val id: Int,
-    override val corners: MutableList<MutCorner> = mutableListOf(),
-    override val borders: MutableList<MutBorder> = mutableListOf(),
-    override val tiles: MutableList<MutTile> = mutableListOf()
-) : Border {
+class MutBorder(override val id: Int, override val corners: MutableList<MutCorner> = mutableListOf(), override val borders: MutableList<MutBorder> = mutableListOf(), override val tiles: MutableList<MutTile> = mutableListOf()) : Border {
     override fun oppositeCorner(corner: Corner): MutCorner = super.oppositeCorner(corner) as MutCorner
     override fun oppositeTile(tile: Tile): MutTile = super.oppositeTile(tile) as MutTile
 }

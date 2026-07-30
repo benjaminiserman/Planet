@@ -16,7 +16,7 @@ class GeometryTest {
 
         assertEquals(
             120.0,
-            bestOceanCorridorDateLineDegrees(coverage, listOf(-60.0 to 1.0))
+            bestOceanCorridorDateLineDegrees(coverage, listOf(-60.0 to 1.0)),
         )
     }
 
@@ -26,7 +26,7 @@ class GeometryTest {
 
         assertEquals(
             180.0,
-            bestOceanCorridorDateLineDegrees(coverage, listOf(0.0 to 1.0))
+            bestOceanCorridorDateLineDegrees(coverage, listOf(0.0 to 1.0)),
         )
     }
 }

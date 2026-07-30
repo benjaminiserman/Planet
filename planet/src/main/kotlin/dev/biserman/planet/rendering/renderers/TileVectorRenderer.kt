@@ -10,16 +10,7 @@ import godot.api.Node
 import godot.core.Color
 import godot.core.Vector3
 
-class TileVectorRenderer(
-    parent: Node,
-    override val name: String,
-    val lift: Double,
-    val getFn: (PlanetTile) -> Vector3,
-    val color: Color = Color(1.0, 1.0, 1.0),
-    val cutoff: Double = 0.0,
-    override val categories: List<String> = listOf()
-) :
-    DebugRenderer<Planet>(parent) {
+class TileVectorRenderer(parent: Node, override val name: String, val lift: Double, val getFn: (PlanetTile) -> Vector3, val color: Color = Color(1.0, 1.0, 1.0), val cutoff: Double = 0.0, override val categories: List<String> = listOf()) : DebugRenderer<Planet>(parent) {
 
     override fun generateMeshes(input: Planet): List<MeshData> {
         val movementVectors = input.planetTiles.values
@@ -27,7 +18,7 @@ class TileVectorRenderer(
             .map {
                 DebugVector(
                     it.tile.position * lift,
-                    getFn(it)
+                    getFn(it),
                 )
             }
 

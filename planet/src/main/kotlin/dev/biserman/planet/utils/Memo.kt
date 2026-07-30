@@ -3,8 +3,7 @@ package dev.biserman.planet.utils
 import com.fasterxml.jackson.annotation.JsonIgnoreType
 import kotlin.reflect.KProperty
 
-fun <T : Any> memo(vararg dependencyFunctions: () -> Any? = arrayOf(), factory: () -> T): Memo<T> =
-    Memo(dependencyFunctions.toList(), factory)
+fun <T : Any> memo(vararg dependencyFunctions: () -> Any? = arrayOf(), factory: () -> T): Memo<T> = Memo(dependencyFunctions.toList(), factory)
 
 @JsonIgnoreType
 class Memo<TValue : Any>(val dependencyFunctions: List<() -> Any?>, factory: () -> TValue) {

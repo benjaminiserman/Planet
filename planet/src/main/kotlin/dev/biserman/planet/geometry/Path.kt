@@ -18,8 +18,6 @@ class Path {
 
     fun reversed(): Path = Path(points.reversed(), isLoop)
 
-
-
     fun toMesh(): MutMesh = addToMesh(MutMesh())
 
     fun addToMesh(mutMesh: MutMesh): MutMesh {

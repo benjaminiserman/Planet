@@ -30,7 +30,6 @@ import java.io.File
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-
 @Suppress("FunctionName", "unused")
 abstract class Vector3Mixin {
     @JsonIgnore
@@ -45,7 +44,6 @@ abstract class Vector3Mixin {
     @JsonIgnore
     abstract fun isNormalized(): Boolean
 }
-
 
 @Suppress("unused")
 abstract class Vector2Mixin {
@@ -64,20 +62,14 @@ class DedupingObjectIdResolver : SimpleObjectIdResolver() {
         _items[id] = ob
     }
 
-    override fun newForDeserialization(context: Any?): ObjectIdResolver {
-        return DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
-    }
+    override fun newForDeserialization(context: Any?): ObjectIdResolver = DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
 }
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class DedupeDuplicateIds
 class DedupingDeserializerModifier : BeanDeserializerModifier() {
-    override fun modifyDeserializer(
-        config: DeserializationConfig,
-        beanDesc: BeanDescription,
-        deserializer: JsonDeserializer<*>
-    ): JsonDeserializer<*> {
+    override fun modifyDeserializer(config: DeserializationConfig, beanDesc: BeanDescription, deserializer: JsonDeserializer<*>): JsonDeserializer<*> {
         val objectIdInfo = beanDesc.objectIdInfo ?: return deserializer
         if (beanDesc.classInfo.getAnnotation(DedupeDuplicateIds::class.java) == null) {
             return deserializer
@@ -93,16 +85,14 @@ class DedupingDeserializerModifier : BeanDeserializerModifier() {
         return GenericDedupingDeserializer(
             deserializer as JsonDeserializer<Any>,
             scopeClass,
-            idProp
+            idProp,
         )
     }
 }
 
-class GenericDedupingDeserializer(
-    private val delegate: JsonDeserializer<Any>,
-    private val scopeClass: Class<*>,
-    private val idProperty: BeanPropertyDefinition
-) : JsonDeserializer<Any>(), ResolvableDeserializer {
+class GenericDedupingDeserializer(private val delegate: JsonDeserializer<Any>, private val scopeClass: Class<*>, private val idProperty: BeanPropertyDefinition) :
+    JsonDeserializer<Any>(),
+    ResolvableDeserializer {
 
     private val accessor: AnnotatedMember? = idProperty.accessor
 
@@ -141,7 +131,7 @@ object Serialization {
             SimpleModule()
                 .addSerializer(ComponentSet::class.java, ComponentSetSerializer())
                 .addDeserializer(ComponentSet::class.java, ComponentSetDeserializer())
-                .addDeserializer(MutableComponentSet::class.java, ComponentSetDeserializer())
+                .addDeserializer(MutableComponentSet::class.java, ComponentSetDeserializer()),
         )
         .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)

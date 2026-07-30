@@ -25,123 +25,39 @@ object HersfeldtReference {
 
     data class ClimateLabel(val id: String, val name: String, val color: String)
 
-    data class ConfusionEntry(
-        val reference: ClimateLabel,
-        val simulated: ClimateLabel,
-        val count: Int,
-        val conditionDistance: Int,
-    )
+    data class ConfusionEntry(val reference: ClimateLabel, val simulated: ClimateLabel, val count: Int, val conditionDistance: Int)
 
-    data class ClassFrequency(
-        val climate: ClimateLabel,
-        val referenceCount: Int,
-        val simulatedCount: Int,
-        val simulatedMinusReference: Int,
-    )
+    data class ClassFrequency(val climate: ClimateLabel, val referenceCount: Int, val simulatedCount: Int, val simulatedMinusReference: Int)
 
-    data class BandScore(
-        val band: String,
-        val sampledTiles: Int,
-        val exactMatches: Int,
-        val matchPercent: Double,
-        val meanConditionDistance: Double,
-    )
+    data class BandScore(val band: String, val sampledTiles: Int, val exactMatches: Int, val matchPercent: Double, val meanConditionDistance: Double)
 
-    data class FamilyScore(
-        val family: String,
-        val referenceCount: Int,
-        val simulatedCount: Int,
-        val truePositives: Int,
-        val precision: Double,
-        val recall: Double,
-        val f1: Double,
-    )
+    data class FamilyScore(val family: String, val referenceCount: Int, val simulatedCount: Int, val truePositives: Int, val precision: Double, val recall: Double, val f1: Double)
 
-    data class DiagnosticAverages(
-        val winterTemperature: Double?,
-        val summerTemperature: Double?,
-        val averageTemperature: Double?,
-        val annualPrecipitation: Double?,
-        val temperatureRange: Double?,
-        val precipitationRange: Double?,
-        val potentialEvapotranspiration: Double?,
-        val actualEvapotranspiration: Double?,
-        val aridityFactor: Double?,
-        val growthAridityFactor: Double?,
-        val growthSupply: Double?,
-        val evaporationRatio: Double?,
-        val totalGdd: Double?,
-        val totalGddz: Double?,
-        val totalGint: Double?,
-        val winterTypes: Map<String, Int>,
-        val summerTypes: Map<String, Int>,
-    )
+    data class DiagnosticAverages(val winterTemperature: Double?, val summerTemperature: Double?, val averageTemperature: Double?, val annualPrecipitation: Double?, val temperatureRange: Double?, val precipitationRange: Double?, val potentialEvapotranspiration: Double?, val actualEvapotranspiration: Double?, val aridityFactor: Double?, val growthAridityFactor: Double?, val growthSupply: Double?, val evaporationRatio: Double?, val totalGdd: Double?, val totalGddz: Double?, val totalGint: Double?, val winterTypes: Map<String, Int>, val summerTypes: Map<String, Int>)
 
-    data class MismatchSummary(
-        val reference: ClimateLabel,
-        val simulated: ClimateLabel,
-        val count: Int,
-        val conditionDistance: Int,
-        val simulatedClassifierInputs: DiagnosticAverages,
-    )
+    data class MismatchSummary(val reference: ClimateLabel, val simulated: ClimateLabel, val count: Int, val conditionDistance: Int, val simulatedClassifierInputs: DiagnosticAverages)
 
     data class ClassCount(val climate: ClimateLabel, val count: Int)
 
-    data class ScoreDelta(
-        val lossDelta: Double,
-        val matchPercentDelta: Double,
-        val correctedTiles: Int,
-        val regressedTiles: Int,
-        val changedSimulatedClasses: Int,
-        val correctedByReferenceClass: List<ClassCount>,
-        val regressedByReferenceClass: List<ClassCount>,
-    )
+    data class ScoreDelta(val lossDelta: Double, val matchPercentDelta: Double, val correctedTiles: Int, val regressedTiles: Int, val changedSimulatedClasses: Int, val correctedByReferenceClass: List<ClassCount>, val regressedByReferenceClass: List<ClassCount>)
 
-    data class TileComparison(
-        val tileId: Int,
-        val reference: ClimateLabel,
-        val simulated: ClimateLabel,
-        val exact: Boolean,
-        val conditionDistance: Int,
-        val latitudeDegrees: Double,
-        val longitudeDegrees: Double,
-        val elevationMeters: Double,
-        @get:JsonIgnore val diagnostics: Hersfeldt.Diagnostics,
-    )
+    data class TileComparison(val tileId: Int, val reference: ClimateLabel, val simulated: ClimateLabel, val exact: Boolean, val conditionDistance: Int, val latitudeDegrees: Double, val longitudeDegrees: Double, val elevationMeters: Double, @get:JsonIgnore val diagnostics: Hersfeldt.Diagnostics)
 
-    data class Score(
-        val landTiles: Int,
-        val sampledTiles: Int,
-        val exactMatches: Int,
-        val referenceMisses: Int,
-        val referenceCoveragePercent: Double,
-        val meanConditionDistance: Double,
-        val conditionDistanceCounts: Map<Int, Int>,
-        val meanSpatialTolerancePixels: Double,
-        val confusionMatrix: List<ConfusionEntry>,
-        val classFrequencies: List<ClassFrequency>,
-        val latitudeBands: List<BandScore>,
-        val elevationBands: List<BandScore>,
-        val priorityRegions: List<BandScore>,
-        val mediterraneanFamily: FamilyScore,
-        val largestMismatches: List<MismatchSummary>,
-        @get:JsonIgnore val tileComparisons: Map<Int, TileComparison>,
-    ) {
+    data class Score(val landTiles: Int, val sampledTiles: Int, val exactMatches: Int, val referenceMisses: Int, val referenceCoveragePercent: Double, val meanConditionDistance: Double, val conditionDistanceCounts: Map<Int, Int>, val meanSpatialTolerancePixels: Double, val confusionMatrix: List<ConfusionEntry>, val classFrequencies: List<ClassFrequency>, val latitudeBands: List<BandScore>, val elevationBands: List<BandScore>, val priorityRegions: List<BandScore>, val mediterraneanFamily: FamilyScore, val largestMismatches: List<MismatchSummary>, @get:JsonIgnore val tileComparisons: Map<Int, TileComparison>) {
         val matchPercent get() = exactMatches * 100.0 / sampledTiles
         val mismatchRate get() = 1.0 - exactMatches.toDouble() / sampledTiles
 
         /** Climate-only loss. Reference-mask misses are reported but excluded. */
         val loss get() = mismatchRate + CONDITION_DISTANCE_WEIGHT * meanConditionDistance / MAX_CONDITION_DISTANCE
 
-        fun summary() =
-            "Earth land: %.1f%% match (loss %.4f, %d/%d covered, %d mask misses, mean error %.3f)".format(
-                matchPercent,
-                loss,
-                sampledTiles,
-                landTiles,
-                referenceMisses,
-                meanConditionDistance,
-            )
+        fun summary() = "Earth land: %.1f%% match (loss %.4f, %d/%d covered, %d mask misses, mean error %.3f)".format(
+            matchPercent,
+            loss,
+            sampledTiles,
+            landTiles,
+            referenceMisses,
+            meanConditionDistance,
+        )
 
         fun deltaFrom(baseline: Score): ScoreDelta {
             val commonTileIds = tileComparisons.keys intersect baseline.tileComparisons.keys
@@ -241,12 +157,7 @@ object HersfeldtReference {
         )
     }
 
-    fun renderMaps(
-        planet: Planet,
-        filename: String = defaultFilename,
-        outputDirectory: File,
-        prefix: String,
-    ): RenderedMaps? {
+    fun renderMaps(planet: Planet, filename: String = defaultFilename, outputDirectory: File, prefix: String): RenderedMaps? {
         val referenceFile = File(filename)
         if (!referenceFile.isFile) return null
         val palette = hersfeldtPalette()
@@ -302,10 +213,7 @@ object HersfeldtReference {
         return RenderedMaps(simulatedFile.absolutePath, differenceFile.absolutePath)
     }
 
-    private class ReferenceRaster(
-        val image: BufferedImage,
-        private val palette: List<ClimateClassification>,
-    ) {
+    private class ReferenceRaster(val image: BufferedImage, private val palette: List<ClimateClassification>) {
         private val colorCache = mutableMapOf<Int, ClimateClassification>()
 
         fun climateAt(x: Int, y: Int): ClimateClassification? {
@@ -418,8 +326,7 @@ object HersfeldtReference {
         summerTypes = groupingBy { it.summerType.name }.eachCount().toSortedMap(),
     )
 
-    private fun List<Hersfeldt.Diagnostics>.finiteAverage(selector: (Hersfeldt.Diagnostics) -> Double): Double? =
-        map(selector).filter { it.isFinite() }.takeIf { it.isNotEmpty() }?.average()
+    private fun List<Hersfeldt.Diagnostics>.finiteAverage(selector: (Hersfeldt.Diagnostics) -> Double): Double? = map(selector).filter { it.isFinite() }.takeIf { it.isNotEmpty() }?.average()
 
     private fun List<TileComparison>.toClassCounts() = groupBy { it.reference.id }
         .map { (_, tiles) -> ClassCount(tiles.first().reference, tiles.size) }
@@ -431,16 +338,9 @@ object HersfeldtReference {
         return "%+03d..%+03d deg".format(lower, lower + 10)
     }
 
-    private data class GeographicRegion(
-        val name: String,
-        val minLatitude: Double,
-        val maxLatitude: Double,
-        val minLongitude: Double,
-        val maxLongitude: Double,
-    ) {
-        fun contains(comparison: TileComparison) =
-            comparison.latitudeDegrees in minLatitude..maxLatitude &&
-                comparison.longitudeDegrees in minLongitude..maxLongitude
+    private data class GeographicRegion(val name: String, val minLatitude: Double, val maxLatitude: Double, val minLongitude: Double, val maxLongitude: Double) {
+        fun contains(comparison: TileComparison) = comparison.latitudeDegrees in minLatitude..maxLatitude &&
+            comparison.longitudeDegrees in minLongitude..maxLongitude
     }
 
     private fun List<TileComparison>.toBandScore(name: String) = BandScore(
@@ -451,10 +351,7 @@ object HersfeldtReference {
         meanConditionDistance = map { it.conditionDistance }.average(),
     )
 
-    private fun List<TileComparison>.familyScore(
-        family: String,
-        isMember: (ClimateLabel) -> Boolean,
-    ): FamilyScore {
+    private fun List<TileComparison>.familyScore(family: String, isMember: (ClimateLabel) -> Boolean): FamilyScore {
         val referenceCount = count { isMember(it.reference) }
         val simulatedCount = count { isMember(it.simulated) }
         val truePositives = count { isMember(it.reference) && isMember(it.simulated) }
@@ -504,11 +401,10 @@ object HersfeldtReference {
         ((this ushr 24) and 0xFF) / 255.0,
     )
 
-    private fun Color.toArgb(): Int =
-        (255 shl 24) or
-            ((r * 255).roundToInt().coerceIn(0, 255) shl 16) or
-            ((g * 255).roundToInt().coerceIn(0, 255) shl 8) or
-            (b * 255).roundToInt().coerceIn(0, 255)
+    private fun Color.toArgb(): Int = (255 shl 24) or
+        ((r * 255).roundToInt().coerceIn(0, 255) shl 16) or
+        ((g * 255).roundToInt().coerceIn(0, 255) shl 8) or
+        (b * 255).roundToInt().coerceIn(0, 255)
 
     private fun Color.toHex() = "#%02X%02X%02X".format(
         (r * 255).roundToInt().coerceIn(0, 255),

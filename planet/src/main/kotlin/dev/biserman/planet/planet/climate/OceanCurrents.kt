@@ -3,7 +3,6 @@ package dev.biserman.planet.planet.climate
 import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.average
 import dev.biserman.planet.geometry.toGeoPoint
-import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetRegion
 import dev.biserman.planet.planet.PlanetTile
@@ -14,33 +13,28 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentM
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentStrengthDiagonalization
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.oceanCurrentStrengthPow
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.targetCurrentRadiusProportion
-import dev.biserman.planet.utils.UtilityExtensions.formatGeo
 import dev.biserman.planet.utils.toCardinal
-import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
-import godot.global.GD
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.acos
 import kotlin.math.cos
-import kotlin.math.min
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
 
 class OceanCurrent(val planetTile: PlanetTile, val direction: Vector3, val temperature: Double)
-class OceanBand(
-    val bottomLatitudeDegrees: Double,
-    val topLatitudeDegrees: Double,
-    val polarity: Double,
-    planet: Planet
-) {
-    val region = PlanetRegion(planet, planet.planetTiles.values.filter { tile ->
-        val geoPoint = tile.tile.position.toGeoPoint()
-        geoPoint.latitudeDegrees in bottomLatitudeDegrees..topLatitudeDegrees
-    })
+class OceanBand(val bottomLatitudeDegrees: Double, val topLatitudeDegrees: Double, val polarity: Double, planet: Planet) {
+    val region = PlanetRegion(
+        planet,
+        planet.planetTiles.values.filter { tile ->
+            val geoPoint = tile.tile.position.toGeoPoint()
+            geoPoint.latitudeDegrees in bottomLatitudeDegrees..topLatitudeDegrees
+        },
+    )
 
     val centerLatitudeDegrees get() = (bottomLatitudeDegrees + topLatitudeDegrees) * 0.5
 
@@ -65,7 +59,7 @@ object OceanCurrents {
                     abs(equatorialCellIndex - i) % 2 == 0 -> -1.0
                     else -> 1.0
                 },
-                planet
+                planet,
             )
         }
 
@@ -100,7 +94,9 @@ object OceanCurrents {
 
                             ocean.tiles.removeAll(clockwiseExtent + counterExtent)
                             acc.apply { add(PlanetRegion(planet, clockwiseExtent + counterExtent)) }
-                        } else acc
+                        } else {
+                            acc
+                        }
                     }
                 }
                 ?.filter { it.tiles.size >= minOceanTilesForCurrent }
@@ -122,25 +118,25 @@ object OceanCurrents {
                     val distance = bandHeight * targetCurrentRadiusProportion
                     val cosineLongitudeDifference =
                         (cos(distance) - sin(edgeTileGeoPoint.latitude) * sin(oceanCenterGeoPoint.latitude)) /
-                                (cos(edgeTileGeoPoint.latitude) * cos(oceanCenterGeoPoint.latitude))
+                            (cos(edgeTileGeoPoint.latitude) * cos(oceanCenterGeoPoint.latitude))
                     val longitudeDifference = acos(cosineLongitudeDifference)
 
                     val compareCirclePoint = listOf(
                         GeoPoint(oceanCenterGeoPoint.latitude, edgeTileGeoPoint.longitude + longitudeDifference),
-                        GeoPoint(oceanCenterGeoPoint.latitude, edgeTileGeoPoint.longitude - longitudeDifference)
+                        GeoPoint(oceanCenterGeoPoint.latitude, edgeTileGeoPoint.longitude - longitudeDifference),
                     ).map { it.toVector3() }.minBy { it.distanceTo(ocean.center) }
 
                     val temperature = (
-                            compareCirclePoint
-                                .toCardinal(edgeTile.tile.position)
-                                .normalized()
-                                .dot((Vector2.RIGHT + Vector2.UP * -band.polarity * oceanCurrentStrengthDiagonalization).normalized()) * band.polarity
-                            ).pow(oceanCurrentStrengthPow)
+                        compareCirclePoint
+                            .toCardinal(edgeTile.tile.position)
+                            .normalized()
+                            .dot((Vector2.RIGHT + Vector2.UP * -band.polarity * oceanCurrentStrengthDiagonalization).normalized()) * band.polarity
+                        ).pow(oceanCurrentStrengthPow)
 
                     OceanCurrent(
                         edgeTile,
                         (averageNeighbor - edgeTile.tile.position).cross(edgeTile.tile.position) * polarity,
-                        if (temperature.isNaN()) 0.0 else temperature
+                        if (temperature.isNaN()) 0.0 else temperature,
                     )
                 }.filter { it.temperature.absoluteValue >= oceanCurrentMinStrength }
             }

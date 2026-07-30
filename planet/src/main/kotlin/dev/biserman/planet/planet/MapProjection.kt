@@ -7,21 +7,14 @@ import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.toVector2
 import dev.biserman.planet.geometry.toVector3
-import dev.biserman.planet.geometry.weightedAverageInverse
 import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
-import kotlin.math.abs
-import kotlin.math.absoluteValue
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 
 class MapProjection(val forward: (GeoPoint) -> Vector2, val backward: (Vector2) -> GeoPoint)
 
@@ -29,18 +22,11 @@ object MapProjections {
     val EQUIRECTANGULAR = MapProjection({ geoPoint -> geoPoint.toVector2() }, { vector2 -> GeoPoint(vector2) })
     val EQUIDISTANT = EQUIRECTANGULAR
 
-    fun (MapProjection).projectPoints(
-        planet: Planet,
-        imageName: String?,
-        imageX: Int,
-        imageY: Int,
-        dateLine: Double = planet.internationalDateLine,
-        colorFn: (Planet).(Vector3) -> Color
-    ): BufferedImage {
+    fun (MapProjection).projectPoints(planet: Planet, imageName: String?, imageX: Int, imageY: Int, dateLine: Double = planet.internationalDateLine, colorFn: (Planet).(Vector3) -> Color): BufferedImage {
         val image = BufferedImage(imageX, imageY, BufferedImage.TYPE_INT_ARGB)
 //        val edgeX = forward(planet.pointNemo.tile.position.toGeoPoint()).x
         val edgeX = forward(
-            GeoPoint(0.0, dateLine)
+            GeoPoint(0.0, dateLine),
         ).x
 
         for (x in 0..<imageX) {
@@ -56,9 +42,9 @@ object MapProjections {
                             Vector2(
                                 newX,
                                 -(y.toDouble() / imageY - 0.5),
-                            )
-                        ).toVector3()
-                    ).clamp(Color.black, Color.white).toARGB32()
+                            ),
+                        ).toVector3(),
+                    ).clamp(Color.black, Color.white).toARGB32(),
                 )
             }
         }
@@ -69,47 +55,36 @@ object MapProjections {
         return image
     }
 
-    fun (MapProjection).projectTiles(
-        planet: Planet,
-        imageName: String?,
-        imageX: Int,
-        imageY: Int,
-        useKriging: Boolean = true,
-        sampleRadius: Double = planet.topology.averageRadius,
-        variogram: (Double) -> Double = Kriging.variogram(sampleRadius, 1.0, 0.0),
-        dateLine: Double = planet.internationalDateLine,
-        colorFn: (PlanetTile) -> Color,
-    ): BufferedImage =
-        this.projectPoints(
-            planet,
-            imageName,
-            imageX,
-            imageY,
-            dateLine
-        ) { point ->
-            val nearest = this.topology.rTree.nearest(point.toPoint(), sampleRadius, 10)
-                .map { it.value().position to colorFn(planet.getTile(it.value())) }
-            val nearestR = nearest.map { (position, color) -> position to color.r }
-            val nearestG = nearest.map { (position, color) -> position to color.g }
-            val nearestB = nearest.map { (position, color) -> position to color.b }
-            val nearestA = nearest.map { (position, color) -> position to color.a }
+    fun (MapProjection).projectTiles(planet: Planet, imageName: String?, imageX: Int, imageY: Int, useKriging: Boolean = true, sampleRadius: Double = planet.topology.averageRadius, variogram: (Double) -> Double = Kriging.variogram(sampleRadius, 1.0, 0.0), dateLine: Double = planet.internationalDateLine, colorFn: (PlanetTile) -> Color): BufferedImage = this.projectPoints(
+        planet,
+        imageName,
+        imageX,
+        imageY,
+        dateLine,
+    ) { point ->
+        val nearest = this.topology.rTree.nearest(point.toPoint(), sampleRadius, 10)
+            .map { it.value().position to colorFn(planet.getTile(it.value())) }
+        val nearestR = nearest.map { (position, color) -> position to color.r }
+        val nearestG = nearest.map { (position, color) -> position to color.g }
+        val nearestB = nearest.map { (position, color) -> position to color.b }
+        val nearestA = nearest.map { (position, color) -> position to color.a }
 
-            if (useKriging) {
-                Color(
-                    Kriging.interpolate(nearestR, point, variogram),
-                    Kriging.interpolate(nearestG, point, variogram),
-                    Kriging.interpolate(nearestB, point, variogram),
-                    Kriging.interpolate(nearestA, point, variogram),
-                )
-            } else {
-                Color(
-                    nearestR.first().second,
-                    nearestG.first().second,
-                    nearestB.first().second,
-                    nearestA.first().second,
-                )
-            }
+        if (useKriging) {
+            Color(
+                Kriging.interpolate(nearestR, point, variogram),
+                Kriging.interpolate(nearestG, point, variogram),
+                Kriging.interpolate(nearestB, point, variogram),
+                Kriging.interpolate(nearestA, point, variogram),
+            )
+        } else {
+            Color(
+                nearestR.first().second,
+                nearestG.first().second,
+                nearestB.first().second,
+                nearestA.first().second,
+            )
         }
+    }
 
     fun (MapProjection).applyValueTo(planet: Planet, imageName: String, modifyFn: (PlanetTile).(Color) -> Unit) {
         val image = ImageIO.read(File(imageName))
@@ -118,9 +93,9 @@ object MapProjections {
                 Pair(
                     Vector2(
                         -(x.toDouble() / image.width - 0.5),
-                        (image.height - y.toDouble() - 1) / image.height - 0.5
+                        (image.height - y.toDouble() - 1) / image.height - 0.5,
                     ),
-                    image.getRGB(x, y).toRGB()
+                    image.getRGB(x, y).toRGB(),
                 )
             }
         }.toRTree(dimensions = 2) { it.first.toPoint() to it.second }
@@ -130,7 +105,7 @@ object MapProjections {
         val distanceGuess = min(
             this.forward(testPoints.first().value().position.toGeoPoint())
                 .distanceTo(this.forward(testPoints.last().value().position.toGeoPoint())),
-            max(1.0 / image.width, 1.0 / image.height)
+            max(1.0 / image.width, 1.0 / image.height),
         ) * 1.5
 
         planet.planetTiles.values.forEach { tile ->

@@ -7,10 +7,8 @@ import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import godot.global.GD
 import kotlin.reflect.KClass
 
 @JsonDeserialize(`as` = MutableComponentSet::class)
@@ -55,11 +53,7 @@ class MutableComponentSet<T : Any>(components: Collection<T>) : ComponentSet<T>(
 }
 
 class ComponentSetSerializer : StdSerializer<ComponentSet<*>>(ComponentSet::class.java) {
-    override fun serialize(
-        componentSet: ComponentSet<*>,
-        jgen: JsonGenerator,
-        provider: SerializerProvider
-    ) {
+    override fun serialize(componentSet: ComponentSet<*>, jgen: JsonGenerator, provider: SerializerProvider) {
         jgen.writeStartObject()
         jgen.writeArrayFieldStart("components")
         for (component in componentSet.internalComponents.values) {
@@ -71,10 +65,7 @@ class ComponentSetSerializer : StdSerializer<ComponentSet<*>>(ComponentSet::clas
 }
 
 class ComponentSetDeserializer : StdDeserializer<MutableComponentSet<*>>(MutableComponentSet::class.java) {
-    override fun deserialize(
-        parser: JsonParser,
-        context: DeserializationContext?
-    ): MutableComponentSet<*> {
+    override fun deserialize(parser: JsonParser, context: DeserializationContext?): MutableComponentSet<*> {
         val node = parser.codec.readTree<JsonNode>(parser)
         val components = mutableListOf<Any>()
         val componentsNode = node["components"]

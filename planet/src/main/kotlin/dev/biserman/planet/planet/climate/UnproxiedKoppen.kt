@@ -9,7 +9,6 @@ import dev.biserman.planet.planet.climate.Hersfeldt.evaporationRatio
 import dev.biserman.planet.planet.climate.Hersfeldt.gdd
 import dev.biserman.planet.planet.climate.Hersfeldt.growthAridityFactor
 import dev.biserman.planet.planet.climate.Hersfeldt.growthSupply
-import dev.biserman.planet.planet.climate.Hersfeldt.hargreavesPet
 import dev.biserman.planet.planet.climate.Hersfeldt.koppenlikePet
 import dev.biserman.planet.planet.climate.Hersfeldt.maxIce
 import dev.biserman.planet.planet.climate.Hersfeldt.minIce
@@ -55,10 +54,7 @@ import dev.biserman.planet.planet.climate.Koppen.highlandElevationThreshold
 // included with permission
 // I've tweaked the growth supply threshold for mediterranean climates to better fit this project's generated data
 object UnproxiedKoppen : ClimateClassifier {
-    override fun classify(
-        planet: Planet,
-        datum: ClimateDatum
-    ): ClimateClassification {
+    override fun classify(planet: Planet, datum: ClimateDatum): ClimateClassification {
         val tile = planet.planetTiles[datum.tileId]!!
 
         // climate parameters
@@ -92,15 +88,24 @@ object UnproxiedKoppen : ClimateClassifier {
 
         return when {
             gddResults.totalGdd < 250 ->
-                if (minIce > 0.1) ICE_CAP
-                else TUNDRA
+                if (minIce > 0.1) {
+                    ICE_CAP
+                } else {
+                    TUNDRA
+                }
             aridityFactor < 0.32 -> when {
                 aridityFactor < 0.14 ->
-                    if (winterType == WinterType.MILD || winterType == WinterType.COOL) HOT_DESERT
-                    else COLD_DESERT
+                    if (winterType == WinterType.MILD || winterType == WinterType.COOL) {
+                        HOT_DESERT
+                    } else {
+                        COLD_DESERT
+                    }
                 else ->
-                    if (winterType == WinterType.MILD || winterType == WinterType.COOL) HOT_SEMIARID
-                    else COLD_SEMIARID
+                    if (winterType == WinterType.MILD || winterType == WinterType.COOL) {
+                        HOT_SEMIARID
+                    } else {
+                        COLD_SEMIARID
+                    }
             }
             winterType == WinterType.MILD -> when {
                 aridityFactor > 0.92 -> TROPICAL_RAINFOREST
@@ -117,15 +122,21 @@ object UnproxiedKoppen : ClimateClassifier {
                 highGrowthAridity -> when {
                     longGrowingSeason -> HUMID_SUBTROPICAL_MONSOON
                     mediumGrowingSeason ->
-                        if (tile.elevation >= highlandElevationThreshold) SUBTROPICAL_HIGHLAND_MONSOON
-                        else TEMPERATE_OCEANIC_MONSOON
+                        if (tile.elevation >= highlandElevationThreshold) {
+                            SUBTROPICAL_HIGHLAND_MONSOON
+                        } else {
+                            TEMPERATE_OCEANIC_MONSOON
+                        }
                     else -> SUBPOLAR_OCEANIC_MONSOON
                 }
                 else -> when {
                     longGrowingSeason -> HUMID_SUBTROPICAL
                     mediumGrowingSeason ->
-                        if (tile.elevation >= highlandElevationThreshold) SUBTROPICAL_HIGHLAND
-                        else TEMPERATE_OCEANIC
+                        if (tile.elevation >= highlandElevationThreshold) {
+                            SUBTROPICAL_HIGHLAND
+                        } else {
+                            TEMPERATE_OCEANIC
+                        }
                     else -> SUBPOLAR_OCEANIC
                 }
             }

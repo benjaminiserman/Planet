@@ -8,7 +8,18 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.math.floor
 
 enum class MonthIndex {
-    JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC;
+    JAN,
+    FEB,
+    MAR,
+    APR,
+    MAY,
+    JUN,
+    JUL,
+    AUG,
+    SEP,
+    OCT,
+    NOV,
+    DEC,
 }
 
 fun <T> (List<T>).monthRange(from: MonthIndex, through: MonthIndex): List<T> {
@@ -30,13 +41,11 @@ data class ClimateDatumSample(
 ) {
 
     companion object {
-        fun Iterable<ClimateDatumSample>.average(): ClimateDatumSample {
-            return ClimateDatumSample(
-                this.map { it.averageTemperature }.average(),
-                this.map { it.insolation }.average(),
-                this.map { it.precipitation }.average(),
-            )
-        }
+        fun Iterable<ClimateDatumSample>.average(): ClimateDatumSample = ClimateDatumSample(
+            this.map { it.averageTemperature }.average(),
+            this.map { it.insolation }.average(),
+            this.map { it.precipitation }.average(),
+        )
     }
 }
 

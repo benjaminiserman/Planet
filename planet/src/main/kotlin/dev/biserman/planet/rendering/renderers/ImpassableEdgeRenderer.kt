@@ -10,11 +10,7 @@ import godot.api.Node
 import godot.api.StandardMaterial3D
 import godot.core.Color
 
-class ImpassableEdgeRenderer(
-    parent: Node,
-    private val lift: Double,
-    override val categories: List<String> = listOf()
-) : DebugRenderer<Planet>(parent) {
+class ImpassableEdgeRenderer(parent: Node, private val lift: Double, override val categories: List<String> = listOf()) : DebugRenderer<Planet>(parent) {
     override val name = "impassable_edges"
 
     override fun generateMeshes(input: Planet): List<MeshData> {
@@ -33,8 +29,8 @@ class ImpassableEdgeRenderer(
         return listOf(
             MeshData(
                 MutMesh(vertices, edges).toWireframe(),
-                StandardMaterial3D().apply { albedoColor = Color(1.0, 0.15, 0.05, 1.0) }
-            )
+                StandardMaterial3D().apply { albedoColor = Color(1.0, 0.15, 0.05, 1.0) },
+            ),
         )
     }
 }

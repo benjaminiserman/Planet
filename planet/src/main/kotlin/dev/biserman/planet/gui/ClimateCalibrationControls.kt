@@ -65,12 +65,7 @@ class ClimateCalibrationControls(private val gui: Gui) {
         }
     }
 
-    private fun bindSlider(
-        sliderName: String,
-        labelName: String,
-        initialValue: Double,
-        update: (Double) -> String,
-    ) {
+    private fun bindSlider(sliderName: String, labelName: String, initialValue: Double, update: (Double) -> String) {
         val slider = slider(sliderName)
         val valueLabel = label(labelName)
         slider.value = initialValue
@@ -78,12 +73,7 @@ class ClimateCalibrationControls(private val gui: Gui) {
         slider.valueChanged.connect { value -> valueLabel.text = update(value) }
     }
 
-    private fun bindSignedSlider(
-        sliderName: String,
-        labelName: String,
-        initialValue: Double,
-        update: (Double) -> Unit,
-    ) = bindSlider(sliderName, labelName, initialValue) {
+    private fun bindSignedSlider(sliderName: String, labelName: String, initialValue: Double, update: (Double) -> Unit) = bindSlider(sliderName, labelName, initialValue) {
         update(it)
         if (it > 0) "+${it.roundToInt()}" else it.roundToInt().toString()
     }
@@ -110,11 +100,9 @@ class ClimateCalibrationControls(private val gui: Gui) {
         modifier("HotspotHeatingModifier").buttonPressed = ClimateRuntimeConfig.hotspotHeating
     }
 
-    private fun formatHalfDegree(value: Double): String =
-        if (value % 1.0 == 0.0) value.roundToInt().toString() else String.format("%.1f", value)
+    private fun formatHalfDegree(value: Double): String = if (value % 1.0 == 0.0) value.roundToInt().toString() else String.format("%.1f", value)
 
-    private fun formatSignedDay(value: Double): String =
-        if (value >= 0) "+${value.roundToInt()} d" else "${value.roundToInt()} d"
+    private fun formatSignedDay(value: Double): String = if (value >= 0) "+${value.roundToInt()} d" else "${value.roundToInt()} d"
 
     private fun seasonForPeriapsis(offset: Double): String {
         // Insolation reaches its orbital maximum when cos(...) == 1:

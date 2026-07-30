@@ -15,18 +15,13 @@ import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
-import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.UtilityExtensions.contains
-import dev.biserman.planet.utils.memo
-import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.floodFillPartitionForest
-import godot.core.Vector3
+import dev.biserman.planet.utils.memo
 import kotlin.collections.average
 import kotlin.math.PI
-import kotlin.math.absoluteValue
-import kotlin.math.pow
-import kotlin.math.sqrt
+import kotlin.random.Random
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {
@@ -49,7 +44,7 @@ class Planet(val seed: Int, val size: Int) {
     val contiguousRegions by memo({ terrainChangeCount }) {
         PlanetRegion(
             this,
-            planetTiles.values.toMutableSet()
+            planetTiles.values.toMutableSet(),
         ).floodFillGroupBy { it.isAboveWater || it.isIceCap }.flatMap { it.value }
     }
 
@@ -57,7 +52,7 @@ class Planet(val seed: Int, val size: Int) {
     val landRegions by memo({ terrainChangeCount }) {
         PlanetRegion(
             this,
-            planetTiles.values.toMutableSet()
+            planetTiles.values.toMutableSet(),
         ).floodFillGroupBy { it.isAboveWater }[true] ?: emptyList()
     }
 
@@ -136,7 +131,7 @@ class Planet(val seed: Int, val size: Int) {
     val warpNoise by memo({ tectonicAge }) {
         VectorWarpNoise(
             tectonicAge,
-            3f
+            3f,
         )
     }
 
@@ -144,7 +139,7 @@ class Planet(val seed: Int, val size: Int) {
         planetTiles.values.sumOf {
             noise.hotspots.sample4d(
                 it.tile.position,
-                tectonicAge.toDouble()
+                tectonicAge.toDouble(),
             )
         }
     }
@@ -158,7 +153,7 @@ class Planet(val seed: Int, val size: Int) {
             projectedMeridianLandCoverage(),
             planetTiles.values
                 .filter { it.isAboveWater }
-                .map { it.tile.position.toGeoPoint().longitudeDegrees to it.tile.area }
+                .map { it.tile.position.toGeoPoint().longitudeDegrees to it.tile.area },
         ) * PI / 180.0
     }
 

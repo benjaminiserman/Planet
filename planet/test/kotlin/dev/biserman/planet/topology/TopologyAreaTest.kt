@@ -6,7 +6,6 @@ import dev.biserman.planet.geometry.reorderVerts
 import dev.biserman.planet.geometry.subdivideIcosahedron
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicAreaScale
 import godot.core.Plane
-import godot.core.Vector3
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -70,15 +69,14 @@ class TopologyAreaTest {
                     result[row * 3 + column] += mass * (
                         (if (row == column) 1.0 else 0.0) -
                             coordinates[row] * coordinates[column]
-                    )
+                        )
                 }
             }
         }
         return result
     }
 
-    private fun dot(left: DoubleArray, right: DoubleArray): Double =
-        left.indices.sumOf { index -> left[index] * right[index] }
+    private fun dot(left: DoubleArray, right: DoubleArray): Double = left.indices.sumOf { index -> left[index] * right[index] }
 
     private fun legacyTileArea(tile: Tile): Double = tile.borders.sumOf { border ->
         val p0 = tile.position

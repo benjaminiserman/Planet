@@ -23,7 +23,7 @@ class Mat3(val m: Array<DoubleArray>) {
         return Mat3(r)
     }
 
-    // Matrix - Matrix 
+    // Matrix - Matrix
     operator fun minus(other: Mat3): Mat3 {
         val r = Array(3) { DoubleArray(3) }
         for (i in 0..2) {
@@ -68,8 +68,8 @@ class Mat3(val m: Array<DoubleArray>) {
     fun inverse(): Mat3 {
         val det =
             m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
-                    m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-                    m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+                m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+                m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
 
         require(abs(det) > 1e-12) { "Matrix is singular (det ~ 0)" }
 
@@ -96,27 +96,25 @@ class Mat3(val m: Array<DoubleArray>) {
             arrayOf(
                 doubleArrayOf(1.0, 0.0, 0.0),
                 doubleArrayOf(0.0, 1.0, 0.0),
-                doubleArrayOf(0.0, 0.0, 1.0)
-            )
+                doubleArrayOf(0.0, 0.0, 1.0),
+            ),
         )
 
         fun zero(): Mat3 = Mat3(
             arrayOf(
                 doubleArrayOf(0.0, 0.0, 0.0),
                 doubleArrayOf(0.0, 0.0, 0.0),
-                doubleArrayOf(0.0, 0.0, 0.0)
-            )
+                doubleArrayOf(0.0, 0.0, 0.0),
+            ),
         )
 
         // Outer product u ⊗ v
-        fun fromOuter(u: Vector3, v: Vector3): Mat3 {
-            return Mat3(
-                arrayOf(
-                    doubleArrayOf(u.x * v.x, u.x * v.y, u.x * v.z),
-                    doubleArrayOf(u.y * v.x, u.y * v.y, u.y * v.z),
-                    doubleArrayOf(u.z * v.x, u.z * v.y, u.z * v.z)
-                )
-            )
-        }
+        fun fromOuter(u: Vector3, v: Vector3): Mat3 = Mat3(
+            arrayOf(
+                doubleArrayOf(u.x * v.x, u.x * v.y, u.x * v.z),
+                doubleArrayOf(u.y * v.x, u.y * v.y, u.y * v.z),
+                doubleArrayOf(u.z * v.x, u.z * v.y, u.z * v.z),
+            ),
+        )
     }
 }

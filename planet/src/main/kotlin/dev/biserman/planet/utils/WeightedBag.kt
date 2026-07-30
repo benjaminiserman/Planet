@@ -34,13 +34,10 @@ class WeightedBag<T> private constructor(private val entries: MutableList<Weight
     val size get() = entries.size
 
     companion object {
-        fun <U, V> Iterable<U>.toWeightedBag(keyFn: (U) -> V, weightFn: (U) -> Number): WeightedBag<V> =
-            WeightedBag(this.map { WeightedBagEntry(keyFn(it), weightFn(it).toDouble()) }.toMutableList())
+        fun <U, V> Iterable<U>.toWeightedBag(keyFn: (U) -> V, weightFn: (U) -> Number): WeightedBag<V> = WeightedBag(this.map { WeightedBagEntry(keyFn(it), weightFn(it).toDouble()) }.toMutableList())
 
-        fun <U> Iterable<U>.toWeightedBag(weightFn: (U) -> Number): WeightedBag<U> =
-            WeightedBag(this.map { WeightedBagEntry(it, weightFn(it).toDouble()) }.toMutableList())
+        fun <U> Iterable<U>.toWeightedBag(weightFn: (U) -> Number): WeightedBag<U> = WeightedBag(this.map { WeightedBagEntry(it, weightFn(it).toDouble()) }.toMutableList())
 
-        fun <U> Iterable<Pair<U, Number>>.toWeightedBag(): WeightedBag<U> =
-            WeightedBag(this.map { WeightedBagEntry(it.first, it.second.toDouble()) }.toMutableList())
+        fun <U> Iterable<Pair<U, Number>>.toWeightedBag(): WeightedBag<U> = WeightedBag(this.map { WeightedBagEntry(it.first, it.second.toDouble()) }.toMutableList())
     }
 }

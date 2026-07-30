@@ -9,7 +9,9 @@ interface TrackedMutable {
 }
 
 class TrackedMutableList<T>(private val list: MutableList<T> = mutableListOf()) :
-    AbstractMutableList<T>(), RandomAccess, TrackedMutable {
+    AbstractMutableList<T>(),
+    RandomAccess,
+    TrackedMutable {
     override var mutationCount = 0
     override val size get() = list.size
     override fun get(index: Int): T = list[index]
@@ -32,7 +34,8 @@ class TrackedMutableList<T>(private val list: MutableList<T> = mutableListOf()) 
 }
 
 class TrackedMutableSet<T>(private val set: MutableSet<T> = mutableSetOf()) :
-    MutableSet<T> by set, TrackedMutable {
+    MutableSet<T> by set,
+    TrackedMutable {
     override var mutationCount = 0
 
     override fun iterator(): MutableIterator<T> {

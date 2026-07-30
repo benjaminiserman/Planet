@@ -11,11 +11,11 @@ import kotlin.math.absoluteValue
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.PROPERTY,
     property = "type",
-    defaultImpl = BiotaDistributionTerrestrial::class
+    defaultImpl = BiotaDistributionTerrestrial::class,
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = BiotaDistributionTerrestrial::class, name = "terrestrial"),
-    JsonSubTypes.Type(value = BiotaDistributionAquatic::class, name = "aquatic")
+    JsonSubTypes.Type(value = BiotaDistributionAquatic::class, name = "aquatic"),
 )
 interface BiotaDistributionMethod {
     fun isValid(tile: PlanetTile): Boolean
@@ -29,15 +29,13 @@ interface BiotaDistributionMethod {
 
 object BiotaDistributionTerrestrial : BiotaDistributionMethod {
     override fun isValid(tile: PlanetTile) = tile.isAboveWater
-    override fun canSpread(from: PlanetTile, to: PlanetTile) =
-        super.canSpread(from, to) &&
-                (to.elevation - from.elevation).absoluteValue < biotaDistributionTerrestrialMaxSlope
+    override fun canSpread(from: PlanetTile, to: PlanetTile) = super.canSpread(from, to) &&
+        (to.elevation - from.elevation).absoluteValue < biotaDistributionTerrestrialMaxSlope
 }
 
 object BiotaDistributionAquatic : BiotaDistributionMethod {
     override fun isValid(tile: PlanetTile) = !tile.isAboveWater
 }
-
 
 class BiotaDistribution(val method: BiotaDistributionMethod, val region: PlanetRegion) {
     fun spread() {

@@ -1,23 +1,12 @@
 package dev.biserman.planet.utils
 
-import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.utils.UtilityExtensions.formatDigits
-import godot.global.GD
 import java.util.PriorityQueue
 
 data class Path<T>(val nodes: List<T>, val distance: Double)
 class QueueNode<T>(val node: T, val priority: Double)
 
 object AStar {
-    fun <T> path(
-        start: T,
-        goal: (T) -> Boolean,
-        heuristic: (T) -> Double,
-        distance: (T, T) -> Double,
-        neighbors: (T) -> Iterable<T>,
-        searchExhaustively: Boolean = false,
-        cutoff: ((T) -> Boolean) = { false }
-    ): Path<T> {
+    fun <T> path(start: T, goal: (T) -> Boolean, heuristic: (T) -> Double, distance: (T, T) -> Double, neighbors: (T) -> Iterable<T>, searchExhaustively: Boolean = false, cutoff: ((T) -> Boolean) = { false }): Path<T> {
         val heuristicResult = heuristic(start)
         val openQueue = PriorityQueue<QueueNode<T>>(Comparator.comparing { it.priority })
             .also { it.add(QueueNode(start, heuristicResult)) }

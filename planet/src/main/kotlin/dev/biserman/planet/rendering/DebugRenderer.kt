@@ -14,7 +14,6 @@ abstract class DebugRenderer<T>(val parent: Node) {
     open val displayName: String
         get() = name.split("_").joinToString(" ") { it.capitalize() }
 
-
     open val categories: List<String> = listOf("feature")
     var visible: Boolean = false
         set(value) {
@@ -42,11 +41,13 @@ abstract class DebugRenderer<T>(val parent: Node) {
 
         val meshData = generateMeshes(input)
         while (meshInstances.size < meshData.size) {
-            meshInstances.add(MeshInstance3D().also {
-                it.setName("${name}_${meshInstances.size}")
-                it.setVisible(visible)
-                parent.addChild(it, forceReadableName = true)
-            })
+            meshInstances.add(
+                MeshInstance3D().also {
+                    it.setName("${name}_${meshInstances.size}")
+                    it.setVisible(visible)
+                    parent.addChild(it, forceReadableName = true)
+                },
+            )
         }
 
         while (meshInstances.size > meshData.size) {
@@ -68,40 +69,41 @@ abstract class DebugRenderer<T>(val parent: Node) {
     abstract fun generateMeshes(input: T): List<MeshData>
 }
 
-class SimpleDebugRenderer<T>(
-    parent: Node,
-    override val name: String,
-    override val categories: List<String> = listOf(),
-    val generateMesh: (T) -> List<MeshData>,
-) : DebugRenderer<T>(parent) {
+class SimpleDebugRenderer<T>(parent: Node, override val name: String, override val categories: List<String> = listOf(), val generateMesh: (T) -> List<MeshData>) : DebugRenderer<T>(parent) {
     override fun generateMeshes(input: T): List<MeshData> = generateMesh(input)
 }
 
-fun vectorMesh(
-    vectors: List<DebugVector>, color: Color = Color.red, drawDot: Boolean = true
-): List<MeshData> {
+fun vectorMesh(vectors: List<DebugVector>, color: Color = Color.red, drawDot: Boolean = true): List<MeshData> {
     val meshData = mutableListOf<MeshData>()
-    meshData.add(MeshData(vectors.toMesh().toWireframe(), StandardMaterial3D().apply {
-        this.setAlbedo(color)
-    }))
+    meshData.add(
+        MeshData(
+            vectors.toMesh().toWireframe(),
+            StandardMaterial3D().apply {
+                this.setAlbedo(color)
+            },
+        ),
+    )
 
     if (drawDot) {
-        meshData.add(MeshData(vectors.map { it.origin }.toMesh(), StandardMaterial3D().apply {
-            this.setAlbedo(color)
-            this.usePointSize = true
-            this.setPointSize(3.5f)
-        }))
+        meshData.add(
+            MeshData(
+                vectors.map { it.origin }.toMesh(),
+                StandardMaterial3D().apply {
+                    this.setAlbedo(color)
+                    this.usePointSize = true
+                    this.setPointSize(3.5f)
+                },
+            ),
+        )
     }
 
     return meshData
 }
 
-fun rotVectorMesh(
-    vectors: List<Pair<DebugVector, Double>>, color: Color = Color.red, drawDot: Boolean = true
-): List<MeshData> = vectorMesh(vectors.map { it.first }, color, drawDot).plus(
+fun rotVectorMesh(vectors: List<Pair<DebugVector, Double>>, color: Color = Color.red, drawDot: Boolean = true): List<MeshData> = vectorMesh(vectors.map { it.first }, color, drawDot).plus(
     vectorMesh(
         vectors.map { it.first.crossOff(it.second) },
         color,
-        drawDot = false
-    )
+        drawDot = false,
+    ),
 )

@@ -19,22 +19,14 @@ import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
 import godot.core.Vector3
 
-data class DivergenceSignal(
-    val strength: Double,
-    val divergingPlates: List<TectonicPlate>
-)
+data class DivergenceSignal(val strength: Double, val divergingPlates: List<TectonicPlate>)
 
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
     scope = DivergenceZone::class,
-    property = "id"
+    property = "id",
 )
-class DivergenceZone(
-    val planet: Planet,
-    val tileId: Int,
-    val strength: Double,
-    val divergingPlates: List<TectonicPlate>
-) {
+class DivergenceZone(val planet: Planet, val tileId: Int, val strength: Double, val divergingPlates: List<TectonicPlate>) {
     @get:JsonIgnore
     val tile get() = planet.topology.tiles[tileId]
 
@@ -44,18 +36,16 @@ class DivergenceZone(
             val towardPlateCenter = divergingPlate.region.center - tile.position
             PointForce(
                 tile.position,
-                if (towardPlateCenter.lengthSquared() == 0.0) Vector3.ZERO
-                else towardPlateCenter.normalized() * tile.tectonicArea() * TectonicGlobals.ridgePushStrength
+                if (towardPlateCenter.lengthSquared() == 0.0) {
+                    Vector3.ZERO
+                } else {
+                    towardPlateCenter.normalized() * tile.tectonicArea() * TectonicGlobals.ridgePushStrength
+                },
             )
         }
 
     companion object {
-        fun divergeTileOrFillGap(
-            planet: Planet,
-            tile: Tile,
-            newTileMap: MutableMap<Tile, PlanetTile?>,
-            divergenceSignal: DivergenceSignal?
-        ): Pair<PlanetTile, DivergenceZone?> {
+        fun divergeTileOrFillGap(planet: Planet, tile: Tile, newTileMap: MutableMap<Tile, PlanetTile?>, divergenceSignal: DivergenceSignal?): Pair<PlanetTile, DivergenceZone?> {
             // divergence & gap filling
             val newPlanetTile = PlanetTile(planet, tile.id)
             val searchDistance = planet.topology.averageRadius * divergenceSearchRadius
@@ -68,7 +58,7 @@ class DivergenceZone(
             val krigingElevation = Kriging.interpolate(
                 nearestOldTiles.map { it.tile.position to it.elevation },
                 tile.position,
-                tectonicElevationVariogram
+                tectonicElevationVariogram,
             )
 
             val nearestTileDistance =
@@ -77,7 +67,7 @@ class DivergenceZone(
             newPlanetTile.elevation = lerp(
                 krigingElevation + (divergencePatchUplift / planet.topology.averageRadius) * nearestTileDistance,
                 divergedCrustHeight,
-                divergenceStrength * divergedCrustLerp
+                divergenceStrength * divergedCrustLerp,
             )
             newPlanetTile.springDisplacement = planet.getTile(tile).springDisplacement
             newPlanetTile.stoneColumn.divergeColumn(newPlanetTile)
@@ -89,19 +79,21 @@ class DivergenceZone(
                         planet,
                         tile.id,
                         divergenceStrength,
-                        divergenceSignal?.divergingPlates ?: emptyList()
+                        divergenceSignal?.divergingPlates ?: emptyList(),
                     )
                 } else {
                     newPlanetTile.stoneColumn =
-                        (tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
-                            ?.stoneColumn
-                            ?: newPlanetTile.stoneColumn).copy()
+                        (
+                            tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
+                                ?.stoneColumn
+                                ?: newPlanetTile.stoneColumn
+                            ).copy()
                     newPlanetTile.formationTime =
                         tile.tiles.map { newTileMap[it]?.formationTime }
                             .groupBy { it }
                             .maxByOrNull { it.value.size }?.key ?: planet.tectonicAge
                     null
-                }
+                },
             )
         }
     }

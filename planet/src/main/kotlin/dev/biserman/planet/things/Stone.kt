@@ -1,12 +1,9 @@
 package dev.biserman.planet.things
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
-import com.fasterxml.jackson.annotation.JsonIdentityReference
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
-import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.DedupeDuplicateIds
 import dev.biserman.planet.utils.DedupingObjectIdResolver
@@ -26,7 +23,8 @@ enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Conce
     MantleVolcanic(StoneType.Igneous, listOf(Concept.MAGMA)),
     SubductionVolcanic(StoneType.Igneous, listOf(Concept.MAGMA)),
     Primordial(StoneType.Igneous, listOf(Concept.ANCIENT, Concept.DEEP)),
-    Meteoric(StoneType.Meteoric, listOf(Concept.COMET));
+    Meteoric(StoneType.Meteoric, listOf(Concept.COMET)),
+    ;
 
     val metamorphicForm get() = metamorphicMap[this]
 
@@ -36,7 +34,7 @@ enum class StonePlacementType(val stoneType: StoneType, val concepts: List<Conce
             OceanicDeposition to MetamorphicOceanic,
             MantleVolcanic to MetamorphicMantle,
             SubductionVolcanic to MetamorphicSubduction,
-            Primordial to MetamorphicPrimordial
+            Primordial to MetamorphicPrimordial,
         )
     }
 }
@@ -45,7 +43,7 @@ enum class StoneType {
     Sedimentary,
     Metamorphic,
     Igneous,
-    Meteoric
+    Meteoric,
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
@@ -53,23 +51,19 @@ interface StonePlacementCondition {
     fun canPlace(planetTile: PlanetTile): Boolean
 
     class MantleConvectionMagnitudeAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() > threshold
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() > threshold
     }
 
     class MantleConvectionMagnitudeBelow(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() < threshold
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.noise.mantleConvection.sampleAt(planetTile).length() < threshold
     }
 
     class EssenceAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.planet.noise.essence.sample3d(planetTile.tile.position) > threshold
+        override fun canPlace(planetTile: PlanetTile) = planetTile.planet.noise.essence.sample3d(planetTile.tile.position) > threshold
     }
 
     class LocalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile): Boolean =
-            planetTile.planet.noise.hotspots.sampleAt(planetTile) > threshold
+        override fun canPlace(planetTile: PlanetTile): Boolean = planetTile.planet.noise.hotspots.sampleAt(planetTile) > threshold
     }
 
     class GlobalHotspotActivityAbove(val threshold: Double) : StonePlacementCondition {
@@ -97,8 +91,7 @@ interface StonePlacementCondition {
     }
 
     class ContinentialityAround(val center: Int, val distance: Int) : StonePlacementCondition {
-        override fun canPlace(planetTile: PlanetTile) =
-            planetTile.continentiality in (center - distance)..(center + distance)
+        override fun canPlace(planetTile: PlanetTile) = planetTile.continentiality in (center - distance)..(center + distance)
     }
 
     class TimeSinceMeteorImpactBelow(val threshold: Int) : StonePlacementCondition {
@@ -118,18 +111,12 @@ interface StonePlacementCondition {
             { random: Random -> ContinentialityAbove(random.nextInt(-10, 10)) } to 1,
             { random: Random -> ContinentialityBelow(random.nextInt(-10, 10)) } to 1,
             { random: Random -> ContinentialityAround(random.nextInt(-10, 10), random.nextInt(1, 5)) } to 1,
-            { random: Random -> TimeSinceMeteorImpactBelow(random.nextInt(2, 20)) } to 1
+            { random: Random -> TimeSinceMeteorImpactBelow(random.nextInt(2, 20)) } to 1,
         )
     }
 }
 
-data class StoneComponent(
-    val debugName: String,
-    val acidityModifier: Double,
-    val fertilityModifier: Double,
-    val moistureCapacityMultiplier: Double,
-    val placementType: StonePlacementType,
-) : ResourceComponent {
+data class StoneComponent(val debugName: String, val acidityModifier: Double, val fertilityModifier: Double, val moistureCapacityMultiplier: Double, val placementType: StonePlacementType) : ResourceComponent {
     @get:JsonIgnore
     val type get() = placementType.stoneType
 }
@@ -139,18 +126,16 @@ data class StoneComponent(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
     scope = Resource::class,
     property = "id",
-    resolver = DedupingObjectIdResolver::class
+    resolver = DedupingObjectIdResolver::class,
 )
-class Stone(
-    components: MutableComponentSet<ResourceComponent>,
-    colors: List<Color>,
-    concepts: List<Concept>,
-) : Resource(
-    components, colors, concepts
-) {
+class Stone(components: MutableComponentSet<ResourceComponent>, colors: List<Color>, concepts: List<Concept>) :
+    Resource(
+        components,
+        colors,
+        concepts,
+    ) {
     @delegate:JsonIgnore
     val stoneComponent by lazy { components.get<StoneComponent>() ?: throw IllegalStateException("Stone has no stone component") }
 
-    override fun toString() =
-        "Stone(stoneComponent=$stoneComponent,colors=${colors.map { it.toHtml(false) }},concepts=$concepts)"
+    override fun toString() = "Stone(stoneComponent=$stoneComponent,colors=${colors.map { it.toHtml(false) }},concepts=$concepts)"
 }

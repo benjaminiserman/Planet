@@ -47,7 +47,7 @@ class BrushTool(private val gui: Gui) {
 
         Target.entries.forEach {
             targetOptionButton.addItem(
-                it.name.lowercase().replace('_', ' ').replaceFirstChar { char -> char.titlecase() }
+                it.name.lowercase().replace('_', ' ').replaceFirstChar { char -> char.titlecase() },
             )
         }
         targetOptionButton.select(0)
@@ -177,40 +177,46 @@ class BrushTool(private val gui: Gui) {
         return result
     }
 
-    private fun paintValue(planetTile: PlanetTile, distance: Int, maxDistance: Int): Boolean =
-        when (target) {
-            Target.ELEVATION -> {
-                val elevation = elevationValue.value
-                val smoothness = elevationSmoothnessValue.value / 100.0
-                val strength = if (maxDistance == 0) 1.0
-                else 1.0 - smoothness * distance / (maxDistance + 1.0)
-                val adjustedElevation = planetTile.elevation + (elevation - planetTile.elevation) * strength
-                if (planetTile.elevation == adjustedElevation) false else {
-                    planetTile.elevation = adjustedElevation
-                    true
-                }
+    private fun paintValue(planetTile: PlanetTile, distance: Int, maxDistance: Int): Boolean = when (target) {
+        Target.ELEVATION -> {
+            val elevation = elevationValue.value
+            val smoothness = elevationSmoothnessValue.value / 100.0
+            val strength = if (maxDistance == 0) {
+                1.0
+            } else {
+                1.0 - smoothness * distance / (maxDistance + 1.0)
             }
-            Target.TECTONIC_PLATE -> {
-                val plate = plates.getOrNull(plateValue.selected)
-                if (planetTile.tectonicPlate == plate) false else {
-                    planetTile.tectonicPlate = plate
-                    true
-                }
-            }
-            Target.BIOTA_DISTRIBUTION -> {
-                val distribution = biotaDistributions.getOrNull(biotaValue.selected)
-                val existing = planetTile.planet.biotaDistributions.filter { planetTile in it.region }
-                if (existing.size == (if (distribution == null) 0 else 1) &&
-                    existing.firstOrNull() == distribution
-                ) {
-                    false
-                } else {
-                    existing.forEach { it.region.tiles.remove(planetTile) }
-                    distribution?.region?.tiles?.add(planetTile)
-                    true
-                }
+            val adjustedElevation = planetTile.elevation + (elevation - planetTile.elevation) * strength
+            if (planetTile.elevation == adjustedElevation) {
+                false
+            } else {
+                planetTile.elevation = adjustedElevation
+                true
             }
         }
+        Target.TECTONIC_PLATE -> {
+            val plate = plates.getOrNull(plateValue.selected)
+            if (planetTile.tectonicPlate == plate) {
+                false
+            } else {
+                planetTile.tectonicPlate = plate
+                true
+            }
+        }
+        Target.BIOTA_DISTRIBUTION -> {
+            val distribution = biotaDistributions.getOrNull(biotaValue.selected)
+            val existing = planetTile.planet.biotaDistributions.filter { planetTile in it.region }
+            if (existing.size == (if (distribution == null) 0 else 1) &&
+                existing.firstOrNull() == distribution
+            ) {
+                false
+            } else {
+                existing.forEach { it.region.tiles.remove(planetTile) }
+                distribution?.region?.tiles?.add(planetTile)
+                true
+            }
+        }
+    }
 
     private fun pickValue(tile: Tile) {
         val planetTile = Main.instance.planet.getTile(tile)

@@ -10,11 +10,7 @@ object Kriging {
         nugget + sill * (1.0 - exp(-h / range))
     }
 
-    fun interpolate(
-        samples: List<Pair<Vector3, Double>>,
-        target: Vector3,
-        variogram: (Double) -> Double = variogram(1.0, 1.0, 0.0)
-    ): Double {
+    fun interpolate(samples: List<Pair<Vector3, Double>>, target: Vector3, variogram: (Double) -> Double = variogram(1.0, 1.0, 0.0)): Double {
         val n = samples.size
         if (n == 0) return 0.0
         if (n == 1) return samples[0].second
@@ -60,8 +56,12 @@ object Kriging {
             for (j in i + 1 until n) {
                 if (kotlin.math.abs(M[j][i]) > kotlin.math.abs(M[max][i])) max = j
             }
-            val tmpRow = M[i]; M[i] = M[max]; M[max] = tmpRow
-            val tmpVal = x[i]; x[i] = x[max]; x[max] = tmpVal
+            val tmpRow = M[i]
+            M[i] = M[max]
+            M[max] = tmpRow
+            val tmpVal = x[i]
+            x[i] = x[max]
+            x[max] = tmpVal
 
             // Normalize pivot row
             val pivot = M[i][i]

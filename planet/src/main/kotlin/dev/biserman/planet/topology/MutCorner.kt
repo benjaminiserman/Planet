@@ -12,10 +12,4 @@ interface Corner {
     fun vectorTo(corner: MutCorner) = corner.position - position
 }
 
-class MutCorner(
-    override val id: Int,
-    override var position: Vector3,
-    override val corners: MutableList<MutCorner> = mutableListOf(),
-    override val borders: MutableList<MutBorder> = mutableListOf(),
-    override val tiles: MutableList<MutTile> = mutableListOf()
-) : Corner
+class MutCorner(override val id: Int, override var position: Vector3, override val corners: MutableList<MutCorner> = mutableListOf(), override val borders: MutableList<MutBorder> = mutableListOf(), override val tiles: MutableList<MutTile> = mutableListOf()) : Corner

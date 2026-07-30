@@ -1,9 +1,6 @@
 package dev.biserman.planet.topology
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import dev.biserman.planet.geometry.Ray
 import dev.biserman.planet.geometry.Sphere
 import dev.biserman.planet.geometry.triArea
@@ -63,11 +60,6 @@ interface Tile {
     fun borderFor(neighbor: Tile) = borders.first { neighbor.borders.contains(it) }
 }
 
-class MutTile(
-    override val id: Int,
-    @JsonIgnore override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(),
-    @JsonIgnore override var borders: MutableList<MutBorder> = mutableListOf(),
-    @JsonIgnore override var tiles: MutableList<MutTile> = mutableListOf(),
-) : Tile {
+class MutTile(override val id: Int, @JsonIgnore override var corners: TrackedMutableList<MutCorner> = mutableListOf<MutCorner>().toTracked(), @JsonIgnore override var borders: MutableList<MutBorder> = mutableListOf(), @JsonIgnore override var tiles: MutableList<MutTile> = mutableListOf()) : Tile {
     override val position by memo({ corners.mutationCount }) { averagePosition }
 }

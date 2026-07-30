@@ -14,95 +14,74 @@ enum class Height { CLOSE, NEAR_CLOSE, CLOSE_MID, MID, OPEN_MID, NEAR_OPEN, OPEN
 enum class Depth { FRONT, NEAR_FRONT, CENTRAL, NEAR_BACK, BACK }
 enum class Place { LABIAL, BILABIAL, DENTAL, LABIODENTAL, ALVEOLAR, POSTALVEOLAR, PALATAL, LABIOVELAR, VELAR, UVULAR, GLOTTAL, RETROFLEX }
 
-data class Glide(
-    val place: Place,
-    val manner: Manner,
-    val isOnGlide: Boolean,
-) {
-    fun display(segment: Segment): String {
-        return when (segment.data.type) {
-            SegmentType.CONSONANT -> when (manner) {
-                Manner.SEMIVOWEL -> when (place) {
-                    Place.PALATAL, Place.ALVEOLAR -> "ʲ"
-                    Place.LABIAL, Place.LABIOVELAR -> "ʷ"
-                    Place.VELAR -> "ˠ"
-                    else -> "?s"
-                }
-                Manner.LIQUID -> when (place) {
-                    Place.ALVEOLAR -> "ˡ"
-                    Place.RETROFLEX -> "ʳ"
-                    else -> "?l"
-                }
-                Manner.FRICATIVE -> "͡" + SyllableConstructor.segments.values
-                    .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
-                    .display
-                else -> "?f"
-            }
-            SegmentType.VOWEL -> when {
-                manner != Manner.SEMIVOWEL -> "?"
-                place == Place.PALATAL -> "i"
-                place == Place.LABIAL ->
-                    if (isOnGlide) "u"
-                    else "o"
-                else -> "?v"
-            } + "̯"
-        }
-    }
-
-    fun symbol(segment: Segment) = when (manner) {
+data class Glide(val place: Place, val manner: Manner, val isOnGlide: Boolean) {
+    fun display(segment: Segment): String = when (segment.data.type) {
+        SegmentType.CONSONANT -> when (manner) {
             Manner.SEMIVOWEL -> when (place) {
-                Place.PALATAL, Place.ALVEOLAR -> "j"
-                Place.LABIAL, Place.LABIOVELAR -> "w"
-                Place.VELAR -> "ɰ"
+                Place.PALATAL, Place.ALVEOLAR -> "ʲ"
+                Place.LABIAL, Place.LABIOVELAR -> "ʷ"
+                Place.VELAR -> "ˠ"
                 else -> "?s"
             }
             Manner.LIQUID -> when (place) {
-                Place.ALVEOLAR -> "l"
-                Place.RETROFLEX -> "r"
+                Place.ALVEOLAR -> "ˡ"
+                Place.RETROFLEX -> "ʳ"
                 else -> "?l"
             }
-            Manner.FRICATIVE -> SyllableConstructor.segments.values
-                .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
-                .symbol
+            Manner.FRICATIVE ->
+                "͡" + SyllableConstructor.segments.values
+                    .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                    .display
             else -> "?f"
         }
+        SegmentType.VOWEL -> when {
+            manner != Manner.SEMIVOWEL -> "?"
+            place == Place.PALATAL -> "i"
+            place == Place.LABIAL ->
+                if (isOnGlide) {
+                    "u"
+                } else {
+                    "o"
+                }
+            else -> "?v"
+        } + "̯"
+    }
+
+    fun symbol(segment: Segment) = when (manner) {
+        Manner.SEMIVOWEL -> when (place) {
+            Place.PALATAL, Place.ALVEOLAR -> "j"
+            Place.LABIAL, Place.LABIOVELAR -> "w"
+            Place.VELAR -> "ɰ"
+            else -> "?s"
+        }
+        Manner.LIQUID -> when (place) {
+            Place.ALVEOLAR -> "l"
+            Place.RETROFLEX -> "r"
+            else -> "?l"
+        }
+        Manner.FRICATIVE ->
+            SyllableConstructor.segments.values
+                .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                .symbol
+        else -> "?f"
+    }
 
     companion object {
         fun from(data: SegmentData, isOnGlide: Boolean): Glide = Glide(data.place!!, data.manner!!, isOnGlide)
     }
 }
 
-data class SegmentData(
-    val type: SegmentType,
-    val place: Place? = null,
-    val manner: Manner? = null,
-    val voiced: Boolean? = null,
-    val isAspirated: Boolean? = null,
-    val isEjective: Boolean? = null,
-    val height: Height? = null,
-    val depth: Depth? = null,
-    val rounded: Boolean? = null,
-    val consonantGlide: Glide? = null,
-    val onGlide: Glide? = null,
-    val offGlide: Glide? = null,
-    val nasalized: Boolean? = null,
-    val lengthened: Boolean? = null,
-) {
+data class SegmentData(val type: SegmentType, val place: Place? = null, val manner: Manner? = null, val voiced: Boolean? = null, val isAspirated: Boolean? = null, val isEjective: Boolean? = null, val height: Height? = null, val depth: Depth? = null, val rounded: Boolean? = null, val consonantGlide: Glide? = null, val onGlide: Glide? = null, val offGlide: Glide? = null, val nasalized: Boolean? = null, val lengthened: Boolean? = null) {
     fun strip() = this.copy(consonantGlide = null, onGlide = null, offGlide = null)
 }
 
-data class Segment(
-    val symbol: String,
-    val data: SegmentData,
-    val prevalence: Double
-) {
-    fun copyData(transform: (SegmentData) -> SegmentData) =
-        transform(data).let { transformed ->
-            val found = SyllableConstructor.segments.values.find {
-                it.data == transformed.strip()
-            }!!
-            Segment(found.symbol, transformed, found.prevalence)
-        }
+data class Segment(val symbol: String, val data: SegmentData, val prevalence: Double) {
+    fun copyData(transform: (SegmentData) -> SegmentData) = transform(data).let { transformed ->
+        val found = SyllableConstructor.segments.values.find {
+            it.data == transformed.strip()
+        }!!
+        Segment(found.symbol, transformed, found.prevalence)
+    }
 
     val display by lazy {
         val onGlide = data.onGlide?.display(this) ?: ""
@@ -114,46 +93,17 @@ data class Segment(
     }
 }
 
-data class PhonemeData(
-    val place: String? = null,
-    val manner: String? = null,
-    val voiced: Boolean? = null,
-    val aspirated: Boolean? = null,
-    val ejective: Boolean? = null,
-    val height: String? = null,
-    val depth: String? = null,
-    val rounded: Boolean? = null,
-    val prevalence: Double? = null
-)
+data class PhonemeData(val place: String? = null, val manner: String? = null, val voiced: Boolean? = null, val aspirated: Boolean? = null, val ejective: Boolean? = null, val height: String? = null, val depth: String? = null, val rounded: Boolean? = null, val prevalence: Double? = null)
 
-data class PhonemeJson(
-    val consonants: Map<String, PhonemeData>,
-    val vowels: Map<String, PhonemeData>
-)
+data class PhonemeJson(val consonants: Map<String, PhonemeData>, val vowels: Map<String, PhonemeData>)
 
-data class RomanizationData(
-    val consonants: Map<String, String>
-)
+data class RomanizationData(val consonants: Map<String, String>)
 
-data class ComplexityTier(
-    val allowedConsonants: String,
-    val allowedVowels: String,
-    val affricates: String,
-    val rewrite_rules: Map<String, String>,
-    val forbidden_cluster_rules: List<String>,
-    val syllables: Map<String, Int>
-)
+data class ComplexityTier(val allowedConsonants: String, val allowedVowels: String, val affricates: String, val rewrite_rules: Map<String, String>, val forbidden_cluster_rules: List<String>, val syllables: Map<String, Int>)
 
-data class LanguageSettingsJson(
-    val romanization: RomanizationData,
-    val complexity_tiers: List<ComplexityTier>
-)
+data class LanguageSettingsJson(val romanization: RomanizationData, val complexity_tiers: List<ComplexityTier>)
 
-class Language(
-    val availableConsonants: Set<Segment>,
-    val availableVowels: Set<Segment>,
-    val syllablePatterns: List<String>
-) {
+class Language(val availableConsonants: Set<Segment>, val availableVowels: Set<Segment>, val syllablePatterns: List<String>) {
     val generateSyllables: (String) -> List<String> = memoize { pattern: String ->
         return@memoize when {
             pattern.isEmpty() -> listOf("")
@@ -161,7 +111,7 @@ class Language(
                 val optional = pattern.substring(1, pattern.indexOf(')'))
                 generateSyllables(optional).plus("").flatMap { option ->
                     generateSyllables(
-                        pattern.substring(pattern.indexOf(')') + 1)
+                        pattern.substring(pattern.indexOf(')') + 1),
                     ).map { option + it }
                 }
             }
@@ -170,8 +120,8 @@ class Language(
                 options.flatMap { option ->
                     generateSyllables(
                         pattern.substring(
-                            pattern.indexOf(']') + 1
-                        )
+                            pattern.indexOf(']') + 1,
+                        ),
                     ).map { option + it }
                 }
             }
@@ -214,9 +164,9 @@ object SyllableConstructor {
                     nasalized = null,
                     lengthened = null,
                 ),
-                prevalence = data.prevalence ?: 0.0
+                prevalence = data.prevalence ?: 0.0,
             )
-        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
+        } // .filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
 
         val vowels = phonemeJson.vowels.map { (symbol, data) ->
             Segment(
@@ -237,9 +187,9 @@ object SyllableConstructor {
                     nasalized = null,
                     lengthened = null,
                 ),
-                prevalence = data.prevalence ?: 0.0
+                prevalence = data.prevalence ?: 0.0,
             )
-        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
+        } // .filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 
         (consonants + vowels).associateBy { it.symbol }
     }
@@ -278,7 +228,8 @@ object SyllableConstructor {
         "NB" to { it.data.depth == Depth.NEAR_BACK },
         "BA" to { it.data.depth == Depth.BACK },
         "R" to { it.data.rounded == true },
-        "NR" to { it.data.rounded == false })
+        "NR" to { it.data.rounded == false },
+    )
 
     val symbolResults: (String) -> List<String> = memoize { symbol ->
         segments.values.filter { topLevelSymbolsFilters[symbol[0]]!!(it) }.map { it.symbol }

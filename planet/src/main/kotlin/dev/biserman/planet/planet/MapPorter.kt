@@ -13,27 +13,22 @@ import kotlin.reflect.full.memberProperties
 object MapPorter {
     data class HslColor(val h: Double, val s: Double, val l: Double, val a: Double)
 
-    data class Variable<T>(
-        val name: String,
-        val fetch: (PlanetTile) -> T,
-        val apply: (PlanetTile, T) -> Unit
-    ) {
+    data class Variable<T>(val name: String, val fetch: (PlanetTile) -> T, val apply: (PlanetTile, T) -> Unit) {
         constructor(prop: KMutableProperty1<PlanetTile, T>) : this(
             prop.name,
             { prop.get(it) },
-            { tile, value -> prop.set(tile, value) }
+            { tile, value -> prop.set(tile, value) },
         )
     }
 
-    data class Channel<T>(
-        val name: String,
-        val fetch: (Color) -> T,
-        val apply: (Color, T) -> Color
-    ) {
+    data class Channel<T>(val name: String, val fetch: (Color) -> T, val apply: (Color, T) -> Color) {
         constructor(prop: KMutableProperty1<Color, T>) : this(
             prop.name,
             { prop.get(it) },
-            { color, value -> prop.set(color, value); color }
+            { color, value ->
+                prop.set(color, value)
+                color
+            },
         )
     }
 
@@ -47,7 +42,10 @@ object MapPorter {
         "h" to Channel(Color::h),
         "s" to Channel(Color::s),
         "v" to Channel(Color::v),
-        "l" to Channel("l", { it.l }, { color, value -> color.l = value; color })
+        "l" to Channel("l", { it.l }, { color, value ->
+            color.l = value
+            color
+        }),
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -81,7 +79,6 @@ object MapPorter {
     }
 
     fun export(planet: Planet, filename: String) {
-
     }
 
     fun hslToHsv(h: RealT, s: RealT, l: RealT, a: Double = 1.0): Color {
@@ -90,7 +87,7 @@ object MapPorter {
             h,
             if (v == 0.0) 0.0 else 2 * (1 - l / v),
             l + s * min(l, 1 - l),
-            a
+            a,
         )
     }
 

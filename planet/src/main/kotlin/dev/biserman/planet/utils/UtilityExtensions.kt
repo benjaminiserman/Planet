@@ -30,18 +30,15 @@ object UtilityExtensions {
      *
      * @param sets The sets.
      */
-    fun <T> cartesianProduct(vararg sets: Set<T>) =
-        sets
-            .fold(listOf(listOf<T>())) { acc, set ->
-                acc.flatMap { list -> set.map { element -> list + element } }
-            }
-            .toSet()
+    fun <T> cartesianProduct(vararg sets: Set<T>) = sets
+        .fold(listOf(listOf<T>())) { acc, set ->
+            acc.flatMap { list -> set.map { element -> list + element } }
+        }
+        .toSet()
 
-    fun <T> (Collection<T>).cartesianProduct(vararg collections: Collection<T>): Set<List<T>> =
-        cartesianProduct(this.toSet(), *collections.map { it.toSet() }.toTypedArray())
+    fun <T> (Collection<T>).cartesianProduct(vararg collections: Collection<T>): Set<List<T>> = cartesianProduct(this.toSet(), *collections.map { it.toSet() }.toTypedArray())
 
-    fun <T> (Set<T>).cartesianProduct(vararg collections: Set<T>): Set<List<T>> =
-        cartesianProduct(this.toSet(), *collections)
+    fun <T> (Set<T>).cartesianProduct(vararg collections: Set<T>): Set<List<T>> = cartesianProduct(this.toSet(), *collections)
 
     operator fun <T> (Pair<T, T>).contains(element: T) = first == element || second == element
 }

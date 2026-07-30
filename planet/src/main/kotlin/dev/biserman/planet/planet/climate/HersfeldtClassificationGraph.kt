@@ -11,10 +11,7 @@ package dev.biserman.planet.planet.climate
 object HersfeldtClassificationGraph {
     const val MAX_SCORED_DISTANCE = 5
 
-    data class AdjacencyMatrix(
-        val ids: List<String>,
-        val rows: List<List<Boolean>>,
-    )
+    data class AdjacencyMatrix(val ids: List<String>, val rows: List<List<Boolean>>)
 
     val classificationIds: Set<String> = setOf(
         "Aha", "Ahc", "Ahh", "Ahe", "Ada", "Adc", "Adh", "Ade",
@@ -221,8 +218,7 @@ object HersfeldtClassificationGraph {
         )
     }
 
-    fun areAdjacent(firstId: String, secondId: String): Boolean =
-        secondId in adjacency[firstId].orEmpty()
+    fun areAdjacent(firstId: String, secondId: String): Boolean = secondId in adjacency[firstId].orEmpty()
 
     fun distance(firstId: String, secondId: String): Int {
         if (firstId == secondId) return 0

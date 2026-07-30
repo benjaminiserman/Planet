@@ -12,7 +12,7 @@ class RiverNetworkTest {
         val lowerRiver = "downstream" to "mouth"
 
         val counts = upstreamSegmentCounts(
-            listOf(firstTributary, secondTributary, joinedRiver, lowerRiver)
+            listOf(firstTributary, secondTributary, joinedRiver, lowerRiver),
         )
 
         assertEquals(0, counts[firstTributary])

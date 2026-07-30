@@ -22,13 +22,9 @@ import godot.global.GD
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.IntSequenceGenerator::class,
     scope = TectonicPlate::class,
-    property = "serId"
+    property = "serId",
 )
-class TectonicPlate(
-    val planet: Planet,
-    val region: PlanetRegion = PlanetRegion(planet),
-    var name: String = DebugNameGenerator.generateName(planet.random)
-) {
+class TectonicPlate(val planet: Planet, val region: PlanetRegion = PlanetRegion(planet), var name: String = DebugNameGenerator.generateName(planet.random)) {
     val biomeColor = Color.fromHsv(Main.debugRandom.nextDouble(0.15, 0.4), Main.debugRandom.nextDouble(0.7, 0.9), 0.5, 1.0)
     val debugColor = Color.randomHsv()
 
@@ -45,7 +41,7 @@ class TectonicPlate(
         try {
             val unconstrainedPole = eulerPole(
                 torque,
-                tiles.map { tile -> tile.tile.position to tile.tile.tectonicArea() }
+                tiles.map { tile -> tile.tile.position to tile.tile.tectonicArea() },
             )
             if (!unconstrainedPole.isFinite()) {
                 GD.print("Discarding non-finite Euler pole for plate $id (${tiles.size} tiles)")

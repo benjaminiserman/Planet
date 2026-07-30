@@ -13,11 +13,10 @@ import godot.api.MeshInstance3D
 //
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
-
 @RegisterClass
 class Rotate : MeshInstance3D() {
-	@RegisterFunction
-	override fun _process(delta: Double) {
-		rotation += delta / 10
-	}
+    @RegisterFunction
+    override fun _process(delta: Double) {
+        rotation += delta / 10
+    }
 }

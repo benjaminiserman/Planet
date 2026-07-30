@@ -11,7 +11,7 @@ import godot.api.VBoxContainer
 import godot.core.connect
 
 @RegisterClass
-class ShowSettingsButton() : OptionButton() {
+class ShowSettingsButton : OptionButton() {
     val mapLayerButtons = mutableListOf<MapLayerCheckButton>()
     val categoriesIdMap = mutableMapOf<Int, String>()
     var settingsCategory = "none"
@@ -43,14 +43,17 @@ class ShowSettingsButton() : OptionButton() {
     fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any) {
         val defaultValue = "default" in categories
         toggles[toggle] = defaultValue
-        mapLayerButtons += MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
-            toggles[toggle] = it
-            onClick(it)
-        }).also {
-            it.text = toggle
-            it.setVisible(false)
-            settingsOptionsList.addChild(it)
-        }, categories)
+        mapLayerButtons += MapLayerCheckButton(
+            ToggleButton(default = defaultValue, onClick = {
+                toggles[toggle] = it
+                onClick(it)
+            }).also {
+                it.text = toggle
+                it.setVisible(false)
+                settingsOptionsList.addChild(it)
+            },
+            categories,
+        )
     }
 
     fun resetToggles() {
@@ -78,7 +81,7 @@ class ShowSettingsButton() : OptionButton() {
             "biome",
             "climate",
             "tectonics",
-            "debug"
+            "debug",
         ).forEachIndexed { index, category ->
             this.addItem("Settings: ${category.split("_").joinToString(" ") { it.capitalize() }}", index)
             categoriesIdMap[index] = category

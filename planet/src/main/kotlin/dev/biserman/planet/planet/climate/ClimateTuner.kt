@@ -12,7 +12,8 @@ import kotlin.math.max
 private enum class ClimateTunerObjective(val cliName: String) {
     GLOBAL("global"),
     BOREAL_TRANSITION("boreal-transition"),
-    MEDITERRANEAN_F1("mediterranean-f1");
+    MEDITERRANEAN_F1("mediterranean-f1"),
+    ;
 
     companion object {
         fun parse(value: String?) = entries.firstOrNull { it.cliName == (value ?: GLOBAL.cliName) }
@@ -20,65 +21,15 @@ private enum class ClimateTunerObjective(val cliName: String) {
     }
 }
 
-private data class ClimateTunerOptions(
-    val planetFile: File,
-    val referenceFile: File,
-    val configFile: File,
-    val tuningSpaceFile: File,
-    val outputFile: File,
-    val reportFile: File,
-    val maxEvaluations: Int,
-    val selectedParameters: Set<String>?,
-    val interactionPairs: List<Pair<String, String>>,
-    val objective: ClimateTunerObjective,
-    val maxMeanConditionDistanceRegression: Double,
-    val apply: Boolean,
-    val resume: Boolean,
-)
+private data class ClimateTunerOptions(val planetFile: File, val referenceFile: File, val configFile: File, val tuningSpaceFile: File, val outputFile: File, val reportFile: File, val maxEvaluations: Int, val selectedParameters: Set<String>?, val interactionPairs: List<Pair<String, String>>, val objective: ClimateTunerObjective, val maxMeanConditionDistanceRegression: Double, val apply: Boolean, val resume: Boolean)
 
-private data class ClimateTunerEvaluationRecord(
-    val index: Int,
-    val changedParameter: String?,
-    val values: Map<String, Double>,
-    val loss: Double,
-    val score: HersfeldtReference.Score?,
-    val deltaFromBaseline: HersfeldtReference.ScoreDelta?,
-    val error: String?,
-)
+private data class ClimateTunerEvaluationRecord(val index: Int, val changedParameter: String?, val values: Map<String, Double>, val loss: Double, val score: HersfeldtReference.Score?, val deltaFromBaseline: HersfeldtReference.ScoreDelta?, val error: String?)
 
-private data class ClimateTunerArtifacts(
-    val baselineSimulatedMap: String? = null,
-    val baselineDifferenceMap: String? = null,
-    val bestSimulatedMap: String? = null,
-    val bestDifferenceMap: String? = null,
-)
+private data class ClimateTunerArtifacts(val baselineSimulatedMap: String? = null, val baselineDifferenceMap: String? = null, val bestSimulatedMap: String? = null, val bestDifferenceMap: String? = null)
 
-private data class ClimateTunerReport(
-    val startedAt: String,
-    val finishedAt: String?,
-    val planetFile: String,
-    val referenceFile: String,
-    val inputConfigFile: String,
-    val bestConfigFile: String,
-    val maxEvaluations: Int,
-    val selectedParameters: List<String>,
-    val interactionPairs: List<String>,
-    val objective: String,
-    val maxMeanConditionDistanceRegression: Double,
-    val initialLoss: Double?,
-    val bestLoss: Double?,
-    val improved: Boolean?,
-    val appliedToInputConfig: Boolean,
-    val artifacts: ClimateTunerArtifacts,
-    val evaluations: List<ClimateTunerEvaluationRecord>,
-)
+private data class ClimateTunerReport(val startedAt: String, val finishedAt: String?, val planetFile: String, val referenceFile: String, val inputConfigFile: String, val bestConfigFile: String, val maxEvaluations: Int, val selectedParameters: List<String>, val interactionPairs: List<String>, val objective: String, val maxMeanConditionDistanceRegression: Double, val initialLoss: Double?, val bestLoss: Double?, val improved: Boolean?, val appliedToInputConfig: Boolean, val artifacts: ClimateTunerArtifacts, val evaluations: List<ClimateTunerEvaluationRecord>)
 
-private data class EvaluationOutcome(
-    val loss: Double,
-    val score: HersfeldtReference.Score?,
-    val planet: Planet?,
-    val error: String?,
-)
+private data class EvaluationOutcome(val loss: Double, val score: HersfeldtReference.Score?, val planet: Planet?, val error: String?)
 
 fun main(args: Array<String>) = runClimateTuner(args)
 
@@ -326,7 +277,7 @@ fun runClimateTuner(args: Array<String>) {
         mismatches.forEach { mismatch ->
             println(
                 "  ${mismatch.reference.id} -> ${mismatch.simulated.id}: " +
-                    "${mismatch.count} (${mismatch.conditionDistance} condition hop(s))"
+                    "${mismatch.count} (${mismatch.conditionDistance} condition hop(s))",
             )
         }
     }
@@ -335,7 +286,6 @@ fun runClimateTuner(args: Array<String>) {
         options.apply -> println("No improvement; ${options.configFile.name} was left unchanged")
         else -> println("Input config was left unchanged; pass --apply to apply an improving winner")
     }
-
 }
 
 private fun applyClimateConfig(config: ObjectNode) {
@@ -463,18 +413,13 @@ private val CLIMATE_TUNER_VALUE_OPTIONS = setOf(
     "report",
 )
 
-private fun climateTuningObjectiveLoss(
-    score: HersfeldtReference.Score,
-    options: ClimateTunerOptions,
-    baselineMeanConditionDistance: Double,
-    baselineScore: HersfeldtReference.Score,
-): Double = when (options.objective) {
+private fun climateTuningObjectiveLoss(score: HersfeldtReference.Score, options: ClimateTunerOptions, baselineMeanConditionDistance: Double, baselineScore: HersfeldtReference.Score): Double = when (options.objective) {
     ClimateTunerObjective.GLOBAL -> score.loss
     ClimateTunerObjective.BOREAL_TRANSITION -> {
         val lossRegression = max(0.0, score.loss - baselineScore.loss)
         val forbiddenRegression =
             max(0, confusionCount(score, "CTf", "CDb") - confusionCount(baselineScore, "CTf", "CDb")) +
-                    max(0, confusionCount(score, "CDb", "CEb") - confusionCount(baselineScore, "CDb", "CEb"))
+                max(0, confusionCount(score, "CDb", "CEb") - confusionCount(baselineScore, "CDb", "CEb"))
         if (lossRegression > IMPROVEMENT_EPSILON || forbiddenRegression > 0) {
             1000.0 + lossRegression * 1000.0 + forbiddenRegression
         } else {
@@ -493,10 +438,9 @@ private fun climateTuningObjectiveLoss(
     }
 }
 
-private fun confusionCount(score: HersfeldtReference.Score, reference: String, simulated: String): Int =
-    score.confusionMatrix
-        .filter { it.reference.id == reference && it.simulated.id == simulated }
-        .sumOf { it.count }
+private fun confusionCount(score: HersfeldtReference.Score, reference: String, simulated: String): Int = score.confusionMatrix
+    .filter { it.reference.id == reference && it.simulated.id == simulated }
+    .sumOf { it.count }
 
 private const val MEDITERRANEAN_CONSTRAINT_PENALTY = 2.0
 private const val MEDITERRANEAN_DISTANCE_TIE_BREAK_WEIGHT = 1e-6

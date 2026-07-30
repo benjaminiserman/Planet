@@ -1,6 +1,5 @@
 package dev.biserman.planet.geometry
 
-import dev.biserman.planet.Main
 import godot.core.Plane
 import godot.core.Vector3
 import godot.global.GD
@@ -17,9 +16,9 @@ import kotlin.random.Random
 // DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 fun makeIcosahedron(): MutMesh {
-    val phi = (1.0 + sqrt(5.0)) / 2.0;
-    val du = 1.0 / sqrt(phi * phi + 1.0);
-    val dv = phi * du;
+    val phi = (1.0 + sqrt(5.0)) / 2.0
+    val du = 1.0 / sqrt(phi * phi + 1.0)
+    val dv = phi * du
 
     val verts = mutableListOf(
         MutVertex(Vector3(0, +dv, +du)),
@@ -123,35 +122,32 @@ fun (MutMesh).distortTriangles(distortionRate: Double = 0.5, iterations: Int = 6
 }
 
 fun (MutMesh).relaxRepeatedly(maxIterations: Int) {
-    val averageNodeRadius = sqrt(4 * Math.PI / this.verts.size);
-    val minShiftDelta = averageNodeRadius / 50000 * this.verts.size;
+    val averageNodeRadius = sqrt(4 * Math.PI / this.verts.size)
+    val minShiftDelta = averageNodeRadius / 50000 * this.verts.size
 
     var priorShift: Double
     var currentShift = this.relaxMesh(0.5)
 
-    (loop@{
-        (1..maxIterations).forEach {
-            priorShift = currentShift
-            currentShift = relaxMesh(0.5)
-            val shiftDelta = abs(currentShift - priorShift)
-            if (shiftDelta <= minShiftDelta) {
-                GD.print("Finished relaxing at $it")
-                return@loop
+    (
+        loop@{
+            (1..maxIterations).forEach {
+                priorShift = currentShift
+                currentShift = relaxMesh(0.5)
+                val shiftDelta = abs(currentShift - priorShift)
+                if (shiftDelta <= minShiftDelta) {
+                    GD.print("Finished relaxing at $it")
+                    return@loop
+                }
             }
         }
-    })()
+        )()
 }
 
-fun rotationPredicate(
-    oldVert0: MutVertex,
-    oldVert1: MutVertex,
-    newVert0: MutVertex,
-    newVert1: MutVertex
-): Boolean {
-    if (newVert0.triIndexes.size >= 7
-        || newVert1.triIndexes.size >= 7
-        || oldVert0.triIndexes.size <= 5
-        || oldVert1.triIndexes.size <= 5
+fun rotationPredicate(oldVert0: MutVertex, oldVert1: MutVertex, newVert0: MutVertex, newVert1: MutVertex): Boolean {
+    if (newVert0.triIndexes.size >= 7 ||
+        newVert1.triIndexes.size >= 7 ||
+        oldVert0.triIndexes.size <= 5 ||
+        oldVert1.triIndexes.size <= 5
     ) {
         return false
     }
@@ -261,10 +257,7 @@ fun (MutMesh).reorderVerts() {
     }
 }
 
-fun (MutMesh).conditionalRotateEdge(
-    edgeIndex: Int,
-    predicate: (MutVertex, MutVertex, MutVertex, MutVertex) -> Boolean
-): Boolean {
+fun (MutMesh).conditionalRotateEdge(edgeIndex: Int, predicate: (MutVertex, MutVertex, MutVertex, MutVertex) -> Boolean): Boolean {
     val edge = this.edges[edgeIndex]
     val face0 = this.tris[edge.triIndexes[0]]
     val face1 = this.tris[edge.triIndexes[1]]
@@ -335,8 +328,8 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
             verts.add(
                 MutVertex(
                     v0.position.slerp(v1.position, i / degree.toDouble()),
-                    mutableListOf(edgeIndex, edgeIndex + 1)
-                )
+                    mutableListOf(edgeIndex, edgeIndex + 1),
+                ),
             )
         }
         edge.subdividedEdgeIndexes.add(edges.size)
@@ -350,23 +343,47 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         val edge1 = this.edges[tri.edgeIndexes[1]]
         val edge2 = this.edges[tri.edgeIndexes[2]]
 
-        val getEdgeVert0: (Int) -> Int = if (tri.vertIndexes[0] == edge0.vertIndexes[0]) ({
-            edge0.subdividedVertexIndexes[it]
-        }) else ({
-            edge0.subdividedVertexIndexes[degree - 2 - it]
-        })
+        val getEdgeVert0: (Int) -> Int = if (tri.vertIndexes[0] == edge0.vertIndexes[0]) {
+            (
+                {
+                    edge0.subdividedVertexIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge0.subdividedVertexIndexes[degree - 2 - it]
+                }
+                )
+        }
 
-        val getEdgeVert1: (Int) -> Int = if (tri.vertIndexes[1] == edge1.vertIndexes[0]) ({
-            edge1.subdividedVertexIndexes[it]
-        }) else ({
-            edge1.subdividedVertexIndexes[degree - 2 - it]
-        })
+        val getEdgeVert1: (Int) -> Int = if (tri.vertIndexes[1] == edge1.vertIndexes[0]) {
+            (
+                {
+                    edge1.subdividedVertexIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge1.subdividedVertexIndexes[degree - 2 - it]
+                }
+                )
+        }
 
-        val getEdgeVert2: (Int) -> Int = if (tri.vertIndexes[0] == edge2.vertIndexes[0]) ({
-            edge2.subdividedVertexIndexes[it]
-        }) else ({
-            edge2.subdividedVertexIndexes[degree - 2 - it]
-        })
+        val getEdgeVert2: (Int) -> Int = if (tri.vertIndexes[0] == edge2.vertIndexes[0]) {
+            (
+                {
+                    edge2.subdividedVertexIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge2.subdividedVertexIndexes[degree - 2 - it]
+                }
+                )
+        }
 
         val faceVerts = listOf<Int>(tri.vertIndexes[0])
             .plus((0..<edge0.subdividedVertexIndexes.size).map(getEdgeVert0))
@@ -384,23 +401,47 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
         }
         faceVerts.add(tri.vertIndexes[2])
 
-        val getEdgeEdge0: (Int) -> Int = if (tri.vertIndexes[0] == edge0.vertIndexes[0]) ({
-            edge0.subdividedEdgeIndexes[it]
-        }) else ({
-            edge0.subdividedEdgeIndexes[degree - 1 - it]
-        })
+        val getEdgeEdge0: (Int) -> Int = if (tri.vertIndexes[0] == edge0.vertIndexes[0]) {
+            (
+                {
+                    edge0.subdividedEdgeIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge0.subdividedEdgeIndexes[degree - 1 - it]
+                }
+                )
+        }
 
-        val getEdgeEdge1: (Int) -> Int = if (tri.vertIndexes[1] == edge1.vertIndexes[0]) ({
-            edge1.subdividedEdgeIndexes[it]
-        }) else ({
-            edge1.subdividedEdgeIndexes[degree - 1 - it]
-        })
+        val getEdgeEdge1: (Int) -> Int = if (tri.vertIndexes[1] == edge1.vertIndexes[0]) {
+            (
+                {
+                    edge1.subdividedEdgeIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge1.subdividedEdgeIndexes[degree - 1 - it]
+                }
+                )
+        }
 
-        val getEdgeEdge2: (Int) -> Int = if (tri.vertIndexes[0] == edge2.vertIndexes[0]) ({
-            edge2.subdividedEdgeIndexes[it]
-        }) else ({
-            edge2.subdividedEdgeIndexes[degree - 1 - it]
-        })
+        val getEdgeEdge2: (Int) -> Int = if (tri.vertIndexes[0] == edge2.vertIndexes[0]) {
+            (
+                {
+                    edge2.subdividedEdgeIndexes[it]
+                }
+                )
+        } else {
+            (
+                {
+                    edge2.subdividedEdgeIndexes[degree - 1 - it]
+                }
+                )
+        }
 
         val faceEdges0 = (0..<degree).map(getEdgeEdge0).toMutableList()
         var vertIndex = degree + 1
@@ -454,9 +495,9 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
                     mutableListOf(
                         faceVerts[vertIndex],
                         faceVerts[vertIndex + 1],
-                        faceVerts[vertIndex + degree - i + 1]
+                        faceVerts[vertIndex + degree - i + 1],
                     ),
-                    mutableListOf(faceEdges0[edgeIndex], faceEdges1[edgeIndex], faceEdges2[edgeIndex])
+                    mutableListOf(faceEdges0[edgeIndex], faceEdges1[edgeIndex], faceEdges2[edgeIndex]),
                 )
                 (0..2).forEach {
                     verts[subTri.vertIndexes[it]].triIndexes.add(tris.size)
@@ -477,13 +518,13 @@ fun (MutMesh).subdivideIcosahedron(degree: Int): MutMesh {
                     mutableListOf(
                         faceVerts[vertIndex],
                         faceVerts[vertIndex + degree - i + 2],
-                        faceVerts[vertIndex + degree - i + 1]
+                        faceVerts[vertIndex + degree - i + 1],
                     ),
                     mutableListOf(
                         faceEdges2[edgeIndex + 1],
                         faceEdges0[edgeIndex + degree - i + 1],
-                        faceEdges1[edgeIndex]
-                    )
+                        faceEdges1[edgeIndex],
+                    ),
                 )
                 (0..2).forEach {
                     verts[subTri.vertIndexes[it]].triIndexes.add(tris.size)

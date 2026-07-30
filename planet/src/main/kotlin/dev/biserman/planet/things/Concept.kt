@@ -112,7 +112,8 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     TEMPERANCE({
         related with WATER
         opposite of listOf(LUST, GLUTTONY, INDULGENCE)
-    });
+    }),
+    ;
 
     data class Relationship(val type: RelationshipType, val origin: Concept, val other: Concept, val via: Concept?) {
         fun addReverse() = type.addReverse(this)
@@ -124,29 +125,22 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
         body()
     }
 
-    fun prettyPrint(): String =
-        "$name: [${relationships.joinToString { "${it.type.name} ${it.type.keywords.first()} ${it.other.name}" }}]"
+    fun prettyPrint(): String = "$name: [${relationships.joinToString { "${it.type.name} ${it.type.keywords.first()} ${it.other.name}" }}]"
 
     // Relationship DSL
     open class RelationshipType(val name: String, vararg keywords: String, val addReverse: Relationship.() -> Unit) {
         val keywords = keywords.toSet()
     }
 
-    class WithRelationship(name: String, addReverse: Relationship.() -> Unit) :
-        RelationshipType(name, "with", addReverse = addReverse)
+    class WithRelationship(name: String, addReverse: Relationship.() -> Unit) : RelationshipType(name, "with", addReverse = addReverse)
 
-    class OfRelationship(name: String, addReverse: Relationship.() -> Unit) :
-        RelationshipType(name, "of", addReverse = addReverse)
+    class OfRelationship(name: String, addReverse: Relationship.() -> Unit) : RelationshipType(name, "of", addReverse = addReverse)
 
-    class ByRelationship(name: String, addReverse: Relationship.() -> Unit) :
-        RelationshipType(name, "by", addReverse = addReverse)
+    class ByRelationship(name: String, addReverse: Relationship.() -> Unit) : RelationshipType(name, "by", addReverse = addReverse)
 
-    class FeatureRelationship(name: String, addReverse: Relationship.() -> Unit) :
-        RelationshipType(name, "feature", addReverse = addReverse)
+    class FeatureRelationship(name: String, addReverse: Relationship.() -> Unit) : RelationshipType(name, "feature", addReverse = addReverse)
 
-    class ToRelationship(name: String, addReverse: Relationship.() -> Unit) :
-        RelationshipType(name, "to", addReverse = addReverse)
-
+    class ToRelationship(name: String, addReverse: Relationship.() -> Unit) : RelationshipType(name, "to", addReverse = addReverse)
 
     private val child: OfRelationship =
         OfRelationship("child") { other += Relationship(parent, other, origin, via) }
@@ -187,7 +181,6 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     private val consumed: ByRelationship =
         ByRelationship("consumed") { other += Relationship(consumer, other, origin, via) }
 
-
     private fun makeRelationship(type: RelationshipType, keyword: String, vararg others: Concept) {
         val concept = this@Concept
         if (keyword !in type.keywords) {
@@ -199,27 +192,21 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     }
 
     private infix fun (WithRelationship).with(other: Concept) = makeRelationship(this, "with", other)
-    private infix fun (WithRelationship).with(others: List<Concept>) =
-        makeRelationship(this, "with", *others.toTypedArray())
+    private infix fun (WithRelationship).with(others: List<Concept>) = makeRelationship(this, "with", *others.toTypedArray())
 
     private infix fun (OfRelationship).of(other: Concept) = makeRelationship(this, "of", other)
-    private infix fun (OfRelationship).of(others: List<Concept>) =
-        makeRelationship(this, "of", *others.toTypedArray())
+    private infix fun (OfRelationship).of(others: List<Concept>) = makeRelationship(this, "of", *others.toTypedArray())
 
     private infix fun (ByRelationship).by(other: Concept) = makeRelationship(this, "by", other)
-    private infix fun (ByRelationship).by(others: List<Concept>) =
-        makeRelationship(this, "by", *others.toTypedArray())
+    private infix fun (ByRelationship).by(others: List<Concept>) = makeRelationship(this, "by", *others.toTypedArray())
 
     private infix fun (FeatureRelationship).feature(other: Concept) = makeRelationship(this, "feature", other)
-    private infix fun (FeatureRelationship).feature(others: List<Concept>) =
-        makeRelationship(this, "feature", *others.toTypedArray())
+    private infix fun (FeatureRelationship).feature(others: List<Concept>) = makeRelationship(this, "feature", *others.toTypedArray())
 
     private infix fun (ToRelationship).to(other: Concept) = makeRelationship(this, "to", other)
-    private infix fun (ToRelationship).to(others: List<Concept>) =
-        makeRelationship(this, "to", *others.toTypedArray())
+    private infix fun (ToRelationship).to(others: List<Concept>) = makeRelationship(this, "to", *others.toTypedArray())
 
-    private operator fun plusAssign(relationship: Relationship): Unit =
-        run { relationships.add(relationship) }
+    private operator fun plusAssign(relationship: Relationship): Unit = run { relationships.add(relationship) }
 
     companion object {
         init {

@@ -57,13 +57,13 @@ object Koppen : ClimateClassifier {
         "Dsa",
         "mediterranean_hot_summer_humid_continental",
         Color.html("#ff00ff"),
-        Color.html("#58592b")
+        Color.html("#58592b"),
     )
     val MEDITERRANEAN_WARM_SUMMER_HUMID_CONTINENTAL = ClimateClassification(
         "Dsb",
         "mediterranean_warm_summer_humid_continental",
         Color.html("#c600c7"),
-        Color.html("#39421c")
+        Color.html("#39421c"),
     )
     val MEDITERRANEAN_SUBARCTIC =
         ClimateClassification("Dsc", "mediterranean_subarctic", Color.html("#963295"), Color.html("#4e4d27"))
@@ -71,20 +71,20 @@ object Koppen : ClimateClassifier {
         "Dsd",
         "mediterranean_extremely_cold_subarctic",
         Color.html("#966495"),
-        Color.html("#4e4d27")
+        Color.html("#4e4d27"),
     )
 
     val HOT_SUMMER_HUMID_CONTINENTAL_MONSOON = ClimateClassification(
         "Dwa",
         "hot_summer_humid_continental_monsoon",
         Color.html("#abb1ff"),
-        Color.html("#3d5019")
+        Color.html("#3d5019"),
     )
     val WARM_SUMMER_HUMID_CONTINENTAL_MONSOON = ClimateClassification(
         "Dwb",
         "warm_summer_humid_continental_monsoon",
         Color.html("#5a77db"),
-        Color.html("#374717")
+        Color.html("#374717"),
     )
     val SUBARCTIC_MONSOON =
         ClimateClassification("Dwc", "subarctic_monsoon", Color.html("#4c51b5"), Color.html("#545629"))
@@ -116,7 +116,6 @@ object Koppen : ClimateClassifier {
         }
     }
 
-
     override fun classify(planet: Planet, datum: ClimateDatum): ClimateClassification {
         val (summer, winter) = getSummerAndWinter(datum)
         val planetTile = planet.planetTiles[datum.tileId]!!
@@ -138,32 +137,37 @@ object Koppen : ClimateClassifier {
 
         // Group B: Desert and semi-arid
         val springSummerPrecipitation = when {
-            geoPoint.latitude >= 0.0 -> datum.months
-                .monthRange(MonthIndex.APR, MonthIndex.SEP)
-                .sumOf { it.precipitation }
-            else -> datum.months
-                .monthRange(MonthIndex.OCT, MonthIndex.MAR)
-                .sumOf { it.precipitation }
+            geoPoint.latitude >= 0.0 ->
+                datum.months
+                    .monthRange(MonthIndex.APR, MonthIndex.SEP)
+                    .sumOf { it.precipitation }
+            else ->
+                datum.months
+                    .monthRange(MonthIndex.OCT, MonthIndex.MAR)
+                    .sumOf { it.precipitation }
         }
         val springSummerPrecipitationRatio = springSummerPrecipitation / datum.annualPrecipitation
         val aridPrecipitationThreshold = max(
-            1.0, datum.averageTemperature * 20 + when {
+            1.0,
+            datum.averageTemperature * 20 + when {
                 springSummerPrecipitationRatio >= 0.7 -> 280.0
                 springSummerPrecipitationRatio >= 0.3 -> 140.0
                 else -> 0.0
-            }
+            },
         )
         val aridityFactor = datum.annualPrecipitation / aridPrecipitationThreshold
         if (aridityFactor <= 0.5) {
-            return if (datum.averageTemperature > 18.0)
+            return if (datum.averageTemperature > 18.0) {
                 HOT_DESERT
-            else
+            } else {
                 COLD_DESERT
+            }
         } else if (aridityFactor <= 1.0) {
-            return if (datum.averageTemperature > 18.0)
+            return if (datum.averageTemperature > 18.0) {
                 HOT_SEMIARID
-            else
+            } else {
                 COLD_SEMIARID
+            }
         }
 
         // Group A: Tropical
@@ -204,8 +208,11 @@ object Koppen : ClimateClassifier {
             if (summerWettest.precipitation >= winterDriest.precipitation * 10) {
                 return when {
                     hasHotMonth -> HUMID_SUBTROPICAL_MONSOON
-                    warmMonthCount >= 4 -> if (isHighland) SUBTROPICAL_HIGHLAND_MONSOON
-                    else TEMPERATE_OCEANIC_MONSOON
+                    warmMonthCount >= 4 -> if (isHighland) {
+                        SUBTROPICAL_HIGHLAND_MONSOON
+                    } else {
+                        TEMPERATE_OCEANIC_MONSOON
+                    }
                     else -> SUBPOLAR_OCEANIC_MONSOON
                 }
             }
@@ -213,8 +220,11 @@ object Koppen : ClimateClassifier {
             // Other
             return when {
                 hasHotMonth -> HUMID_SUBTROPICAL
-                warmMonthCount >= 4 -> if (isHighland) SUBTROPICAL_HIGHLAND
-                else TEMPERATE_OCEANIC
+                warmMonthCount >= 4 -> if (isHighland) {
+                    SUBTROPICAL_HIGHLAND
+                } else {
+                    TEMPERATE_OCEANIC
+                }
                 else -> SUBPOLAR_OCEANIC
             }
         }
@@ -223,8 +233,11 @@ object Koppen : ClimateClassifier {
         // Mediterranean
         if (summerDriest.precipitation < 30.0 && winterWettest.precipitation >= summerDriest.precipitation * 3) {
             return when {
-                warmMonthCount >= 4 -> if (hasHotMonth) MEDITERRANEAN_HOT_SUMMER_HUMID_CONTINENTAL
-                else MEDITERRANEAN_WARM_SUMMER_HUMID_CONTINENTAL
+                warmMonthCount >= 4 -> if (hasHotMonth) {
+                    MEDITERRANEAN_HOT_SUMMER_HUMID_CONTINENTAL
+                } else {
+                    MEDITERRANEAN_WARM_SUMMER_HUMID_CONTINENTAL
+                }
                 datum.months.any { it.averageTemperature < -38.0 } -> MEDITERRANEAN_EXTREMELY_COLD_SUBARCTIC
                 else -> MEDITERRANEAN_SUBARCTIC
             }
@@ -233,16 +246,22 @@ object Koppen : ClimateClassifier {
         // Monsoon
         if (summerWettest.precipitation >= winterDriest.precipitation * 10) {
             return when {
-                warmMonthCount >= 4 -> if (hasHotMonth) HOT_SUMMER_HUMID_CONTINENTAL_MONSOON
-                else WARM_SUMMER_HUMID_CONTINENTAL_MONSOON
+                warmMonthCount >= 4 -> if (hasHotMonth) {
+                    HOT_SUMMER_HUMID_CONTINENTAL_MONSOON
+                } else {
+                    WARM_SUMMER_HUMID_CONTINENTAL_MONSOON
+                }
                 datum.months.any { it.averageTemperature < -38.0 } -> EXTREMELY_COLD_SUBARCTIC_MONSOON
                 else -> SUBARCTIC_MONSOON
             }
         }
 
         return when {
-            warmMonthCount >= 4 -> if (hasHotMonth) HOT_SUMMER_HUMID_CONTINENTAL
-            else WARM_SUMMER_HUMID_CONTINENTAL
+            warmMonthCount >= 4 -> if (hasHotMonth) {
+                HOT_SUMMER_HUMID_CONTINENTAL
+            } else {
+                WARM_SUMMER_HUMID_CONTINENTAL
+            }
             datum.months.any { it.averageTemperature < -38.0 } -> EXTREMELY_COLD_SUBARCTIC
             else -> SUBARCTIC
         }

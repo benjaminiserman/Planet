@@ -2,12 +2,8 @@ package dev.biserman.planet.geometry
 
 import godot.core.Vector3
 
-data class MutTri(
-    val vertIndexes: MutableList<Int> = mutableListOf(),
-    val edgeIndexes: MutableList<Int> = mutableListOf()
-) {
-    fun centroid(mesh: MutMesh): Vector3 =
-        centroid(vertIndexes.map { mesh.verts[it].position })
+data class MutTri(val vertIndexes: MutableList<Int> = mutableListOf(), val edgeIndexes: MutableList<Int> = mutableListOf()) {
+    fun centroid(mesh: MutMesh): Vector3 = centroid(vertIndexes.map { mesh.verts[it].position })
 
     fun oppositeVertIndex(edge: MutEdge): Int = when {
         this.vertIndexes[0] != edge.vertIndexes[0] && this.vertIndexes[0] != edge.vertIndexes[1] -> 0

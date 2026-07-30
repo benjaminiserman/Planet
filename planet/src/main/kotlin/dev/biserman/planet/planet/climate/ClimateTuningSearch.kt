@@ -3,13 +3,7 @@ package dev.biserman.planet.planet.climate
 import kotlin.math.abs
 import kotlin.math.max
 
-data class ClimateTuningParameter(
-    val name: String,
-    val min: Double,
-    val max: Double,
-    val step: Double,
-    val minStep: Double = step / 16.0,
-) {
+data class ClimateTuningParameter(val name: String, val min: Double, val max: Double, val step: Double, val minStep: Double = step / 16.0) {
     init {
         require(name.isNotBlank()) { "Tuning parameter name cannot be blank" }
         require(min < max) { "$name must have min < max" }
@@ -20,33 +14,16 @@ data class ClimateTuningParameter(
 
 data class ClimateTuningSpace(val parameters: List<ClimateTuningParameter>)
 
-data class ClimateTuningEvaluation(
-    val index: Int,
-    val values: Map<String, Double>,
-    val changedParameter: String?,
-    val loss: Double,
-)
+data class ClimateTuningEvaluation(val index: Int, val values: Map<String, Double>, val changedParameter: String?, val loss: Double)
 
-data class ClimateTuningResult(
-    val initialLoss: Double,
-    val bestLoss: Double,
-    val bestValues: Map<String, Double>,
-    val evaluations: Int,
-)
+data class ClimateTuningResult(val initialLoss: Double, val bestLoss: Double, val bestValues: Map<String, Double>, val evaluations: Int)
 
 /**
  * Deterministic bounded coordinate search. It works well for expensive climate
  * evaluations because every accepted candidate becomes the next center point,
  * and steps shrink only after an entire pass fails to improve the score.
  */
-class ClimateTuningSearch(
-    parameters: List<ClimateTuningParameter>,
-    initialValues: Map<String, Double>,
-    private val maxEvaluations: Int,
-    interactionPairs: List<Pair<String, String>> = emptyList(),
-    private val evaluate: (Map<String, Double>) -> Double,
-    private val afterEvaluation: (ClimateTuningEvaluation) -> Unit = {},
-) {
+class ClimateTuningSearch(parameters: List<ClimateTuningParameter>, initialValues: Map<String, Double>, private val maxEvaluations: Int, interactionPairs: List<Pair<String, String>> = emptyList(), private val evaluate: (Map<String, Double>) -> Double, private val afterEvaluation: (ClimateTuningEvaluation) -> Unit = {}) {
     private val parameters = parameters.toList()
     private val initialValues = initialValues.toMap()
     private val interactionPairs = interactionPairs.toList()

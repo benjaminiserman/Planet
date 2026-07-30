@@ -104,7 +104,7 @@ class StatsGraphPlot : Control() {
                 HorizontalAlignment.CENTER,
                 56.0f,
                 fontSize,
-                axisColor
+                axisColor,
             )
         }
         yTicks.forEach { yValue ->
@@ -119,7 +119,7 @@ class StatsGraphPlot : Control() {
                 HorizontalAlignment.RIGHT,
                 50.0f,
                 fontSize,
-                axisColor
+                axisColor,
             )
         }
 
@@ -132,7 +132,7 @@ class StatsGraphPlot : Control() {
             HorizontalAlignment.CENTER,
             plot.size.x.toFloat(),
             fontSize,
-            axisColor
+            axisColor,
         )
         if (yLabel.isNotEmpty()) {
             drawString(font, Vector2(plot.position.x, 16.0), yLabel, modulate = axisColor, fontSize = fontSize)
@@ -143,7 +143,7 @@ class StatsGraphPlot : Control() {
             .map { point ->
                 Vector2(
                     plot.position.x + (point.x - xMin) / (xMax - xMin) * plot.size.x,
-                    plot.end.y - (point.y.coerceIn(yMin, yMax) - yMin) / (yMax - yMin) * plot.size.y
+                    plot.end.y - (point.y.coerceIn(yMin, yMax) - yMin) / (yMax - yMin) * plot.size.y,
                 )
             }
             .zipWithNext()
