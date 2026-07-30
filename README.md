@@ -16,6 +16,7 @@ Clone the repository, fetch the save fixtures, and build the Kotlin project:
 git lfs install
 git lfs pull
 cd planet
+./gradlew addKtlintFormatGitPreCommitHook
 ./gradlew build
 ```
 
