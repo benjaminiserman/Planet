@@ -2,3 +2,13 @@ root = true
 
 [*]
 charset = utf-8
+max_line_length = 10000
+
+# noinspection EditorConfigKeyCorrectness,ditorConfigPartialOverride
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-imports = disabled
+
+# noinspection EditorConfigKeyCorrectness,ditorConfigPartialOverride
+[build/**]
+ktlint = disabled
