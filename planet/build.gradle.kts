@@ -30,6 +30,12 @@ tasks.test {
     useJUnitPlatform()
 }
 
+sourceSets {
+    test {
+        kotlin.srcDirs("test")
+    }
+}
+
 kotlin {
     jvmToolchain(17)
 }
