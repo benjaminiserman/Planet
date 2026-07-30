@@ -337,7 +337,7 @@ private fun parseClimateTunerOptions(args: Array<String>): ClimateTunerOptions {
     val output = File(values["output"] ?: "build/climate-tuning/best-climate_config.json")
     return ClimateTunerOptions(
         planetFile = File(values["planet"] ?: "save/earth.json"),
-        referenceFile = File(values["reference"] ?: HersfeldtReference.defaultFilename),
+        referenceFile = File(values["reference"] ?: HersfeldtReference.DEFAULT_FILENAME),
         configFile = File(values["config"] ?: "climate_config.json"),
         tuningSpaceFile = File(values["space"] ?: "climate_tuning.json"),
         outputFile = output,

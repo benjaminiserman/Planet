@@ -16,25 +16,25 @@ object Kriging {
         if (n == 1) return samples[0].second
 
         // Build Kriging matrix (n+1 x n+1)
-        val K = Array(n + 1) { DoubleArray(n + 1) }
+        val k = Array(n + 1) { DoubleArray(n + 1) }
         val y = DoubleArray(n + 1)
 
         for (i in 0 until n) {
             for (j in 0 until n) {
                 val h = samples[i].first.distanceTo(samples[j].first)
-                K[i][j] = variogram(h)
+                k[i][j] = variogram(h)
             }
-            K[i][n] = 1.0
-            K[n][i] = 1.0
+            k[i][n] = 1.0
+            k[n][i] = 1.0
 
             val hTarget = samples[i].first.distanceTo(target)
             y[i] = variogram(hTarget)
         }
-        K[n][n] = 0.0
+        k[n][n] = 0.0
         y[n] = 1.0
 
         // Solve linear system K * λ = y
-        val lambda = solveLinearSystem(K, y)
+        val lambda = solveLinearSystem(k, y)
 
         // Interpolated value
         var estimate = 0.0
@@ -45,34 +45,34 @@ object Kriging {
     }
 
     // Simple Gaussian elimination solver
-    private fun solveLinearSystem(A: Array<DoubleArray>, b: DoubleArray): DoubleArray {
+    private fun solveLinearSystem(a: Array<DoubleArray>, b: DoubleArray): DoubleArray {
         val n = b.size
-        val M = Array(n) { A[it].clone() }
+        val m = Array(n) { a[it].clone() }
         val x = b.clone()
 
         for (i in 0 until n) {
             // Pivot
             var max = i
             for (j in i + 1 until n) {
-                if (kotlin.math.abs(M[j][i]) > kotlin.math.abs(M[max][i])) max = j
+                if (kotlin.math.abs(m[j][i]) > kotlin.math.abs(m[max][i])) max = j
             }
-            val tmpRow = M[i]
-            M[i] = M[max]
-            M[max] = tmpRow
+            val tmpRow = m[i]
+            m[i] = m[max]
+            m[max] = tmpRow
             val tmpVal = x[i]
             x[i] = x[max]
             x[max] = tmpVal
 
             // Normalize pivot row
-            val pivot = M[i][i]
-            for (j in i until n) M[i][j] /= pivot
+            val pivot = m[i][i]
+            for (j in i until n) m[i][j] /= pivot
             x[i] /= pivot
 
             // Eliminate column
             for (j in 0 until n) {
                 if (j != i) {
-                    val factor = M[j][i]
-                    for (k in i until n) M[j][k] -= factor * M[i][k]
+                    val factor = m[j][i]
+                    for (k in i until n) m[j][k] -= factor * m[i][k]
                     x[j] -= factor * x[i]
                 }
             }

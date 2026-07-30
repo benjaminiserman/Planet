@@ -83,7 +83,7 @@ class ShowSettingsButton : OptionButton() {
             "tectonics",
             "debug",
         ).forEachIndexed { index, category ->
-            this.addItem("Settings: ${category.split("_").joinToString(" ") { it.capitalize() }}", index)
+            this.addItem("Settings: ${category.split("_").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }}", index)
             categoriesIdMap[index] = category
         }
     }

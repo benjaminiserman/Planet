@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.GeoPoint
 import dev.biserman.planet.geometry.toGeoPoint
 import dev.biserman.planet.geometry.toPoint
-import dev.biserman.planet.geometry.toVector2
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import godot.core.Color
@@ -21,7 +20,7 @@ import kotlin.math.sqrt
 
 /** Scores simulated land climates against the painted equirectangular reference. */
 object HersfeldtReference {
-    const val defaultFilename = "earth_hersfeldt_reference.png"
+    const val DEFAULT_FILENAME = "earth_hersfeldt_reference.png"
 
     data class ClimateLabel(val id: String, val name: String, val color: String)
 
@@ -88,7 +87,7 @@ object HersfeldtReference {
 
     data class RenderedMaps(val simulatedMap: String, val differenceMap: String)
 
-    fun score(planet: Planet, filename: String = defaultFilename): Score? {
+    fun score(planet: Planet, filename: String = DEFAULT_FILENAME): Score? {
         val file = File(filename)
         if (!file.isFile) return null
         val palette = hersfeldtPalette()
@@ -157,7 +156,7 @@ object HersfeldtReference {
         )
     }
 
-    fun renderMaps(planet: Planet, filename: String = defaultFilename, outputDirectory: File, prefix: String): RenderedMaps? {
+    fun renderMaps(planet: Planet, filename: String = DEFAULT_FILENAME, outputDirectory: File, prefix: String): RenderedMaps? {
         val referenceFile = File(filename)
         if (!referenceFile.isFile) return null
         val palette = hersfeldtPalette()

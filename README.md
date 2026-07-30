@@ -30,6 +30,10 @@ Run the JVM tests from the `planet` directory:
 ./gradlew test
 ```
 
+## Linting
+
+Use `./gradlew ktlintCheck` to check the code or use `./gradlew ktlintFormat` to fix any issues.
+
 ## Configuration
 
 - `planet/tectonics_config.json` contains reloadable tectonic and erosion parameters.

@@ -8,6 +8,7 @@ max_line_length = 10000
 [*.{kt,kts}]
 ktlint_code_style = intellij_idea
 ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_no-unused-imports = enabled
 
 # noinspection EditorConfigKeyCorrectness,ditorConfigPartialOverride
 [build/**]
