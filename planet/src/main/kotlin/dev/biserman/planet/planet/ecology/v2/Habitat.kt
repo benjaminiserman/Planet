@@ -27,28 +27,58 @@ enum class Habitat(
     fun camouflageMatch(
         color: BiologicalColor?,
         snowOrIce: Boolean,
+        canopyCover: Double,
         reefCover: Double,
     ): Double {
         if (color == null) return 0.0
-        if (snowOrIce && color == BiologicalColor.PALE) return 0.35
+        if (snowOrIce && color == BiologicalColor.WHITE) return 0.35
         if (aquatic && reefCover > 0.45) {
             return when (color) {
-                BiologicalColor.BROWN, BiologicalColor.GREEN, BiologicalColor.PURPLE -> 0.24
+                BiologicalColor.BROWN, BiologicalColor.GREEN, BiologicalColor.PURPLE, BiologicalColor.BLUE, BiologicalColor.RED -> 0.24
                 else -> 0.08
             }
         }
         return when (this) {
             CANOPY ->
-                if (color == BiologicalColor.GREEN || color == BiologicalColor.BROWN) 0.28 else 0.05
+                when (color) {
+                    BiologicalColor.GREEN, BiologicalColor.BROWN -> 0.28
+                    else -> 0.05
+                }
 
-            LAND_SURFACE, SEA_ICE ->
-                if (color == BiologicalColor.BROWN || color == BiologicalColor.PALE) 0.24 else 0.05
+            LAND_SURFACE -> when (color) {
+                BiologicalColor.BROWN -> 0.24
+                BiologicalColor.PALE -> if (canopyCover < 0.35) 0.24 else 0.15
+                BiologicalColor.GREEN -> if(canopyCover > 0.2) 0.2 else 0.15
+                BiologicalColor.WHITE -> if (canopyCover < 0.35) 0.1 else 0.0
+                else -> 0.05
+            }
 
-            FRESHWATER, COASTAL, SUNLIT_WATER, DARK_WATER ->
-                if (color == BiologicalColor.BLUE_GREEN || color == BiologicalColor.BLACK) 0.22 else 0.05
+            SEA_ICE -> when {
+                color == BiologicalColor.WHITE -> 0.20
+                else -> 0.05
+            }
+
+            FRESHWATER, COASTAL, SUNLIT_WATER ->
+                when (color) {
+                    BiologicalColor.COUNTERSHADE -> 0.30
+                    BiologicalColor.BLUE -> 0.20
+                    else -> 0.05
+                }
+
+            DARK_WATER ->
+                when (color) {
+                    BiologicalColor.BLACK -> 0.1
+                    BiologicalColor.BLUE -> 0.075
+                    BiologicalColor.BROWN -> 0.075
+                    else -> 0.05
+                }
 
             AERIAL ->
-                if (color == BiologicalColor.PALE || color == BiologicalColor.BLUE_GREEN) 0.18 else 0.04
+                when (color) {
+                    BiologicalColor.WHITE -> 0.24
+                    BiologicalColor.BLUE -> 0.18
+                    else -> 0.04
+                }
         }
     }
 }

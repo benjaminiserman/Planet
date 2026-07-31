@@ -174,7 +174,7 @@ object EarthSpeciesCatalog {
             CommonTrait.DENSE_FUR,
             CommonTrait.BLUBBER,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.WHITE
         ),
         animal(
             "brown-bear",
@@ -223,7 +223,7 @@ object EarthSpeciesCatalog {
             CommonTrait.LEAPING_LEGS,
             CommonTrait.DENSE_FUR,
             CommonTrait.SEASONAL_WINTER_COAT,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.WHITE
         ),
         animal(
             "north-american-beaver",
@@ -338,7 +338,7 @@ object EarthSpeciesCatalog {
             CommonTrait.FOOD_DERIVED_WATER,
             CommonTrait.CAMOUFLAGE_PATTERN,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.WHITE
         ),
         animal(
             "white-tailed-deer",
@@ -388,7 +388,7 @@ object EarthSpeciesCatalog {
             CommonTrait.BLUBBER,
             CommonTrait.LONG_MIGRATION,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "humpback-whale",
@@ -402,7 +402,7 @@ object EarthSpeciesCatalog {
             CommonTrait.BLUBBER,
             CommonTrait.LONG_MIGRATION,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.BLACK
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "orca",
@@ -415,7 +415,7 @@ object EarthSpeciesCatalog {
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.BLUBBER,
             CommonTrait.ECHOLOCATION,
-            camouflage = BiologicalColor.BLACK
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "bottlenose-dolphin",
@@ -428,7 +428,7 @@ object EarthSpeciesCatalog {
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.ECHOLOCATION,
             CommonTrait.BLUBBER,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "harbor-seal",
@@ -597,7 +597,7 @@ object EarthSpeciesCatalog {
             CommonTrait.LEAPING_LEGS,
             CommonTrait.DENSE_FUR,
             CommonTrait.SEASONAL_WINTER_COAT,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.WHITE
         ),
         // High Andes
         animal(
@@ -638,6 +638,18 @@ object EarthSpeciesCatalog {
             CommonTrait.MASSIVE_EARS,
             CommonTrait.PREY_DERIVED_WATER,
             CommonTrait.DRY_BURROW_NEST,
+            camouflage = BiologicalColor.PALE
+        ),
+        animal(
+            "kangaroo-rat",
+            "Kangaroo rat",
+            SizeClass.TINY,
+            CommonTrait.HETEROTHERMY,
+            CommonTrait.TERRESTRIAL_LOCOMOTION,
+            CommonTrait.GRAZING_MOUTHPARTS,
+            CommonTrait.FOOD_DERIVED_WATER,
+            CommonTrait.DRY_BURROW_NEST,
+            CommonTrait.CACHED_FOOD,
             camouflage = BiologicalColor.PALE
         ),
         // Canadian Shield boreal forest
@@ -894,7 +906,7 @@ object EarthSpeciesCatalog {
             CommonTrait.WATERPROOF_PLUMAGE,
             CommonTrait.COLD_ACTIVE_ENZYMES,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.BLACK
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "common-ostrich",
@@ -987,7 +999,7 @@ object EarthSpeciesCatalog {
             CommonTrait.TERRESTRIAL_LOCOMOTION,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.SEED_CRACKING_MOUTHPARTS,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.BLUE
         ),
         animal(
             "pileated-woodpecker",
@@ -1042,7 +1054,7 @@ object EarthSpeciesCatalog {
             CommonTrait.POWERED_FLIGHT,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.WATERPROOF_PLUMAGE,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.BLUE
         ),
         animal(
             "andean-condor",
@@ -1239,7 +1251,7 @@ object EarthSpeciesCatalog {
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.ELECTRORECEPTION,
             CommonTrait.FAT_RESERVES,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "whale-shark",
@@ -1251,7 +1263,7 @@ object EarthSpeciesCatalog {
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.GILL_PADS,
             CommonTrait.LONG_MIGRATION,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "giant-oceanic-manta",
@@ -1263,7 +1275,7 @@ object EarthSpeciesCatalog {
             CommonTrait.GILL_PADS,
             CommonTrait.ELECTRORECEPTION,
             CommonTrait.LONG_MIGRATION,
-            camouflage = BiologicalColor.BLACK
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "atlantic-bluefin-tuna",
@@ -1274,7 +1286,7 @@ object EarthSpeciesCatalog {
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.LONG_MIGRATION,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "atlantic-salmon",
@@ -1286,7 +1298,7 @@ object EarthSpeciesCatalog {
             CommonTrait.COLD_ACTIVE_ENZYMES,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.LONG_MIGRATION,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "ocellaris-clownfish",
@@ -1352,7 +1364,7 @@ object EarthSpeciesCatalog {
             CommonTrait.DEEP_DIVING_PHYSIOLOGY,
             CommonTrait.PURSUIT_LIMBS,
             CommonTrait.LONG_MIGRATION,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "channel-catfish",
@@ -1382,7 +1394,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ECTOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GILL_PADS,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
         animal(
             "coral-grouper",
@@ -1426,7 +1438,7 @@ object EarthSpeciesCatalog {
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.ANTIFREEZE_PROTEINS,
             CommonTrait.COLD_ACTIVE_ENZYMES,
-            camouflage = BiologicalColor.PALE
+            camouflage = BiologicalColor.COUNTERSHADE
         ),
     ).map { definition ->
         if (CommonTrait.GILLS in definition.traits) {
@@ -1499,7 +1511,7 @@ object EarthSpeciesCatalog {
             CommonTrait.CRUSHING_CLAWS,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.ARMORED_HIDE,
-            camouflage = BiologicalColor.BLUE_GREEN
+            camouflage = BiologicalColor.BLUE
         ),
         animal(
             "american-lobster",

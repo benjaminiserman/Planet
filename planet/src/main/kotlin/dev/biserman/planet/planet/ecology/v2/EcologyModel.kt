@@ -12,10 +12,12 @@ enum class BiologicalColor {
     BLACK,
     BROWN,
     GREEN,
-    BLUE_GREEN,
+    BLUE,
     RED,
     PURPLE,
     PALE,
+    WHITE,
+    COUNTERSHADE,
 }
 
 enum class ThermalStrategy {

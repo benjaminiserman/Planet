@@ -90,6 +90,23 @@ enum class EcoStrategy(
         setOf(Habitat.LAND_SURFACE, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.DARK_WATER),
     );
 
+    /**
+     * These strategies receive food through precompiled species interactions.
+     * Their carrying-capacity ceiling must not be reduced merely because they
+     * intentionally have no background resource pool.
+     */
+    val foodComesFromModeledPopulations: Boolean
+        get() = when (this) {
+            FILTER_FEEDING,
+            GRAZING,
+            GENERALIST_FORAGING,
+            AMBUSH_PREDATION,
+            PURSUIT_PREDATION,
+            PARASITISM,
+            -> true
+            else -> false
+        }
+
     fun resourceSupport(
         environment: SeasonalCellEnvironment,
         habitat: Habitat,

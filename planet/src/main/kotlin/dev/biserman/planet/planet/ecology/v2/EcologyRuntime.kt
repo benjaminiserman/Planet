@@ -416,6 +416,7 @@ class EcologyRuntime(
                 val colorCamouflage = targetHabitat.camouflageMatch(
                     target.camouflageColor,
                     environment.snowOrIce,
+                    environment.canopyCover,
                     environment.reefCover,
                 )
                 val concealment =
@@ -484,6 +485,7 @@ class EcologyRuntime(
                 val colorCamouflage = targetHabitat.camouflageMatch(
                     target.camouflageColor,
                     environment.snowOrIce,
+                    environment.canopyCover,
                     environment.reefCover,
                 )
                 val concealment =

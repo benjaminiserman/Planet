@@ -138,10 +138,7 @@ class SeasonalCellEnvironment private constructor(
                 habitats[habitat.ordinal] = availability.coerceIn(0.0, 1.0)
             }
 
-            val snowOrIce =
-                temperatureC < 0.0 &&
-                    annualAverageTemperatureC < 6.0 &&
-                    (water > 0.12 || !isLand)
+            val snowOrIce = permanentSeaIce || (temperatureC < 0.0 && water > annualAverageTemperatureC / 100.0)
 
             return SeasonalCellEnvironment(
                 areaKm2 = areaKm2,
@@ -399,15 +396,19 @@ object LightColorModel {
         red: Double,
         purple: Double,
         pale: Double,
+        white: Double = pale,
+        countershade: Double = pale,
     ) = PhotosyntheticCompatibility(
         mapOf(
             BiologicalColor.BLACK to black,
             BiologicalColor.BROWN to brown,
             BiologicalColor.GREEN to green,
-            BiologicalColor.BLUE_GREEN to blueGreen,
+            BiologicalColor.BLUE to blueGreen,
             BiologicalColor.RED to red,
             BiologicalColor.PURPLE to purple,
             BiologicalColor.PALE to pale,
+            BiologicalColor.WHITE to white,
+            BiologicalColor.COUNTERSHADE to countershade,
         ),
     )
 }
