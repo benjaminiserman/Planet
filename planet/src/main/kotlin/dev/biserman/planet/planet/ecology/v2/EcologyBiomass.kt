@@ -91,6 +91,7 @@ object EcologyBiomass {
         val resource = when {
             aquaticFilterFeeder ->
                 (environment.fertility * environment.lightAt(niche.habitat)).coerceAtLeast(0.04)
+            niche.strategy.foodComesFromModeledPopulations -> 1.0
             else ->
                 environment.resourceSupport(niche, species.sizeClass).coerceAtLeast(0.04)
         }

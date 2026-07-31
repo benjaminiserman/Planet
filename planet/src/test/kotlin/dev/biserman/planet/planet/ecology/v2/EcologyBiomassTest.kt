@@ -52,6 +52,45 @@ class EcologyBiomassTest {
     }
 
     @Test
+    fun `modeled prey consumers receive a trophic ceiling without background food`() {
+        val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.BUGS))
+        val bugs = ecology.species.single()
+        val environment = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 20.0,
+            insolation = 0.8,
+            precipitationMm = 800.0,
+            isLand = true,
+        )
+        val nicheIndex = NicheSelection.choose(bugs, ecology, environment)
+        val niche = ecology.niches[nicheIndex]
+        val carryingCapacity =
+            EcologyBiomass.carryingCapacityKg(bugs, niche, environment)
+        val expectedCapacity =
+            environment.areaKm2 *
+                220.0 *
+                bugs.sizeClass.densityScale *
+                environment.fertility *
+                environment.habitatAvailability(niche.habitat)
+
+        assertEquals(expectedCapacity, carryingCapacity)
+        assertEquals(0.0, environment.resourceSupport(niche, bugs.sizeClass))
+
+        val community = TileCommunity()
+        community.add(bugs.index, nicheIndex, carryingCapacity * 0.50)
+        val runtime = EcologyRuntime(ecology)
+        repeat(20) {
+            runtime.advanceSeason(community, environment)
+        }
+
+        assertTrue(
+            community.find(bugs.index) < 0 ||
+                community.activeBiomass[community.find(bugs.index)] < carryingCapacity * 0.50,
+            "A higher trophic ceiling must not create food where no producer exists",
+        )
+    }
+
+    @Test
     fun `huge filter feeder remains far below its plankton stock over one thousand years`() {
         val whaleShark = EarthSpeciesCatalog.FISH.single { it.id == "whale-shark" }
         val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.PLANKTON, whaleShark))

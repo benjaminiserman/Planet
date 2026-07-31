@@ -48,6 +48,69 @@ class EcologyEnvironmentTest {
     }
 
     @Test
+    fun `pale matches open ground while white matches snow`() {
+        val paleOpen = Habitat.LAND_SURFACE.camouflageMatch(
+            BiologicalColor.PALE,
+            snowOrIce = false,
+            canopyCover = 0.1,
+            reefCover = 0.0,
+        )
+        val paleForest = Habitat.LAND_SURFACE.camouflageMatch(
+            BiologicalColor.PALE,
+            snowOrIce = false,
+            canopyCover = 0.8,
+            reefCover = 0.0,
+        )
+        val paleSnow = Habitat.LAND_SURFACE.camouflageMatch(
+            BiologicalColor.PALE,
+            snowOrIce = true,
+            canopyCover = 0.1,
+            reefCover = 0.0,
+        )
+        val whiteSnow = Habitat.LAND_SURFACE.camouflageMatch(
+            BiologicalColor.WHITE,
+            snowOrIce = true,
+            canopyCover = 0.1,
+            reefCover = 0.0,
+        )
+        val whiteOpen = Habitat.LAND_SURFACE.camouflageMatch(
+            BiologicalColor.WHITE,
+            snowOrIce = false,
+            canopyCover = 0.1,
+            reefCover = 0.0,
+        )
+
+        assertTrue(paleOpen > paleForest)
+        assertTrue(whiteSnow > paleSnow)
+        assertTrue(whiteSnow > whiteOpen)
+    }
+
+    @Test
+    fun `countershading matches sunlit water but not dark water`() {
+        val countershadedSunlit = Habitat.SUNLIT_WATER.camouflageMatch(
+            BiologicalColor.COUNTERSHADE,
+            snowOrIce = false,
+            canopyCover = 0.0,
+            reefCover = 0.0,
+        )
+        val blueGreenSunlit = Habitat.SUNLIT_WATER.camouflageMatch(
+            BiologicalColor.BLUE,
+            snowOrIce = false,
+            canopyCover = 0.0,
+            reefCover = 0.0,
+        )
+        val countershadedDark = Habitat.DARK_WATER.camouflageMatch(
+            BiologicalColor.COUNTERSHADE,
+            snowOrIce = false,
+            canopyCover = 0.0,
+            reefCover = 0.0,
+        )
+
+        assertTrue(countershadedSunlit > blueGreenSunlit)
+        assertTrue(countershadedSunlit > countershadedDark)
+    }
+
+    @Test
     fun `grazing obtains food only from modeled producer populations`() {
         assertEquals(
             0.0,

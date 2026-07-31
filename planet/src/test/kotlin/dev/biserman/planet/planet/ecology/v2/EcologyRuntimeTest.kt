@@ -470,7 +470,7 @@ class EcologyRuntimeTest {
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.DIFFUSIVE_AQUATIC_GAS_EXCHANGE,
         ) + extraTraits,
-        photosyntheticColor = BiologicalColor.BLUE_GREEN,
+        photosyntheticColor = BiologicalColor.BLUE,
     )
 
     private fun grazer() = SpeciesDefinition(
