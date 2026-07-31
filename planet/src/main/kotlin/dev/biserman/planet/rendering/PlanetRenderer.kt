@@ -5,8 +5,8 @@ import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.planet.ecology.v2.EarthSpeciesCatalog
-import dev.biserman.planet.planet.ecology.v2.TileEcosystem
+import dev.biserman.planet.planet.ecology.EarthSpeciesCatalog
+import dev.biserman.planet.planet.ecology.TileEcosystem
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevationStrength
 import dev.biserman.planet.rendering.colormodes.BiomeColorMode
 import dev.biserman.planet.rendering.colormodes.SimpleColorMode

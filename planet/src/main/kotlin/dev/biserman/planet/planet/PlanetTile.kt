@@ -22,10 +22,10 @@ import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
-import dev.biserman.planet.planet.ecology.v2.TileEcosystem
-import dev.biserman.planet.planet.ecology.v2.PlanetEcology
-import dev.biserman.planet.planet.ecology.v2.Habitat
-import dev.biserman.planet.planet.ecology.v2.PlanetEcologyEnvironment
+import dev.biserman.planet.planet.ecology.TileEcosystem
+import dev.biserman.planet.planet.ecology.PlanetEcology
+import dev.biserman.planet.planet.ecology.Habitat
+import dev.biserman.planet.planet.ecology.PlanetEcologyEnvironment
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
