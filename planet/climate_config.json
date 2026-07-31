@@ -30,7 +30,7 @@
   "defaultAxialTiltDegrees" : 23.5,
   "defaultOrbitalEccentricity" : 0.017,
   "dryLapseRate" : -0.0098,
-  "dryLapseRateScalar" : 0.645,
+  "dryLapseRateScalar" : 0.55,
   "equatorMoistureEffectInsolationExp" : 2.0,
   "equatorMoistureEffectMaxContinentiality" : 9.0,
   "equatorMoistureEffectMaxDistance" : 2.5,

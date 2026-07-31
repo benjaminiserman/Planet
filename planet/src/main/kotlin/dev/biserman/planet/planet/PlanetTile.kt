@@ -69,7 +69,7 @@ class PlanetTile(
     var moisture = 0.0
     var ecosystem = TileEcosystem()
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo(
+    val airPressure by memo( // air pressure at sea level
         { planet.terrainChangeCount }, { planet.daysPassed }, { ClimateRuntimeConfig.revision }
     ) { calculateAirPressure() }
     val prevailingWind by memo(

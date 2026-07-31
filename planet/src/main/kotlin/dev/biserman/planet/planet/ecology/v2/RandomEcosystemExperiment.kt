@@ -80,8 +80,25 @@ object RandomEcosystemExperiment {
                 marineSnow = if (!tile.isLand || tile.adjacentToOcean) 0.12 else 0.0,
             ),
         )
+        val annualEnvironments = List(12) { month ->
+            environmentAt(
+                climate = climate.first,
+                tile = tile,
+                year = (month + 0.5) / 12.0,
+                resources = FunctionalResources(),
+            )
+        }
+        val birdIds = EarthSpeciesCatalog.BIRDS.mapTo(hashSetOf()) { it.id }
+        val openOceanBirdIds = setOf("emperor-penguin", "wandering-albatross")
         val candidates = catalogEcology.species.filter { species ->
-            NicheSelection.choose(species, catalogEcology, initialEnvironment) >= 0
+            val permittedOverOcean =
+                tile.isLand || species.id !in birdIds || species.id in openOceanBirdIds
+            permittedOverOcean &&
+                EcologySuitability.evaluate(
+                    species,
+                    catalogEcology,
+                    annualEnvironments,
+                ).suitable
         }
         // Extremely restrictive habitats, especially permanent coastal sea
         // ice, may authentically have fewer than the requested ten candidates.

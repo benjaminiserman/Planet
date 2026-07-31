@@ -623,7 +623,10 @@ class EcologyRuntime(
             // physiological stress so the same dry or cool season is not charged
             // twice at full strength.
             val stressLoss =
-                if (EcologyFitness.thermal(species, environment) <= 0.0) {
+                if (
+                    EcologyFitness.thermal(species, environment) <= 0.0 ||
+                    EcologyFitness.elevation(species, environment, niche.habitat) <= 0.0
+                ) {
                     active * config.lethalTemperatureMortality
                 } else {
                     active * config.stressMortality * stress * stress * stress * stress

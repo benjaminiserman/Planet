@@ -30,6 +30,11 @@ enum class AquaticSalinityTolerance {
     BROAD,
 }
 
+enum class AquaticRespirationMode {
+    UNDERWATER,
+    BREATH_HOLDING,
+}
+
 enum class DormancyKind {
     NONE,
     PROPAGULE,
@@ -113,6 +118,12 @@ sealed interface TraitEffect {
             require(absoluteMaximumM > optimalMaximumM)
         }
     }
+    data class ElevationToleranceShift(val meters: Double) : TraitEffect {
+        init {
+            require(meters >= 0.0)
+        }
+    }
+    data object SnowHydration : TraitEffect
 
     data class InsolationOptimum(val change: Double) : TraitEffect
     data class CanopyLightEfficiency(val change: Double) : TraitEffect
@@ -134,6 +145,7 @@ sealed interface TraitEffect {
     data class ReproductionMultiplier(val multiplier: Double) : TraitEffect
     data object FreshwaterOsmoregulation : TraitEffect
     data object BroadSalinityTolerance : TraitEffect
+    data class AquaticRespiration(val mode: AquaticRespirationMode) : TraitEffect
     data object PelagicAerialResidency : TraitEffect
     data object DarkWaterAdaptation : TraitEffect
     data class ObligateResidentHabitat(val habitat: Habitat) : TraitEffect

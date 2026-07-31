@@ -109,14 +109,7 @@ object PlanetEcology {
         tile.ecosystem.reefCover = initialReefCover(tile, climate.averageTemperature)
         val annualEnvironments =
             PlanetEcologyEnvironment.annualEnvironments(tile, climate, context)
-        val currentEnvironment = PlanetEcologyEnvironment.environment(
-            tile,
-            climate,
-            tile.planet.historyTurn / 4.0,
-            context,
-        )
-
-        val invariantSpecies = relevantInvariantSpecies(currentEnvironment)
+        val invariantSpecies = relevantInvariantSpecies(annualEnvironments)
         val scoredCandidates = EarthSpeciesCatalog.ALL.map { definition ->
             val species = compiled.species[compiled.speciesIndex(definition.id)]
             species to EcologySuitability.evaluate(
@@ -163,7 +156,7 @@ object PlanetEcology {
         selected.forEach { (species, suitability) ->
             val niche = compiled.niches[suitability.nicheIndex]
             val carryingCapacity =
-                EcologyBiomass.carryingCapacityKg(species, niche, currentEnvironment)
+                initialCarryingCapacityKg(species, niche, annualEnvironments)
             val capacityFraction = when (niche.strategy) {
                 EcoStrategy.PHOTOSYNTHESIS, EcoStrategy.ABSORPTION ->
                     random.nextDouble(0.45, 0.75)
@@ -295,26 +288,45 @@ object PlanetEcology {
         }
     }
 
-    private fun relevantInvariantSpecies(
-        environment: SeasonalCellEnvironment,
+    internal fun relevantInvariantSpecies(
+        annualEnvironments: List<SeasonalCellEnvironment>,
     ): List<CompiledSpecies> = buildList {
-        if (environment.isLand) {
+        require(annualEnvironments.isNotEmpty()) {
+            "Random ecosystem initialization requires at least one seasonal environment"
+        }
+        if (annualEnvironments.any { it.isLand }) {
             add(compiled.species[compiled.speciesIndex(InvariantSpecies.CARPET_PLANTS.id)])
             add(compiled.species[compiled.speciesIndex(InvariantSpecies.BUGS.id)])
         }
-        val aquaticHabitatAvailable = EcologyFitness.aquaticHabitats.any {
-            environment.habitatAvailability(it) > 0.0
+        val aquaticHabitatAvailable = annualEnvironments.any { environment ->
+            EcologyFitness.aquaticHabitats.any {
+                environment.habitatAvailability(it) > 0.0
+            }
         }
         if (aquaticHabitatAvailable) {
             add(compiled.species[compiled.speciesIndex(InvariantSpecies.SMALL_AQUATIC_LIFE.id)])
         }
-        val photosyntheticWaterAvailable =
+        val photosyntheticWaterAvailable = annualEnvironments.any { environment ->
             listOf(Habitat.FRESHWATER, Habitat.COASTAL, Habitat.SUNLIT_WATER).any {
                 environment.habitatAvailability(it) > 0.0
             }
+        }
         if (photosyntheticWaterAvailable) {
             add(compiled.species[compiled.speciesIndex(InvariantSpecies.PLANKTON.id)])
         }
+    }
+
+    internal fun initialCarryingCapacityKg(
+        species: CompiledSpecies,
+        niche: NicheDefinition,
+        annualEnvironments: List<SeasonalCellEnvironment>,
+    ): Double {
+        require(annualEnvironments.isNotEmpty()) {
+            "Random ecosystem initialization requires at least one seasonal environment"
+        }
+        return annualEnvironments.sumOf { environment ->
+            EcologyBiomass.carryingCapacityKg(species, niche, environment)
+        } / annualEnvironments.size
     }
 
     private fun weightedSampleWithoutReplacement(

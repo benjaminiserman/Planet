@@ -6,6 +6,122 @@ import kotlin.test.assertTrue
 
 class EarthSpeciesCatalogTest {
     @Test
+    fun `regional biodiversity additions cover six underrepresented environments`() {
+        val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
+        val regionalSpecies = mapOf(
+            "Siberia" to listOf("siberian-larch", "siberian-musk-deer", "sable"),
+            "Himalayan plateau" to listOf("himalayan-juniper", "wild-yak", "himalayan-pika"),
+            "Rockies" to listOf("lodgepole-pine", "rocky-mountain-elk", "mountain-goat"),
+            "Andes" to listOf("ichu-grass", "vicuna", "andean-condor"),
+            "Sahara" to listOf("saharan-cypress", "addax", "fennec-fox"),
+            "Canadian Shield" to listOf("black-spruce", "woodland-caribou", "canada-lynx"),
+        )
+
+        regionalSpecies.forEach { (region, speciesIds) ->
+            val species = speciesIds.map { requireNotNull(definitions[it]) { "$region is missing $it" } }
+            assertEquals(1, species.count { !it.motile }, "$region plant coverage")
+            assertEquals(2, species.count { it.motile }, "$region animal coverage")
+        }
+
+        val coldRegionIds = regionalSpecies
+            .filterKeys { it != "Sahara" }
+            .values
+            .flatten()
+        coldRegionIds.forEach { speciesId ->
+            val traits = definitions.getValue(speciesId).traits
+            assertTrue(
+                traits.any {
+                    it == CommonTrait.DENSE_FUR ||
+                        it == CommonTrait.INSULATING_PLUMAGE ||
+                        it == CommonTrait.FROST_HARDENED_TISSUES ||
+                        it == CommonTrait.SEASONAL_WINTER_COAT
+                },
+                "$speciesId lacks an explicit cold-climate adaptation",
+            )
+        }
+    }
+
+    @Test
+    fun `high plateau species use evidence-supported water coat and oxygen adaptations`() {
+        val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
+
+        assertTrue(
+            CommonTrait.FOOD_DERIVED_WATER in
+                definitions.getValue("himalayan-pika").traits,
+        )
+        assertTrue(
+            CommonTrait.INSULATED_BURROW_REFUGE in
+                definitions.getValue("himalayan-pika").traits,
+        )
+        assertTrue(
+            CommonTrait.WOOLLY_UNDERCOAT in
+                definitions.getValue("snow-leopard").traits,
+        )
+        assertTrue(
+            CommonTrait.FOOD_DERIVED_WATER in
+                definitions.getValue("snow-leopard").traits,
+        )
+        assertTrue(
+            CommonTrait.ENLARGED_CARDIOPULMONARY_SYSTEM in
+                definitions.getValue("wild-yak").traits,
+        )
+        assertTrue(
+            CommonTrait.SNOW_AND_ICE_LICKING in
+                definitions.getValue("wild-yak").traits,
+        )
+        assertTrue(
+            CommonTrait.HIGH_AFFINITY_HEMOGLOBIN in
+                definitions.getValue("vicuna").traits,
+        )
+        listOf("wild-yak", "himalayan-pika", "mountain-goat").forEach { speciesId ->
+            assertTrue(
+                CommonTrait.SEASONAL_WINTER_COAT in definitions.getValue(speciesId).traits,
+                speciesId,
+            )
+        }
+
+        val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
+        listOf("wild-yak", "himalayan-pika", "snow-leopard").forEach { speciesId ->
+            val species = ecology.species.single { it.id == speciesId }
+            assertTrue(species.elevationToleranceShiftM >= 2_500.0, speciesId)
+        }
+    }
+
+    @Test
+    fun `Himalayan specialists are physically viable in a cold semidesert at 4500 meters`() {
+        val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
+        val temperatures = listOf(
+            -16.1, -11.5, -3.8, 2.7, 6.1, 7.0,
+            6.9, 6.1, 3.3, -2.7, -10.1, -15.6,
+        )
+        val insolations = listOf(
+            0.49, 0.55, 0.65, 0.75, 0.81, 0.83,
+            0.82, 0.78, 0.70, 0.60, 0.52, 0.47,
+        )
+        val precipitation = listOf(2.0, 2.0, 3.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0)
+        val annualEnvironments = temperatures.indices.map { month ->
+            SeasonalCellEnvironment.create(
+                areaKm2 = 40_000.0,
+                temperatureC = temperatures[month],
+                annualAverageTemperatureC = -2.31,
+                insolation = insolations[month],
+                precipitationMm = precipitation[month],
+                isLand = true,
+                elevationM = 4_500.0,
+            )
+        }
+
+        listOf("wild-yak", "himalayan-pika", "snow-leopard").forEach { speciesId ->
+            val species = ecology.species.single { it.id == speciesId }
+            val suitability = EcologySuitability.evaluate(species, ecology, annualEnvironments)
+            assertTrue(
+                suitability.suitable,
+                "$speciesId: score=${suitability.score}, issues=${suitability.issues}",
+            )
+        }
+    }
+
+    @Test
     fun `catalog corrections keep feeding and insulation anatomy explicit`() {
         val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
         val walrus = requireNotNull(definitions["walrus"])
