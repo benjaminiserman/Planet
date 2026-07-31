@@ -4,7 +4,7 @@ import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.gui.Gui.Mode
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.Planet
-import dev.biserman.planet.planet.ecology.v2.PlanetEcology
+import dev.biserman.planet.planet.ecology.PlanetEcology
 import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.things.Concept
