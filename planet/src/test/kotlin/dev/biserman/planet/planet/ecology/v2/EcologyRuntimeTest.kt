@@ -144,6 +144,76 @@ class EcologyRuntimeTest {
     }
 
     @Test
+    fun `polar plankton overwinter as a small resting stock and regrow below tropical biomass`() {
+        val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.PLANKTON))
+        val species = ecology.species.single()
+        val tropicalEnvironment = oceanEnvironment(temperatureC = 25.0)
+        val niche = NicheSelection.choose(species, ecology, tropicalEnvironment)
+        val tropical = TileCommunity().also {
+            it.add(species.index, niche, activeBiomass = 1.0e10)
+        }
+        val polar = TileCommunity().also {
+            it.add(species.index, niche, activeBiomass = 1.0e10)
+        }
+        val polarYear = listOf(
+            polarOceanEnvironment(
+                temperatureC = -8.0,
+                insolation = 0.0,
+                usefulSunlightReachesWater = false,
+            ),
+            polarOceanEnvironment(
+                temperatureC = -5.0,
+                insolation = 0.01,
+                usefulSunlightReachesWater = false,
+            ),
+            polarOceanEnvironment(
+                temperatureC = 2.0,
+                insolation = 0.55,
+                usefulSunlightReachesWater = true,
+            ),
+            polarOceanEnvironment(
+                temperatureC = 7.0,
+                insolation = 0.95,
+                usefulSunlightReachesWater = true,
+            ),
+        )
+        val tropicalRuntime = EcologyRuntime(ecology)
+        val polarRuntime = EcologyRuntime(ecology)
+        var lateWinterBiomass = 0.0
+        var lateSummerBiomass = 0.0
+
+        repeat(400) { year ->
+            repeat(4) {
+                tropicalRuntime.advanceSeason(tropical, tropicalEnvironment)
+            }
+            polarYear.forEachIndexed { season, environment ->
+                val beforeSeason = polar.totalBiomass()
+                polarRuntime.advanceSeason(polar, environment)
+                assertTrue(
+                    polar.find(species.index) >= 0,
+                    "Polar plankton went locally extinct in year $year season $season " +
+                        "from ${"%.3e".format(beforeSeason)} kg",
+                )
+                if (season == 1) lateWinterBiomass = polar.totalBiomass()
+                if (season == 3) lateSummerBiomass = polar.totalBiomass()
+            }
+        }
+
+        val tropicalBiomass = tropical.totalBiomass()
+        assertTrue(lateWinterBiomass > 0.0)
+        assertTrue(
+            lateSummerBiomass > lateWinterBiomass * 2.0,
+            "winter=${"%.3e".format(lateWinterBiomass)} " +
+                "summer=${"%.3e".format(lateSummerBiomass)}",
+        )
+        assertTrue(
+            lateSummerBiomass < tropicalBiomass * 0.25,
+            "polar=${"%.3e".format(lateSummerBiomass)} " +
+                "tropical=${"%.3e".format(tropicalBiomass)}",
+        )
+    }
+
+    @Test
     fun `reef builders emit cover only from aquatic habitat`() {
         val species = aquaticProducer(extraTraits = listOf(CommonTrait.REEF_BUILDING))
         val ecology = EcologyCompiler.compile(listOf(species))
@@ -549,5 +619,22 @@ class EcologyRuntimeTest {
             resources = FunctionalResources(
                 marineSnow = 0.25,
             ),
+        )
+
+    private fun polarOceanEnvironment(
+        temperatureC: Double,
+        insolation: Double,
+        usefulSunlightReachesWater: Boolean,
+    ) =
+        SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = temperatureC,
+            annualAverageTemperatureC = -1.0,
+            insolation = insolation,
+            precipitationMm = 30.0,
+            isLand = false,
+            waterDepthM = 1_000.0,
+            usefulSunlightReachesWater = usefulSunlightReachesWater,
+            permanentSeaIce = true,
         )
 }

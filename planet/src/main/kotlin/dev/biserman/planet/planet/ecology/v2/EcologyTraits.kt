@@ -97,6 +97,17 @@ enum class CommonTrait(
         ),
         invariantOnly = true,
     ),
+    MICROSCOPIC_RESTING_STAGES(
+        "microscopic resting stages",
+        "A small fraction of the active population forms durable cysts, spores, or resting eggs that preserve the lineage through dark or otherwise unproductive seasons.",
+        listOf(
+            TraitEffect.DormantEntryBiomassRetention(0.10),
+            TraitEffect.DormantReactivationMultiplier(10.00),
+            TraitEffect.ReproductionMultiplier(1.03),
+            TraitEffect.MaintenanceCost(0.02),
+        ),
+        invariantOnly = true,
+    ),
     THAW_DEPENDENT_GROWTH(
         "thaw-dependent growth",
         "Living ground cover can overwinter below freezing, but requires liquid water and a thawed growing season to renew its tissues.",
@@ -396,6 +407,19 @@ enum class CommonTrait(
             TraitEffect.TemperatureTolerance(colderC = 3.0, hotterC = 3.0),
             TraitEffect.WaterRequirement(-0.06),
             TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    SAND_BURROWING(
+        "sand burrowing",
+        "Broad feet, digging behavior, and maintainable dens specialized for loose desert sand, providing a cooler and more humid refuge from exposed conditions.",
+        listOf(
+            TraitEffect.TemperatureTolerance(hotterC = 4.0),
+            TraitEffect.WaterRequirement(-0.06),
+            TraitEffect.MaximumWaterTolerance(
+                optimalMaximumChange = -0.25,
+                absoluteMaximumChange = -0.10,
+            ),
+            TraitEffect.MaintenanceCost(0.09),
         ),
     ),
     INSULATED_BURROW_REFUGE(

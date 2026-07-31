@@ -267,7 +267,14 @@ class EcologyWorldEcosystemHealthTest {
             totals[season] = community.totalBiomass()
         }
 
-        val tail = totals.copyOfRange(SIMULATION_SEASONS * 4 / 5, SIMULATION_SEASONS)
+        // Stability is year-to-year persistence, not the absence of ordinary
+        // seasonality. Comparing raw seasons incorrectly classifies a stable
+        // polar plankton bloom as an oscillating ecosystem.
+        val tail = totals
+            .copyOfRange(SIMULATION_SEASONS * 4 / 5, SIMULATION_SEASONS)
+            .asList()
+            .chunked(4)
+            .map { year -> year.average() }
         val mean = tail.average()
         val cv =
             if (mean > 0.0) sqrt(tail.sumOf { (it - mean) * (it - mean) } / tail.size) / mean

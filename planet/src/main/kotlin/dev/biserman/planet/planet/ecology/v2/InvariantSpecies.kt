@@ -62,6 +62,7 @@ object InvariantSpecies {
         traits = listOf(
             CommonTrait.TEMPERATE_BIOCHEMISTRY,
             CommonTrait.INVARIANT_RESISTANCE,
+            CommonTrait.MICROSCOPIC_RESTING_STAGES,
             CommonTrait.ECTOTHERMY,
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.FRESHWATER_OSMOREGULATION,

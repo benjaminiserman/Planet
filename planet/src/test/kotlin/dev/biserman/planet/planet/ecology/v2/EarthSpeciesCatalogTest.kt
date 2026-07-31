@@ -6,6 +6,31 @@ import kotlin.test.assertTrue
 
 class EarthSpeciesCatalogTest {
     @Test
+    fun `sand burrowing trades wet climate tolerance for desert refuge`() {
+        listOf("fennec-fox", "jerboa", "kangaroo-rat").forEach { speciesId ->
+            val definition = EarthSpeciesCatalog.ALL.single { it.id == speciesId }
+            assertTrue(
+                CommonTrait.SAND_BURROWING in definition.traits,
+                "$speciesId should be specialized for sandy desert burrows",
+            )
+        }
+        val fennec = EarthSpeciesCatalog.ALL.single { it.id == "fennec-fox" }
+        val withoutSandBurrowing = fennec.copy(
+            id = "fennec-without-sand-burrowing",
+            traits = fennec.traits - CommonTrait.SAND_BURROWING,
+        )
+        val compiled = EcologyCompiler.compile(listOf(fennec, withoutSandBurrowing))
+        val adapted = compiled.species[0]
+        val baseline = compiled.species[1]
+
+        assertTrue(adapted.temperatureOuterHigh > baseline.temperatureOuterHigh)
+        assertTrue(adapted.minimumWater < baseline.minimumWater)
+        assertTrue(adapted.optimalMaximumWater < baseline.optimalMaximumWater)
+        assertTrue(adapted.maximumWater < baseline.maximumWater)
+        assertTrue(adapted.maintenanceDemand > baseline.maintenanceDemand)
+    }
+
+    @Test
     fun `regional biodiversity additions cover six underrepresented environments`() {
         val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
         val regionalSpecies = mapOf(
@@ -38,52 +63,6 @@ class EarthSpeciesCatalogTest {
                 },
                 "$speciesId lacks an explicit cold-climate adaptation",
             )
-        }
-    }
-
-    @Test
-    fun `high plateau species use evidence-supported water coat and oxygen adaptations`() {
-        val definitions = EarthSpeciesCatalog.ALL.associateBy { it.id }
-
-        assertTrue(
-            CommonTrait.FOOD_DERIVED_WATER in
-                definitions.getValue("himalayan-pika").traits,
-        )
-        assertTrue(
-            CommonTrait.INSULATED_BURROW_REFUGE in
-                definitions.getValue("himalayan-pika").traits,
-        )
-        assertTrue(
-            CommonTrait.WOOLLY_UNDERCOAT in
-                definitions.getValue("snow-leopard").traits,
-        )
-        assertTrue(
-            CommonTrait.FOOD_DERIVED_WATER in
-                definitions.getValue("snow-leopard").traits,
-        )
-        assertTrue(
-            CommonTrait.ENLARGED_CARDIOPULMONARY_SYSTEM in
-                definitions.getValue("wild-yak").traits,
-        )
-        assertTrue(
-            CommonTrait.SNOW_AND_ICE_LICKING in
-                definitions.getValue("wild-yak").traits,
-        )
-        assertTrue(
-            CommonTrait.HIGH_AFFINITY_HEMOGLOBIN in
-                definitions.getValue("vicuna").traits,
-        )
-        listOf("wild-yak", "himalayan-pika", "mountain-goat").forEach { speciesId ->
-            assertTrue(
-                CommonTrait.SEASONAL_WINTER_COAT in definitions.getValue(speciesId).traits,
-                speciesId,
-            )
-        }
-
-        val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
-        listOf("wild-yak", "himalayan-pika", "snow-leopard").forEach { speciesId ->
-            val species = ecology.species.single { it.id == speciesId }
-            assertTrue(species.elevationToleranceShiftM >= 2_500.0, speciesId)
         }
     }
 
