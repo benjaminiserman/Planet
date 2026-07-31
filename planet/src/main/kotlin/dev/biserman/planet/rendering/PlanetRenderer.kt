@@ -36,6 +36,7 @@ import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.ln1p
+import kotlin.math.log10
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -249,6 +250,15 @@ class PlanetRenderer(parent: Node, var planet: Planet) {
             "number_of_species_in_ecosystem",
             categories = listOf("ecology", "overlay"),
         ) { tile -> tile.ecosystem.speciesCount.toDouble() / TileEcosystem.MAXIMUM_POPULATIONS })
+        add(SimpleDoubleColorMode(
+            this@PlanetRenderer,
+            "total_biomass",
+            categories = listOf("ecology", "overlay"),
+            colorFn = redWhenNull { value -> Color.black.transparent.lerp(Color.green, value) },
+        ) { tile ->
+            val biomass = tile.ecosystem.totalBiomassKg
+            if (biomass <= 0.0) null else log10(biomass + 1.0) / 15.0
+        })
 
         EarthSpeciesCatalog.ALL.filter { it.motile }.sortedBy { it.id }.forEach { species ->
             val mode = SimpleDoubleColorMode(

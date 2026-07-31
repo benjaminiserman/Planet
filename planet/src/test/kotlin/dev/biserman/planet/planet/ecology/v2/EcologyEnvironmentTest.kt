@@ -177,6 +177,82 @@ class EcologyEnvironmentTest {
     }
 
     @Test
+    fun `terrestrial motile elevation fitness declines from 2000 to 3000 meters`() {
+        fun organism(
+            id: String,
+            motile: Boolean,
+            locomotion: CommonTrait,
+            altitudeTrait: CommonTrait? = null,
+        ) = SpeciesDefinition(
+            id = id,
+            displayName = id,
+            sizeClass = SizeClass.MEDIUM,
+            motile = motile,
+            traits = listOfNotNull(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ENDOTHERMY.takeIf { motile },
+                locomotion,
+                CommonTrait.GRAZING_MOUTHPARTS.takeIf { motile },
+                CommonTrait.PHOTOSYNTHETIC_SURFACE.takeIf { !motile },
+                altitudeTrait,
+            ),
+            photosyntheticColor = BiologicalColor.GREEN.takeIf { !motile },
+        )
+        val ecology = EcologyCompiler.compile(
+            listOf(
+                organism("lowland-grazer", true, CommonTrait.TERRESTRIAL_LOCOMOTION),
+                organism(
+                    "highland-grazer",
+                    true,
+                    CommonTrait.TERRESTRIAL_LOCOMOTION,
+                    CommonTrait.HIGH_AFFINITY_HEMOGLOBIN,
+                ),
+                organism("flying-grazer", true, CommonTrait.POWERED_FLIGHT),
+                organism("rooted-producer", false, CommonTrait.ROOTED_BODY),
+            ),
+        )
+        val lowland = ecology.species[0]
+        val highland = ecology.species[1]
+        val flying = ecology.species[2]
+        val rooted = ecology.species[3]
+
+        assertEquals(1.0, EcologyFitness.elevation(lowland, land(elevationM = 2_000.0), Habitat.LAND_SURFACE))
+        assertEquals(0.5, EcologyFitness.elevation(lowland, land(elevationM = 2_500.0), Habitat.LAND_SURFACE))
+        assertEquals(0.0, EcologyFitness.elevation(lowland, land(elevationM = 3_000.0), Habitat.LAND_SURFACE))
+        assertEquals(1.0, EcologyFitness.elevation(highland, land(elevationM = 4_500.0), Habitat.LAND_SURFACE))
+        assertEquals(0.5, EcologyFitness.elevation(highland, land(elevationM = 5_000.0), Habitat.LAND_SURFACE))
+        assertEquals(0.0, EcologyFitness.elevation(highland, land(elevationM = 5_500.0), Habitat.LAND_SURFACE))
+        assertEquals(1.0, EcologyFitness.elevation(flying, land(elevationM = 6_000.0), Habitat.AERIAL))
+        assertEquals(1.0, EcologyFitness.elevation(rooted, land(elevationM = 6_000.0), Habitat.LAND_SURFACE))
+    }
+
+    @Test
+    fun `snow licking supplies water only when snow or ice is present`() {
+        val yak = EcologyCompiler.compile(
+            listOf(EarthSpeciesCatalog.MAMMALS.single { it.id == "wild-yak" }),
+        ).species.single()
+        val frozen = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = -8.0,
+            annualAverageTemperatureC = -2.0,
+            insolation = 0.5,
+            precipitationMm = 2.0,
+            isLand = true,
+        )
+        val thawed = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 8.0,
+            annualAverageTemperatureC = 8.0,
+            insolation = 0.7,
+            precipitationMm = 2.0,
+            isLand = true,
+        )
+
+        assertEquals(1.0, EcologyFitness.water(yak, frozen, Habitat.LAND_SURFACE))
+        assertTrue(EcologyFitness.water(yak, thawed, Habitat.LAND_SURFACE) < 1.0)
+    }
+
+    @Test
     fun `competition can make a locally secondary niche the best establishment choice`() {
         val definition = SpeciesDefinition(
             id = "branch-mat",
@@ -303,6 +379,7 @@ class EcologyEnvironmentTest {
     private fun land(
         adjacentToMajorRiver: Boolean = false,
         canopyCover: Double = 0.0,
+        elevationM: Double = 0.0,
     ) = SeasonalCellEnvironment.create(
         areaKm2 = 40_000.0,
         temperatureC = 22.0,
@@ -311,6 +388,7 @@ class EcologyEnvironmentTest {
         isLand = true,
         adjacentToMajorRiver = adjacentToMajorRiver,
         canopyCover = canopyCover,
+        elevationM = elevationM,
         resources = FunctionalResources(),
     )
 

@@ -445,6 +445,7 @@ class EcologyWorldEcosystemHealthTest {
             surfaceFertilityModifier = tile.fertilityModifier,
             isLand = tile.isLand,
             adjacentToOcean = tile.adjacentToOcean,
+            adjacentToLand = tile.adjacentToLand,
             adjacentToMajorRiver = tile.adjacentToMajorRiver,
             waterDepthM = tile.waterDepthM,
             usefulSunlightReachesWater = tile.usefulSunlightReachesWater,
@@ -496,6 +497,7 @@ class EcologyWorldEcosystemHealthTest {
         val tile = ParsedTile(
             isLand = tileValues.getValue("isLand").toBoolean(),
             adjacentToOcean = tileValues["adjacentToOcean"]?.toBoolean() ?: false,
+            adjacentToLand = tileValues["adjacentToLand"]?.toBoolean() ?: false,
             adjacentToMajorRiver = tileValues["adjacentToMajorRiver"]?.toBoolean() ?: false,
             waterDepthM = tileValues["waterDepthM"]?.toDouble() ?: 0.0,
             usefulSunlightReachesWater =
@@ -632,6 +634,7 @@ class EcologyWorldEcosystemHealthTest {
     private data class ParsedTile(
         val isLand: Boolean,
         val adjacentToOcean: Boolean = false,
+        val adjacentToLand: Boolean = false,
         val adjacentToMajorRiver: Boolean = false,
         val waterDepthM: Double = 0.0,
         val usefulSunlightReachesWater: Boolean = true,

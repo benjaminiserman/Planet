@@ -51,7 +51,8 @@ class RandomEcosystemExperimentTest {
             if (!result.tile.isLand) {
                 assertTrue(
                     result.selectedSpecies.filter { it in birdNames }.all { it in openOceanBirds },
-                    "Seed ${result.seed} selected a non-pelagic bird over open ocean",
+                    "Seed ${result.seed} selected non-pelagic birds over open ocean: " +
+                        result.selectedSpecies.filter { it in birdNames && it !in openOceanBirds },
                 )
                 result.chosenNiches["Wandering albatross"]?.let { niche ->
                     assertTrue(
@@ -85,7 +86,7 @@ class RandomEcosystemExperimentTest {
     }
 
     @Test
-    fun `long random communities do not retain profoundly climate mismatched species`() {
+    fun `long random communities seed and retain only annually viable species`() {
         val results = longRunSeeds.map { seed ->
             RandomEcosystemExperiment.run(seed = seed, seasons = 4_000)
         }
@@ -119,13 +120,12 @@ class RandomEcosystemExperimentTest {
             )
         }
         assertTrue(
-            results.any { result ->
-                result.selectedSpecies.any {
-                    result.maximumAnnualClimateFitness.getValue(it) < 0.35 &&
-                        it in result.extinctionSeasons
+            results.all { result ->
+                result.selectedSpecies.all {
+                    result.maximumAnnualClimateFitness.getValue(it) >= 0.35
                 }
             },
-            "The long random audit did not sample any climate-driven extinction",
+            "The random experiment seeded a species with no viable season",
         )
     }
 

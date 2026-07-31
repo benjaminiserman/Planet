@@ -74,6 +74,31 @@ class EcologyProductionTest {
     }
 
     @Test
+    fun `random ecosystem initialization is independent of hemisphere season`() {
+        val northernYear = environment(HersfeldtClimatePresets.PERMANENT_SEA_ICE)
+        val southernYear = northernYear.drop(6) + northernYear.take(6)
+
+        val northernInvariants =
+            PlanetEcology.relevantInvariantSpecies(northernYear).map { it.id }.toSet()
+        val southernInvariants =
+            PlanetEcology.relevantInvariantSpecies(southernYear).map { it.id }.toSet()
+
+        assertEquals(northernInvariants, southernInvariants)
+        assertTrue(InvariantSpecies.PLANKTON.id in northernInvariants)
+
+        val plankton = ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
+        val nicheIndex =
+            EcologySuitability.evaluate(plankton, ecology, northernYear).nicheIndex
+        val niche = ecology.niches[nicheIndex]
+        val northernCapacity =
+            PlanetEcology.initialCarryingCapacityKg(plankton, niche, northernYear)
+        val southernCapacity =
+            PlanetEcology.initialCarryingCapacityKg(plankton, niche, southernYear)
+
+        assertEquals(northernCapacity, southernCapacity, northernCapacity * 1e-12)
+    }
+
+    @Test
     fun `catalog animals do not gain broad climate ranges from generic physiology`() {
         assertUnsuitable("bengal-tiger", HersfeldtClimatePresets.DESERT)
         assertUnsuitable("red-kangaroo", HersfeldtClimatePresets.DESERT)

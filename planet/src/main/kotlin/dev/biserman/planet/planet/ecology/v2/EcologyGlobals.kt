@@ -18,6 +18,12 @@ object EcologyGlobals {
     /** Active biomass lost in one season beyond the species' lethal temperature boundary. */
     var lethalTemperatureMortality = 0.90
 
+    /** Highest elevation at which ordinary ground-dwelling motile species retain full fitness. */
+    var normalElevationLimitM = 2_000.0
+
+    /** Elevation at which ordinary ground-dwelling motile species reach zero fitness. */
+    var lethalElevationLimitM = 3_000.0
+
     /** Maximum fraction of active biomass that starvation can remove in one season. */
     var maximumStarvationMortality = 0.72
 
@@ -80,6 +86,8 @@ object EcologyGlobals {
         require(backgroundMortality in 0.0..1.0)
         require(stressMortality in 0.0..1.0)
         require(lethalTemperatureMortality in 0.0..1.0)
+        require(normalElevationLimitM >= 0.0)
+        require(lethalElevationLimitM > normalElevationLimitM)
         require(maximumStarvationMortality in 0.0..1.0)
         require(interspecificNicheCompetition >= 0.0)
         require(maximumConsumedBiomassFraction in 0.0..1.0)

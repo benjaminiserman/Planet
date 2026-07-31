@@ -29,6 +29,7 @@ class SeasonalCellEnvironment private constructor(
     val starLight: StarLight,
     val isLand: Boolean,
     val adjacentToLand: Boolean,
+    val elevationM: Double,
     val waterDepthM: Double,
     val resources: FunctionalResources,
     private val habitatAvailability: DoubleArray,
@@ -64,6 +65,7 @@ class SeasonalCellEnvironment private constructor(
             starLight = starLight,
             isLand = isLand,
             adjacentToLand = adjacentToLand,
+            elevationM = elevationM,
             waterDepthM = waterDepthM,
             resources = resources,
             habitatAvailability = habitatAvailability.copyOf(),
@@ -83,6 +85,7 @@ class SeasonalCellEnvironment private constructor(
             adjacentToOcean: Boolean = false,
             adjacentToLand: Boolean = false,
             adjacentToMajorRiver: Boolean = false,
+            elevationM: Double = 0.0,
             waterDepthM: Double = 0.0,
             usefulSunlightReachesWater: Boolean = true,
             permanentSeaIce: Boolean = false,
@@ -97,6 +100,7 @@ class SeasonalCellEnvironment private constructor(
             require(surfaceMoistureCapacityMultiplier > 0.0)
             require(canopyCover in 0.0..1.0)
             require(reefCover in 0.0..1.0)
+            require(elevationM >= 0.0)
             require(waterDepthM >= 0.0)
             require(!permanentSeaIce || !isLand)
 
@@ -116,6 +120,9 @@ class SeasonalCellEnvironment private constructor(
                 if (adjacentToOcean) habitats[Habitat.COASTAL.ordinal] = 0.48
             } else {
                 habitats[Habitat.AERIAL.ordinal] = 0.30
+                if (adjacentToLand) {
+                    habitats[Habitat.COASTAL.ordinal] = 1.0
+                }
                 if (permanentSeaIce) {
                     habitats[Habitat.SEA_ICE.ordinal] = 0.80
                 }
@@ -150,6 +157,7 @@ class SeasonalCellEnvironment private constructor(
                 starLight = starLight,
                 isLand = isLand,
                 adjacentToLand = adjacentToLand,
+                elevationM = elevationM,
                 waterDepthM = waterDepthM,
                 resources = resources,
                 habitatAvailability = habitats,
@@ -198,7 +206,21 @@ object EcologyFitness {
 
     fun water(species: CompiledSpecies, environment: SeasonalCellEnvironment, habitat: Habitat): Double {
         if (habitat.aquatic) return 1.0
-        val water = environment.waterAvailability
+        val frozenWaterAvailable =
+            environment.snowOrIce ||
+                (
+                    environment.waterAvailability > 0.0 &&
+                        (
+                            environment.temperatureC <= 0.0 ||
+                                environment.annualAverageTemperatureC <= 0.0
+                            )
+                    )
+        val water =
+            if (species.snowHydration && frozenWaterAvailable) {
+                max(environment.waterAvailability, species.minimumWater)
+            } else {
+                environment.waterAvailability
+            }
         if (water < species.minimumWater) {
             if (species.minimumWater <= 0.0) return 1.0
             return (water / species.minimumWater).coerceIn(0.0, 1.0)
@@ -232,10 +254,32 @@ object EcologyFitness {
         habitat: Habitat,
     ): Double =
         habitat(species, environment, habitat) *
+            elevation(species, environment, habitat) *
             thermal(species, environment) *
             water(species, environment, habitat) *
             light(species, environment, habitat) *
             vegetationStructure(species, environment, habitat)
+
+    fun elevation(
+        species: CompiledSpecies,
+        environment: SeasonalCellEnvironment,
+        habitat: Habitat,
+    ): Double {
+        if (!species.motile || !environment.isLand || habitat == Habitat.AERIAL || habitat.aquatic) {
+            return 1.0
+        }
+        val optimalMaximumM =
+            EcologyGlobals.normalElevationLimitM + species.elevationToleranceShiftM
+        val lethalMaximumM =
+            EcologyGlobals.lethalElevationLimitM + species.elevationToleranceShiftM
+        return when {
+            environment.elevationM <= optimalMaximumM -> 1.0
+            environment.elevationM >= lethalMaximumM -> 0.0
+            else ->
+                (lethalMaximumM - environment.elevationM) /
+                    (lethalMaximumM - optimalMaximumM)
+        }.coerceIn(0.0, 1.0)
+    }
 
     fun vegetationStructure(
         species: CompiledSpecies,
@@ -390,6 +434,11 @@ object NicheSelection {
                             habitat == Habitat.AERIAL &&
                             !species.pelagicAerialResident
                         ) &&
+                    !(
+                        !environment.isLand &&
+                            species.pelagicAerialResident &&
+                            habitat != Habitat.AERIAL
+                        ) &&
                     !(habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
             }
             .maxOfOrNull { species.nicheFit[it] }
@@ -411,6 +460,13 @@ object NicheSelection {
                 !environment.isLand &&
                 niche.habitat == Habitat.AERIAL &&
                 !species.pelagicAerialResident
+            ) {
+                return@forEach
+            }
+            if (
+                !environment.isLand &&
+                species.pelagicAerialResident &&
+                niche.habitat != Habitat.AERIAL
             ) {
                 return@forEach
             }

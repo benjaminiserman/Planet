@@ -65,6 +65,7 @@ object InvariantSpecies {
             CommonTrait.ECTOTHERMY,
             CommonTrait.BUOYANCY_BLADDER,
             CommonTrait.FRESHWATER_OSMOREGULATION,
+            CommonTrait.DIFFUSIVE_AQUATIC_GAS_EXCHANGE,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
         ),
         photosyntheticColor = BiologicalColor.GREEN,

@@ -8,6 +8,20 @@ import kotlin.test.assertTrue
 
 class EcologyRuntimeTest {
     @Test
+    fun `terrestrial animal above its lethal elevation suffers lethal mortality`() {
+        val ecology = EcologyCompiler.compile(listOf(grazer()))
+        val niche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.GRAZING)
+        val lowland = TileCommunity().also { it.add(0, niche, activeBiomass = 1_000.0) }
+        val highland = TileCommunity().also { it.add(0, niche, activeBiomass = 1_000.0) }
+        val runtime = EcologyRuntime(ecology)
+
+        runtime.advanceSeason(lowland, landEnvironment(elevationM = 2_000.0))
+        runtime.advanceSeason(highland, landEnvironment(elevationM = 3_000.0))
+
+        assertTrue(highland.activeBiomass[0] < lowland.activeBiomass[0] * 0.25)
+    }
+
+    @Test
     fun `reserves delay starvation without creating biomass`() {
         val ecology = EcologyCompiler.compile(listOf(landProducer()))
         val niche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.PHOTOSYNTHESIS)
@@ -454,6 +468,7 @@ class EcologyRuntimeTest {
             CommonTrait.TEMPERATE_BIOCHEMISTRY,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.BUOYANCY_BLADDER,
+            CommonTrait.DIFFUSIVE_AQUATIC_GAS_EXCHANGE,
         ) + extraTraits,
         photosyntheticColor = BiologicalColor.BLUE_GREEN,
     )
@@ -502,9 +517,13 @@ class EcologyRuntimeTest {
         camouflageColor = BiologicalColor.BLACK,
     )
 
-    private fun landEnvironment(temperatureC: Double = 21.0) =
+    private fun landEnvironment(
+        temperatureC: Double = 21.0,
+        elevationM: Double = 0.0,
+    ) =
         SeasonalCellEnvironment.create(
             areaKm2 = 40_000.0,
+            elevationM = elevationM,
             temperatureC = temperatureC,
             annualAverageTemperatureC = 18.0,
             insolation = 0.8,

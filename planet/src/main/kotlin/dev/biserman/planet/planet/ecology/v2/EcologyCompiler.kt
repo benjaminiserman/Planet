@@ -22,11 +22,15 @@ class CompiledSpecies(
     val seasonalColdTriggerInsolation: Double,
     val thermalStrategy: ThermalStrategy?,
     val aquaticSalinityTolerance: AquaticSalinityTolerance,
+    val underwaterBreathing: Boolean,
+    val prolongedBreathHolding: Boolean,
     val minimumWater: Double,
     val optimalMaximumWater: Double,
     val maximumWater: Double,
     val optimalMaximumWaterDepthM: Double,
     val absoluteMaximumWaterDepthM: Double,
+    val elevationToleranceShiftM: Double,
+    val snowHydration: Boolean,
     val insolationOptimum: Double,
     val canopyLightEfficiency: Double,
     val denseCanopyForagingPenalty: Double,
@@ -201,6 +205,8 @@ object EcologyCompiler {
         var maximumWater = 1.0
         var optimalMaximumWaterDepthM = Double.POSITIVE_INFINITY
         var absoluteMaximumWaterDepthM = Double.POSITIVE_INFINITY
+        var elevationToleranceShiftM = 0.0
+        var snowHydration = false
         var insolationOptimum = 0.8
         var canopyLightEfficiency = 0.0
         var denseCanopyForagingPenalty = 0.0
@@ -224,6 +230,8 @@ object EcologyCompiler {
         var darkWaterAdapted = false
         var freshwaterAdapted = false
         var broadSalinityTolerance = false
+        var underwaterBreathing = false
+        var prolongedBreathHolding = false
         var obligateResidentHabitat: Habitat? = null
         var requiresAdjacentLand = false
 
@@ -263,6 +271,9 @@ object EcologyCompiler {
                     absoluteMaximumWaterDepthM =
                         minOf(absoluteMaximumWaterDepthM, effect.absoluteMaximumM)
                 }
+                is TraitEffect.ElevationToleranceShift ->
+                    elevationToleranceShiftM += effect.meters
+                TraitEffect.SnowHydration -> snowHydration = true
                 is TraitEffect.InsolationOptimum -> insolationOptimum += effect.change
                 is TraitEffect.CanopyLightEfficiency -> canopyLightEfficiency += effect.change
                 is TraitEffect.DenseCanopyForagingPenalty ->
@@ -291,6 +302,10 @@ object EcologyCompiler {
                 is TraitEffect.ReproductionMultiplier -> reproductionMultiplier *= effect.multiplier
                 TraitEffect.FreshwaterOsmoregulation -> freshwaterAdapted = true
                 TraitEffect.BroadSalinityTolerance -> broadSalinityTolerance = true
+                is TraitEffect.AquaticRespiration -> when (effect.mode) {
+                    AquaticRespirationMode.UNDERWATER -> underwaterBreathing = true
+                    AquaticRespirationMode.BREATH_HOLDING -> prolongedBreathHolding = true
+                }
                 TraitEffect.PelagicAerialResidency -> pelagicAerialResident = true
                 TraitEffect.DarkWaterAdaptation -> darkWaterAdapted = true
                 is TraitEffect.ObligateResidentHabitat -> {
@@ -328,6 +343,13 @@ object EcologyCompiler {
         // interactions, and loaded communities all see the same restriction.
         if (definition.sizeClass.ordinal >= SizeClass.HUGE.ordinal) {
             habitatSupport[Habitat.FRESHWATER.ordinal] = 0.0
+        }
+        if (!underwaterBreathing && !prolongedBreathHolding) {
+            // Coastal and river habitats allow routine access to air or the
+            // waterline. Living in the open-ocean water column requires an
+            // explicit way to obtain oxygen while submerged.
+            habitatSupport[Habitat.SUNLIT_WATER.ordinal] = 0.0
+            habitatSupport[Habitat.DARK_WATER.ordinal] = 0.0
         }
         obligateResidentHabitat?.let { requiredHabitat ->
             habitatSupport.indices.forEach { habitatIndex ->
@@ -404,11 +426,15 @@ object EcologyCompiler {
             seasonalColdTriggerInsolation = seasonalColdTrigger,
             thermalStrategy = thermalStrategy,
             aquaticSalinityTolerance = aquaticSalinityTolerance,
+            underwaterBreathing = underwaterBreathing,
+            prolongedBreathHolding = prolongedBreathHolding,
             minimumWater = compiledMinimumWater,
             optimalMaximumWater = compiledOptimalMaximumWater,
             maximumWater = compiledMaximumWater,
             optimalMaximumWaterDepthM = optimalMaximumWaterDepthM,
             absoluteMaximumWaterDepthM = absoluteMaximumWaterDepthM,
+            elevationToleranceShiftM = elevationToleranceShiftM,
+            snowHydration = snowHydration,
             insolationOptimum = insolationOptimum.coerceIn(0.05, 1.0),
             canopyLightEfficiency = canopyLightEfficiency.coerceIn(0.0, 0.8),
             denseCanopyForagingPenalty = denseCanopyForagingPenalty.coerceIn(0.0, 1.0),

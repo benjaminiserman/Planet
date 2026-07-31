@@ -176,6 +176,32 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.06),
         ),
     ),
+    ENLARGED_CARDIOPULMONARY_SYSTEM(
+        "enlarged heart and lungs",
+        "An unusually large heart, lungs, and pulmonary exchange surface sustain oxygen delivery in thin air.",
+        listOf(
+            TraitEffect.ElevationToleranceShift(2_500.0),
+            TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    HIGH_AFFINITY_HEMOGLOBIN(
+        "high-affinity hemoglobin",
+        "Respiratory pigments bind oxygen effectively at the low partial pressures found at high elevation.",
+        listOf(
+            TraitEffect.ElevationToleranceShift(2_500.0),
+            TraitEffect.CaptureAbility(-0.03),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    HYPOXIA_RESPONSIVE_METABOLISM(
+        "hypoxia-responsive metabolism",
+        "Oxygen-sensing pathways adjust circulation and cellular energy use during chronic exposure to thin air.",
+        listOf(
+            TraitEffect.ElevationToleranceShift(2_500.0),
+            TraitEffect.ReproductionMultiplier(0.97),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
     SEA_ICE_LOCOMOTION(
         "sea-ice locomotion",
         "Broad feet, claws, body posture, or equivalent adaptations support travel and hunting across floating sea ice.",
@@ -191,6 +217,33 @@ enum class CommonTrait(
             TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.72),
             TraitEffect.HabitatSupport(Habitat.COASTAL, 0.52),
             TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    GILLS(
+        "gills",
+        "Thin, blood-supplied folds extract dissolved respiratory gases from water as it passes over them.",
+        listOf(
+            TraitEffect.AquaticRespiration(AquaticRespirationMode.UNDERWATER),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    DIFFUSIVE_AQUATIC_GAS_EXCHANGE(
+        "diffusive aquatic gas exchange",
+        "A thin body surface exchanges dissolved respiratory gases directly with surrounding water without dedicated gills.",
+        listOf(
+            TraitEffect.AquaticRespiration(AquaticRespirationMode.UNDERWATER),
+            TraitEffect.Defense(-0.04),
+            TraitEffect.MaintenanceCost(0.02),
+        ),
+    ),
+    PROLONGED_BREATH_HOLDING(
+        "prolonged breath-holding",
+        "Large internal oxygen stores and dive responses sustain repeated activity far from an immediately accessible shore.",
+        listOf(
+            TraitEffect.AquaticRespiration(AquaticRespirationMode.BREATH_HOLDING),
+            TraitEffect.ReserveCapacity(0.08),
+            TraitEffect.ReproductionMultiplier(0.97),
+            TraitEffect.MaintenanceCost(0.06),
         ),
     ),
     SEA_ICE_ROOKERY(
@@ -345,6 +398,14 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.10),
         ),
     ),
+    INSULATED_BURROW_REFUGE(
+        "insulated burrow refuge",
+        "A sheltered burrow or rock-crevice retreat buffers its occupant from the coldest exposed-air temperatures.",
+        listOf(
+            TraitEffect.TemperatureTolerance(colderC = 5.0),
+            TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
     DRY_BURROW_NEST(
         "dry burrow nest",
         "A nest chamber whose eggs, young, stored food, or respiratory surfaces require a well-drained burrow.",
@@ -369,6 +430,7 @@ enum class CommonTrait(
         "gill pads",
         "Broad ciliated or mucus-coated respiratory surfaces that also trap minuscule food from flowing water.",
         listOf(
+            TraitEffect.AquaticRespiration(AquaticRespirationMode.UNDERWATER),
             TraitEffect.StrategySupport(EcoStrategy.FILTER_FEEDING, 0.82),
             TraitEffect.HabitatSupport(Habitat.SUNLIT_WATER, 0.30),
             TraitEffect.MaintenanceCost(0.06),
@@ -530,6 +592,14 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.07),
         ),
     ),
+    WOOLLY_UNDERCOAT(
+        "woolly undercoat",
+        "A second layer of fine, densely packed hairs traps additional insulating air beneath the outer coat.",
+        listOf(
+            TraitEffect.TemperatureTolerance(colderC = 5.0, hotterC = -2.0),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
     INSULATING_PLUMAGE(
         "insulating plumage",
         "Dense overlapping feathers trap air around the body while remaining lighter than an equally thick fur coat.",
@@ -590,6 +660,14 @@ enum class CommonTrait(
             TraitEffect.WaterRequirement(-0.22),
             TraitEffect.CaptureAbility(-0.04),
             TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    SNOW_AND_ICE_LICKING(
+        "snow and ice licking",
+        "The organism deliberately consumes snow or surface ice when liquid drinking water is unavailable.",
+        listOf(
+            TraitEffect.SnowHydration,
+            TraitEffect.MaintenanceCost(0.04),
         ),
     ),
     PREY_DERIVED_WATER(

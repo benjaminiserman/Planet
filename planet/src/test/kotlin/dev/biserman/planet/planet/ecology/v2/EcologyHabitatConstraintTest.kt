@@ -68,6 +68,49 @@ class EcologyHabitatConstraintTest {
     }
 
     @Test
+    fun `open ocean requires underwater breathing or prolonged breath holding`() {
+        val blueWhale = catalogEcology.species.single { it.id == "blue-whale" }
+        val greatWhiteShark = catalogEcology.species.single { it.id == "great-white-shark" }
+        val manatee = catalogEcology.species.single { it.id == "west-indian-manatee" }
+        val seaOtter = catalogEcology.species.single { it.id == "sea-otter" }
+        val offshoreOcean = ocean(depthM = 250.0)
+        val coastalOcean = ocean(depthM = 45.0, adjacentToLand = true)
+
+        assertTrue(blueWhale.prolongedBreathHolding)
+        assertFalse(blueWhale.underwaterBreathing)
+        assertTrue(blueWhale.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+
+        assertTrue(greatWhiteShark.underwaterBreathing)
+        assertFalse(greatWhiteShark.prolongedBreathHolding)
+        assertTrue(greatWhiteShark.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+
+        for (coastalDiver in listOf(manatee, seaOtter)) {
+            assertFalse(coastalDiver.underwaterBreathing)
+            assertFalse(coastalDiver.prolongedBreathHolding)
+            assertTrue(coastalDiver.habitatSupport[Habitat.COASTAL.ordinal] > 0.0)
+            assertEquals(0.0, coastalDiver.habitatSupport[Habitat.SUNLIT_WATER.ordinal])
+            assertEquals(0.0, coastalDiver.habitatSupport[Habitat.DARK_WATER.ordinal])
+            assertEquals(-1, NicheSelection.choose(coastalDiver, catalogEcology, offshoreOcean))
+            assertTrue(NicheSelection.choose(coastalDiver, catalogEcology, coastalOcean) >= 0)
+        }
+    }
+
+    @Test
+    fun `every species with open-ocean habitat support can respire there`() {
+        for (species in catalogEcology.species) {
+            val hasOpenOceanSupport =
+                species.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0 ||
+                    species.habitatSupport[Habitat.DARK_WATER.ordinal] > 0.0
+            if (hasOpenOceanSupport) {
+                assertTrue(
+                    species.underwaterBreathing || species.prolongedBreathHolding,
+                    "${species.displayName} has open-ocean support without a qualifying respiration trait",
+                )
+            }
+        }
+    }
+
+    @Test
     fun `pandas and koalas consume only their obligate authored plants`() {
         val panda = catalogEcology.speciesIndex("giant-panda")
         val bamboo = catalogEcology.speciesIndex("giant-bamboo")

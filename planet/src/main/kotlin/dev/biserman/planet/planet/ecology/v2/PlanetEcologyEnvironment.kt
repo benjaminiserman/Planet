@@ -76,6 +76,7 @@ object PlanetEcologyEnvironment {
             adjacentToOcean = adjacentToOcean,
             adjacentToLand = adjacentToLand,
             adjacentToMajorRiver = adjacentToMajorRiver,
+            elevationM = tile.elevation.coerceAtLeast(0.0),
             waterDepthM = waterDepthM,
             // Depth decides whether a dark compartment exists; illumination
             // decides whether the surface compartment exists. A deep lit ocean
