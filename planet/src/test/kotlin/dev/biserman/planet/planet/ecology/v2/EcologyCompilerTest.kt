@@ -316,6 +316,21 @@ class EcologyCompilerTest {
         assertTrue(ecology.species.all { it.kind == SpeciesKind.INVARIANT })
         assertTrue(ecology.species.all { it.dormancyKind == DormancyKind.PROPAGULE })
         assertTrue(ecology.species.all { it.nicheCompetitionSensitivity < 0.20 })
+        assertEquals(
+            0.10,
+            ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
+                .dormantEntryBiomassRetention,
+        )
+        assertEquals(
+            10.0,
+            ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
+                .dormantReactivationMultiplier,
+        )
+        assertTrue(
+            ecology.species
+                .filterNot { it.id == InvariantSpecies.PLANKTON.id }
+                .all { it.dormantEntryBiomassRetention == 1.0 },
+        )
     }
 
     @Test

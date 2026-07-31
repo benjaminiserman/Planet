@@ -62,8 +62,8 @@ object EcologyBiomass {
         SizeClass.SMALL to 0.02,
         SizeClass.MEDIUM to 0.01,
         SizeClass.LARGE to 0.003,
-        SizeClass.HUGE to 0.0005,
-        SizeClass.COLOSSAL to 0.00025,
+        SizeClass.HUGE to 0.003,
+        SizeClass.COLOSSAL to 0.003,
     )
 
     private val terrestrialProducerDensity =

@@ -38,6 +38,8 @@ class CompiledSpecies(
     val nicheCompetitionSensitivity: Double,
     val dormancyKind: DormancyKind,
     val dormantSurvival: Double,
+    val dormantEntryBiomassRetention: Double,
+    val dormantReactivationMultiplier: Double,
     val dispersalKind: DispersalKind,
     val captureAbility: Double,
     val defense: Double,
@@ -214,6 +216,8 @@ object EcologyCompiler {
         var nicheCompetitionSensitivity = 1.0
         var dormancyKind = DormancyKind.NONE
         var dormantSurvival = 0.0
+        var dormantEntryBiomassRetention = 1.0
+        var dormantReactivationMultiplier = 1.0
         var dispersalKind = DispersalKind.NONE
         var reproductionMultiplier = 1.0
         val maintenanceCost = definition.traits.sumOf { trait ->
@@ -294,6 +298,10 @@ object EcologyCompiler {
                     dormancyKind = effect.kind
                     dormantSurvival = effect.survivalPerSeason
                 }
+                is TraitEffect.DormantEntryBiomassRetention ->
+                    dormantEntryBiomassRetention *= effect.fraction
+                is TraitEffect.DormantReactivationMultiplier ->
+                    dormantReactivationMultiplier *= effect.multiplier
                 is TraitEffect.Dispersal -> {
                     if (effect.kind.rangeClass > dispersalKind.rangeClass) {
                         dispersalKind = effect.kind
@@ -442,6 +450,9 @@ object EcologyCompiler {
             nicheCompetitionSensitivity = nicheCompetitionSensitivity.coerceIn(0.0, 1.0),
             dormancyKind = dormancyKind,
             dormantSurvival = dormantSurvival,
+            dormantEntryBiomassRetention =
+                dormantEntryBiomassRetention.coerceIn(0.0, 1.0),
+            dormantReactivationMultiplier = dormantReactivationMultiplier,
             dispersalKind = dispersalKind,
             captureAbility = captureAbility.coerceIn(0.05, 1.5),
             defense = defense.coerceIn(0.0, 1.5),

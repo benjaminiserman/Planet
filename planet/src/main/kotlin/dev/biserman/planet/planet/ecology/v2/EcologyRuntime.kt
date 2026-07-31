@@ -364,11 +364,23 @@ class EcologyRuntime(
             ) {
                 val entering = active * config.dormantEntryFraction
                 active -= entering
-                dormant += entering
+                // Resting eggs, spores, and cysts may preserve a lineage using
+                // much less living biomass than the active population that
+                // produced them. Whole-body dormancy retains the default 1:1
+                // transfer, while microscopic resting stages can opt into a
+                // smaller retained fraction.
+                dormant += entering * species.dormantEntryBiomassRetention
             } else if (populationFitness > config.dormantExitFitness && dormant > 0.0) {
                 val exiting = dormant * config.dormantExitFraction
                 dormant -= exiting
-                active += exiting
+                val carryingBiomass =
+                    EcologyBiomass.carryingCapacityKg(species, niche, environment)
+                val ordinaryReactivation = exiting
+                val bloomGrowth = min(
+                    exiting * (species.dormantReactivationMultiplier - 1.0),
+                    max(0.0, carryingBiomass - active - ordinaryReactivation),
+                )
+                active += ordinaryReactivation + bloomGrowth
             }
             effectiveActive[populationIndex] = active
             nextDormant[populationIndex] = dormant

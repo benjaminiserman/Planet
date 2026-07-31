@@ -637,7 +637,21 @@ object EarthSpeciesCatalog {
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.MASSIVE_EARS,
             CommonTrait.PREY_DERIVED_WATER,
+            CommonTrait.SAND_BURROWING,
             CommonTrait.DRY_BURROW_NEST,
+            camouflage = BiologicalColor.PALE
+        ),
+        animal(
+            "jerboa",
+            "Jerboa",
+            SizeClass.TINY,
+            CommonTrait.HETEROTHERMY,
+            CommonTrait.TERRESTRIAL_LOCOMOTION,
+            CommonTrait.GRAZING_MOUTHPARTS,
+            CommonTrait.FOOD_DERIVED_WATER,
+            CommonTrait.SAND_BURROWING,
+            CommonTrait.DRY_BURROW_NEST,
+            CommonTrait.CACHED_FOOD,
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -648,6 +662,7 @@ object EarthSpeciesCatalog {
             CommonTrait.TERRESTRIAL_LOCOMOTION,
             CommonTrait.GRAZING_MOUTHPARTS,
             CommonTrait.FOOD_DERIVED_WATER,
+            CommonTrait.SAND_BURROWING,
             CommonTrait.DRY_BURROW_NEST,
             CommonTrait.CACHED_FOOD,
             camouflage = BiologicalColor.PALE

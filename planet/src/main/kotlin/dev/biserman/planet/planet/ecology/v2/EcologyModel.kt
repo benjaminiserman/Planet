@@ -143,6 +143,16 @@ sealed interface TraitEffect {
     data class ReserveCapacity(val change: Double) : TraitEffect
     data class NicheCompetitionSensitivity(val multiplier: Double) : TraitEffect
     data class Dormancy(val kind: DormancyKind, val survivalPerSeason: Double) : TraitEffect
+    data class DormantEntryBiomassRetention(val fraction: Double) : TraitEffect {
+        init {
+            require(fraction in 0.0..1.0)
+        }
+    }
+    data class DormantReactivationMultiplier(val multiplier: Double) : TraitEffect {
+        init {
+            require(multiplier >= 1.0)
+        }
+    }
     data class Dispersal(val kind: DispersalKind) : TraitEffect
     data class ReproductionMultiplier(val multiplier: Double) : TraitEffect
     data object FreshwaterOsmoregulation : TraitEffect
