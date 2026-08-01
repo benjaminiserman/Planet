@@ -67,6 +67,8 @@ class EcologyProductionTest {
         assertUnsuitable("ocellaris-clownfish", HersfeldtClimatePresets.POLAR_SEA)
         assertSuitable("deep-sea-anglerfish", HersfeldtClimatePresets.DEEP_OCEAN)
         assertUnsuitable("deep-sea-anglerfish", HersfeldtClimatePresets.TROPICAL_REEF)
+        assertSuitable("western-honey-bee", HersfeldtClimatePresets.OCEANIC_TEMPERATE)
+        assertUnsuitable("western-honey-bee", HersfeldtClimatePresets.ICE_CAP)
     }
 
     @Test

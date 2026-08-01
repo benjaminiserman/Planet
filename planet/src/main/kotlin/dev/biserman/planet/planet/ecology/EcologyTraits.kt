@@ -1293,6 +1293,17 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.09),
         ),
     ),
+    COLONY_THERMOREGULATION(
+        "colony thermoregulation",
+        "Workers cluster and generate metabolic heat in winter, then fan and evaporate water to cool the shared nest during hot weather.",
+        listOf(
+            TraitEffect.SeasonalColdTolerance(maximumBonusC = 24.0, triggerInsolation = 0.62),
+            TraitEffect.TemperatureTolerance(hotterC = 5.0),
+            TraitEffect.WaterRequirement(0.04),
+            TraitEffect.ReproductionMultiplier(0.96),
+            TraitEffect.MaintenanceCost(0.14),
+        ),
+    ),
     VENOMOUS_STINGER(
         "defensive venomous stinger",
         "A barbed or reusable ovipositor-derived weapon injects venom into attackers, strongly deterring predation on the colony.",

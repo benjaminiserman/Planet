@@ -253,6 +253,29 @@ class EcologyEnvironmentTest {
     }
 
     @Test
+    fun `colony thermoregulation buffers dim winters and hot summers`() {
+        val bee = EarthSpeciesCatalog.ALL.single { it.id == "western-honey-bee" }
+        val unregulated = bee.copy(
+            id = "unregulated-honey-bee",
+            traits = bee.traits - CommonTrait.COLONY_THERMOREGULATION,
+        )
+        val compiled = EcologyCompiler.compile(listOf(bee, unregulated)).species
+        val regulated = compiled[0]
+        val ordinary = compiled[1]
+
+        assertTrue(
+            EcologyFitness.seasonalTemperature(regulated, 0.0, insolation = 0.15) >
+                EcologyFitness.seasonalTemperature(ordinary, 0.0, insolation = 0.15),
+        )
+        assertTrue(
+            EcologyFitness.temperature(regulated, 31.0) >
+                EcologyFitness.temperature(ordinary, 31.0),
+        )
+        assertTrue(regulated.maintenanceDemand > ordinary.maintenanceDemand)
+        assertTrue(regulated.minimumWater > ordinary.minimumWater)
+    }
+
+    @Test
     fun `terrestrial motile elevation fitness declines outside a shifted optimal band`() {
         fun organism(
             id: String,

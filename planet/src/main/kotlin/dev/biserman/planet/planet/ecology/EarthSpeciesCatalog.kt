@@ -647,6 +647,7 @@ object EarthSpeciesCatalog {
             CommonTrait.LEAPING_LEGS,
             CommonTrait.DENSE_FUR,
             CommonTrait.SEASONAL_WINTER_COAT,
+            CommonTrait.HIGH_AFFINITY_HEMOGLOBIN,
             camouflage = BiologicalColor.WHITE
         ),
         // High Andes
@@ -1708,6 +1709,7 @@ object EarthSpeciesCatalog {
             CommonTrait.NECTAR_SIPPING_TONGUE,
             CommonTrait.POLLEN_CARRYING_SURFACES,
             CommonTrait.COLONY_LIVING,
+            CommonTrait.COLONY_THERMOREGULATION,
             CommonTrait.VENOMOUS_STINGER,
             CommonTrait.HONEY_STORES,
             CommonTrait.APOSEMATIC_COLORATION,

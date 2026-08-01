@@ -127,6 +127,7 @@ class EarthSpeciesCatalogTest {
         assertTrue(CommonTrait.AMBUSH_MUSCULATURE !in anteater.traits)
         assertTrue(CommonTrait.VENOMOUS_STINGER in bee.traits)
         assertTrue(CommonTrait.HONEY_STORES in bee.traits)
+        assertTrue(CommonTrait.COLONY_THERMOREGULATION in bee.traits)
         assertTrue(CommonTrait.APOSEMATIC_COLORATION in bee.traits)
         assertTrue(
             CommonTrait.APOSEMATIC_COLORATION in
