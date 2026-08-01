@@ -162,11 +162,14 @@ object PlanetEcology {
                     random.nextDouble(0.45, 0.75)
                 EcoStrategy.FILTER_FEEDING,
                 EcoStrategy.GRAZING,
+                EcoStrategy.FRUGIVORY,
+                EcoStrategy.NECTAR_FEEDING,
                 EcoStrategy.DEPOSIT_FEEDING,
                 EcoStrategy.DECOMPOSITION,
                 EcoStrategy.COPROPHAGY -> random.nextDouble(0.12, 0.32)
                 EcoStrategy.AMBUSH_PREDATION,
                 EcoStrategy.PURSUIT_PREDATION,
+                EcoStrategy.COLONY_RAIDING,
                 EcoStrategy.GENERALIST_FORAGING,
                 EcoStrategy.SCAVENGING,
                 EcoStrategy.PARASITISM -> random.nextDouble(0.006, 0.018)
@@ -396,6 +399,14 @@ object PlanetEcology {
             } else {
                 0.0
             },
+        fruit = OrganicPoolDynamics.update(
+            previous.fruit,
+            fluxes.fruitBiomass,
+            fluxes.fruitConsumedBiomass,
+            areaKm2 * 2_500.0,
+            0.20,
+            maximumAccessibleFraction = 0.85,
+        ),
     )
 
     private fun initialReefCover(tile: PlanetTile, averageTemperatureC: Double): Double {

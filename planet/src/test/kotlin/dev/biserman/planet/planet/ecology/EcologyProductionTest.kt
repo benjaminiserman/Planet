@@ -62,6 +62,8 @@ class EcologyProductionTest {
         assertSuitable("emperor-penguin", HersfeldtClimatePresets.PERMANENT_SEA_ICE)
         assertUnsuitable("emperor-penguin", HersfeldtClimatePresets.TROPICAL_REEF)
         assertSuitable("ocellaris-clownfish", HersfeldtClimatePresets.TROPICAL_REEF)
+        assertSuitable("porcupinefish", HersfeldtClimatePresets.TROPICAL_REEF)
+        assertSuitable("cleaner-shrimp", HersfeldtClimatePresets.TROPICAL_REEF)
         assertUnsuitable("ocellaris-clownfish", HersfeldtClimatePresets.POLAR_SEA)
         assertSuitable("deep-sea-anglerfish", HersfeldtClimatePresets.DEEP_OCEAN)
         assertUnsuitable("deep-sea-anglerfish", HersfeldtClimatePresets.TROPICAL_REEF)
@@ -232,6 +234,7 @@ class EcologyProductionTest {
                 if (!preset.ocean) {
                     add("${preset.id}-river" to environment(preset, majorRiver = true))
                     add("${preset.id}-coast" to environment(preset, coastal = true))
+                    add("${preset.id}-highland" to environment(preset, elevationM = 3_500.0))
                 }
             }
         }
@@ -240,6 +243,7 @@ class EcologyProductionTest {
         preset: HersfeldtClimatePreset,
         majorRiver: Boolean = false,
         coastal: Boolean = false,
+        elevationM: Double = 0.0,
     ): List<SeasonalCellEnvironment> {
         val annualTemperature = preset.months.map { it.averageTemperature }.average()
         val canopy = when (preset) {
@@ -268,6 +272,7 @@ class EcologyProductionTest {
                 adjacentToOcean = coastal,
                 adjacentToLand = preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE,
                 adjacentToMajorRiver = majorRiver,
+                elevationM = elevationM,
                 waterDepthM = waterDepth,
                 permanentSeaIce =
                     preset.ocean &&

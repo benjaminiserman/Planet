@@ -91,7 +91,8 @@ class ShowSettingsButton() : OptionButton() {
             "tectonics",
             "debug",
             "ecology",
-            "animal_ranges"
+            "animal_ranges",
+            "sessile_ranges"
         ).forEachIndexed { index, category ->
             this.addItem("Settings: ${category.split("_").joinToString(" ") { it.capitalize() }}", index)
             categoriesIdMap[index] = category

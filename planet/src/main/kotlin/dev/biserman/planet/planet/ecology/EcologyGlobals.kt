@@ -18,6 +18,12 @@ object EcologyGlobals {
     /** Active biomass lost in one season beyond the species' lethal temperature boundary. */
     var lethalTemperatureMortality = 0.90
 
+    /** Lowest elevation at which ordinary ground-dwelling motile species retain full fitness. */
+    var normalMinimumElevationM = 0.0
+
+    /** Elevation at which ordinary ground-dwelling motile species reach zero fitness below their optimal band. */
+    var lethalMinimumElevationM = -1_000.0
+
     /** Highest elevation at which ordinary ground-dwelling motile species retain full fitness. */
     var normalElevationLimitM = 2_000.0
 
@@ -32,6 +38,12 @@ object EcologyGlobals {
 
     /** Maximum fraction of a prey population that all consumers may remove in one season. */
     var maximumConsumedBiomassFraction = 0.75
+
+    /** Fraction of consumed nectar biomass that becomes usable consumer energy. */
+    var nectarAssimilationEfficiency = 0.68
+
+    /** Maximum share of flowering producer biomass added as seasonal growth by complete pollination service. */
+    var maximumPollinationBenefitFraction = 0.04
 
     /** Fitness below which a dormancy-capable species begins becoming dormant. */
     var dormantEntryFitness = 0.35
@@ -82,15 +94,30 @@ object EcologyGlobals {
      */
     var establishmentCapacityMultiplier = 1.20
 
+    /** Predation multiplier applied to prey displaying an aposematic warning signal. */
+    var aposematicPredationMultiplier = 0.20
+
+    /** Cold protection, in °C, provided by dormant leaves and buds. */
+    var dormantLeafColdProtectionC = 20.0
+
+    /** Cold buffer, in °C, before seasonal torpor becomes vulnerable to lethal cold. */
+    var seasonalTorporColdBufferC = 5.0
+
+    /** Temperature span, in °C, over which seasonal torpor cold mortality ramps. */
+    var seasonalTorporLethalRampC = 10.0
+
     fun validate() {
         require(backgroundMortality in 0.0..1.0)
         require(stressMortality in 0.0..1.0)
         require(lethalTemperatureMortality in 0.0..1.0)
-        require(normalElevationLimitM >= 0.0)
+        require(lethalMinimumElevationM < normalMinimumElevationM)
+        require(normalMinimumElevationM <= normalElevationLimitM)
         require(lethalElevationLimitM > normalElevationLimitM)
         require(maximumStarvationMortality in 0.0..1.0)
         require(interspecificNicheCompetition >= 0.0)
         require(maximumConsumedBiomassFraction in 0.0..1.0)
+        require(nectarAssimilationEfficiency in 0.0..1.0)
+        require(maximumPollinationBenefitFraction in 0.0..1.0)
         require(dormantEntryFitness in 0.0..1.0)
         require(dormantExitFitness in 0.0..1.0)
         require(dormantEntryFraction in 0.0..1.0)
@@ -105,5 +132,9 @@ object EcologyGlobals {
         require(neighborRadiationChancePerSeason in 0.0..1.0)
         require(minimumRelativeRadiationNicheFit in 0.0..1.0)
         require(establishmentCapacityMultiplier >= 1.0)
+        require(aposematicPredationMultiplier >= 0.0)
+        require(dormantLeafColdProtectionC >= 0.0)
+        require(seasonalTorporColdBufferC >= 0.0)
+        require(seasonalTorporLethalRampC > 0.0)
     }
 }

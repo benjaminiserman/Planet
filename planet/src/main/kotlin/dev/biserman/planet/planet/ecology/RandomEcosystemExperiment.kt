@@ -151,6 +151,7 @@ object RandomEcosystemExperiment {
             "Detritus" to ArrayList<Double>(seasons),
             "Waste" to ArrayList<Double>(seasons),
             "Marine snow" to ArrayList<Double>(seasons),
+            "Fruit" to ArrayList<Double>(seasons),
         )
         val temperatureHistory = ArrayList<Double>(seasons)
         val precipitationHistory = ArrayList<Double>(seasons)
@@ -184,6 +185,7 @@ object RandomEcosystemExperiment {
             resourceHistory.getValue("Detritus") += resources.detritus
             resourceHistory.getValue("Waste") += resources.waste
             resourceHistory.getValue("Marine snow") += resources.marineSnow
+            resourceHistory.getValue("Fruit") += resources.fruit
             totalHistory[season] = community.totalBiomass()
         }
 
@@ -342,6 +344,7 @@ object RandomEcosystemExperiment {
         val viableSeedMultiplier = when (niche.strategy) {
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.COLONY_RAIDING,
             EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.FILTER_FEEDING,
             EcoStrategy.SCAVENGING -> 20.0
@@ -351,11 +354,14 @@ object RandomEcosystemExperiment {
             EcoStrategy.PHOTOSYNTHESIS, EcoStrategy.ABSORPTION -> 0.65
             EcoStrategy.FILTER_FEEDING,
             EcoStrategy.GRAZING,
+            EcoStrategy.FRUGIVORY,
+            EcoStrategy.NECTAR_FEEDING,
             EcoStrategy.DEPOSIT_FEEDING,
             EcoStrategy.DECOMPOSITION,
             EcoStrategy.COPROPHAGY -> 0.45
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.COLONY_RAIDING,
             EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.SCAVENGING,
             EcoStrategy.PARASITISM -> 0.015
@@ -431,6 +437,14 @@ object RandomEcosystemExperiment {
             AREA_KM2 * 15.0,
             0.72,
         ),
+        fruit = OrganicPoolDynamics.update(
+            resources.fruit,
+            fluxes.fruitBiomass,
+            fluxes.fruitConsumedBiomass,
+            AREA_KM2 * 2_500.0,
+            0.20,
+            maximumAccessibleFraction = 0.85,
+        ),
     )
 
     private fun presentSpeciesIds(
@@ -481,6 +495,7 @@ object RandomEcosystemExperiment {
         EcoStrategy.GRAZING,
         EcoStrategy.AMBUSH_PREDATION,
         EcoStrategy.PURSUIT_PREDATION,
+        EcoStrategy.COLONY_RAIDING,
         EcoStrategy.GENERALIST_FORAGING,
     )
 }

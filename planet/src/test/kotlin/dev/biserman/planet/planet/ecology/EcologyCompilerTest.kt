@@ -298,6 +298,54 @@ class EcologyCompilerTest {
     }
 
     @Test
+    fun `separated marine predator tiers are not treated as intraguild competitors`() {
+        val definitions = listOf("antarctic-silverfish", "harbor-seal", "orca").map { id ->
+            EarthSpeciesCatalog.ALL.single { it.id == id }
+        }
+        val ecology = EcologyCompiler.compile(definitions)
+        val orca = ecology.species.single { it.id == "orca" }
+        val seal = ecology.species.single { it.id == "harbor-seal" }
+        val silverfish = ecology.species.single { it.id == "antarctic-silverfish" }
+
+        fun undiscountedAttack(consumer: CompiledSpecies, target: CompiledSpecies): Double {
+            val support = maxOf(
+                consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
+                consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
+            )
+            val pursuit =
+                consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] >
+                    consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal]
+            val capture = consumer.captureAbility + if (pursuit) consumer.pursuitSpeed else 0.0
+            val defense = target.defense + if (pursuit) target.pursuitSpeed else 0.0
+            return (0.07 * support * capture / maxOf(0.25, defense)).coerceIn(0.0, 0.25)
+        }
+
+        listOf(orca to seal, seal to silverfish).forEach { (consumer, target) ->
+            val interaction = ecology.interactions.get(consumer.index, target.index)
+            val attack = undiscountedAttack(consumer, target)
+            assertEquals(InteractionKind.PREDATION, interaction.kind)
+            assertEquals(attack, interaction.targetLossRate, 1.0e-12)
+            assertEquals(attack * 1.30, interaction.consumerGainRate, 1.0e-12)
+        }
+    }
+
+    @Test
+    fun `attached and suspended photosynthesizers compile to separate competition layers`() {
+        val waterLily = EarthSpeciesCatalog.ALL.single { it.id == "white-water-lily" }
+        val ecology = EcologyCompiler.compile(listOf(waterLily, InvariantSpecies.PLANKTON))
+
+        assertEquals(
+            ProducerCompetitionLayer.ATTACHED,
+            ecology.species.single { it.id == waterLily.id }.producerCompetitionLayer,
+        )
+        assertEquals(
+            ProducerCompetitionLayer.SUSPENDED,
+            ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
+                .producerCompetitionLayer,
+        )
+    }
+
+    @Test
     fun `invariant traits are unavailable to evolving species`() {
         val invalid = predator("invalid-invariant").copy(
             traits = predator("invalid-invariant").traits + CommonTrait.INVARIANT_RESISTANCE,

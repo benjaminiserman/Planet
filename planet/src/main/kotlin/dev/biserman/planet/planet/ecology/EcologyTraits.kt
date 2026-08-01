@@ -7,10 +7,10 @@ enum class SizeClass(
     val densityScale: Double,
 ) {
     MINUSCULE(0.000_001, 0.34, 1.20, 8.0),
-    TINY(0.001, 0.25, 0.90, 5.0),
-    SMALL(0.1, 0.18, 0.60, 2.5),
-    MEDIUM(10.0, 0.12, 0.34, 1.0),
-    LARGE(500.0, 0.08, 0.18, 0.38),
+    TINY(0.01, 0.25, 0.90, 5.0),
+    SMALL(1.0, 0.18, 0.60, 2.5),
+    MEDIUM(50.0, 0.12, 0.34, 1.0),
+    LARGE(1_000.0, 0.08, 0.18, 0.38),
     HUGE(10_000.0, 0.055, 0.10, 0.12),
     COLOSSAL(100_000.0, 0.040, 0.06, 0.04),
 }
@@ -150,6 +150,25 @@ enum class CommonTrait(
         ),
         true,
     ),
+    SLOW_METABOLISM(
+        "extremely slow metabolism",
+        "Low-throughput digestion and cellular metabolism extract energy from poor food while sharply limiting growth and reproduction.",
+        listOf(
+            TraitEffect.MetabolicDemandMultiplier(0.55),
+            TraitEffect.ReproductionMultiplier(0.65),
+            TraitEffect.MaintenanceCost(0.03),
+            TraitEffect.PursuitSpeed(-0.5)
+        ),
+    ),
+    EXTENDED_PARENTAL_CARE(
+        "extended parental care",
+        "Young remain with experienced adults for years, gaining protection and learned foraging skills at the cost of producing offspring slowly.",
+        listOf(
+            TraitEffect.ReproductionMultiplier(0.074),
+            TraitEffect.Defense(0.08),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
     PHOTOSYNTHETIC_SURFACE(
         "photosynthetic surface",
         "A broad light-harvesting body surface containing photosynthetic pigments.",
@@ -208,7 +227,7 @@ enum class CommonTrait(
         "hypoxia-responsive metabolism",
         "Oxygen-sensing pathways adjust circulation and cellular energy use during chronic exposure to thin air.",
         listOf(
-            TraitEffect.ElevationToleranceShift(2_500.0),
+            TraitEffect.ElevationToleranceShift(3_500.0),
             TraitEffect.ReproductionMultiplier(0.97),
             TraitEffect.MaintenanceCost(0.06),
         ),
@@ -276,8 +295,8 @@ enum class CommonTrait(
             TraitEffect.DarkWaterAdaptation,
             // Deep water is usually cooler and less seasonally variable than
             // the surface represented by the tile's single temperature.
-            TraitEffect.TemperatureOptimalTolerance(hotterC = 4.0),
-            TraitEffect.TemperatureTolerance(hotterC = 8.0),
+            TraitEffect.TemperatureOptimalTolerance(hotterC = 4.0, colderC = 4.0),
+            TraitEffect.TemperatureTolerance(hotterC = 8.0, colderC = 8.0),
             TraitEffect.ReserveCapacity(0.08),
             TraitEffect.MaintenanceCost(0.12),
         ),
@@ -309,6 +328,33 @@ enum class CommonTrait(
             TraitEffect.CanopyLightEfficiency(0.22),
             TraitEffect.WaterRequirement(0.08),
             TraitEffect.MaintenanceCost(0.07),
+        ),
+    ),
+    FRUIT_BEARING(
+        "fruit-bearing reproductive structures",
+        "Energy-rich fruits surround or accompany propagules, recruiting mobile animals to disperse them.",
+        listOf(
+            TraitEffect.FruitProduction(0.0025),
+            TraitEffect.MaintenanceCost(0.08),
+        ),
+    ),
+    FLOWERS(
+        "flowers",
+        "Specialized reproductive structures expose pollen and ovules while advertising to mobile visitors or releasing pollen into the environment.",
+        listOf(
+            TraitEffect.Flowering,
+            TraitEffect.ReproductionMultiplier(1.05),
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    NECTARIES(
+        "nectaries",
+        "Secretory tissues offer an energy-rich liquid reward that attracts animals to reproductive structures.",
+        listOf(
+            TraitEffect.NectarProduction(0.025),
+            TraitEffect.WaterRequirement(0.02),
+            TraitEffect.ReproductionMultiplier(0.96),
+            TraitEffect.MaintenanceCost(0.05),
         ),
     ),
     SHADE_FRONDS(
@@ -409,19 +455,6 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.10),
         ),
     ),
-    SAND_BURROWING(
-        "sand burrowing",
-        "Broad feet, digging behavior, and maintainable dens specialized for loose desert sand, providing a cooler and more humid refuge from exposed conditions.",
-        listOf(
-            TraitEffect.TemperatureTolerance(hotterC = 4.0),
-            TraitEffect.WaterRequirement(-0.06),
-            TraitEffect.MaximumWaterTolerance(
-                optimalMaximumChange = -0.25,
-                absoluteMaximumChange = -0.10,
-            ),
-            TraitEffect.MaintenanceCost(0.09),
-        ),
-    ),
     INSULATED_BURROW_REFUGE(
         "insulated burrow refuge",
         "A sheltered burrow or rock-crevice retreat buffers its occupant from the coldest exposed-air temperatures.",
@@ -434,9 +467,11 @@ enum class CommonTrait(
         "dry burrow nest",
         "A nest chamber whose eggs, young, stored food, or respiratory surfaces require a well-drained burrow.",
         listOf(
+            TraitEffect.TemperatureTolerance(hotterC = 5.0, colderC = 3.0),
+            TraitEffect.WaterRequirement(-0.06),
             TraitEffect.MaximumWaterTolerance(
-                optimalMaximumChange = -0.32,
-                absoluteMaximumChange = -0.12,
+                optimalMaximumChange = -0.66,
+                absoluteMaximumChange = -0.33,
             ),
             TraitEffect.MaintenanceCost(0.05),
         ),
@@ -447,6 +482,15 @@ enum class CommonTrait(
         listOf(
             TraitEffect.StrategySupport(EcoStrategy.FILTER_FEEDING, 0.88),
             TraitEffect.CaptureAbility(0.06),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
+    KRILL_SIEVING_TEETH(
+        "krill-sieving teeth",
+        "Interlocking, multi-cusped teeth form a sieve that retains small swimming prey as water is expelled from the mouth.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.FILTER_FEEDING, 0.84),
+            TraitEffect.CaptureAbility(0.05),
             TraitEffect.MaintenanceCost(0.05),
         ),
     ),
@@ -497,6 +541,16 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.04),
         ),
     ),
+    FRUIT_EATING_MOUTHPARTS(
+        "fruit-eating mouthparts and digestion",
+        "Grasping, biting, crushing, or swallowing structures and digestion suited to energy-rich fruits.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.FRUGIVORY, 0.78),
+            TraitEffect.HabitatSupport(Habitat.CANOPY, 0.18),
+            TraitEffect.CaptureAbility(-0.04),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
     AMBUSH_MUSCULATURE(
         "burst ambush musculature",
         "Muscles specialized for short, explosive attacks launched from concealment or stillness.",
@@ -506,14 +560,22 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.13),
         ),
     ),
-    PURSUIT_LIMBS(
-        "endurance pursuit limbs",
-        "Efficient propulsive limbs or fins adapted to sustained chases rather than brief bursts.",
+    SWIFT_LIMBS(
+        "swift limbs",
+        "Long, powerful, or rapidly cycling legs or fins increase running or swimming speed, helping hunters close distance and prey escape pursuit.",
+        listOf(
+            TraitEffect.PursuitSpeed(0.18),
+            TraitEffect.WaterRequirement(0.03),
+            TraitEffect.MaintenanceCost(0.10),
+        ),
+    ),
+    MOTION_TRACKING_SENSES(
+        "motion-tracking senses",
+        "Vision, hearing, scent, vibration detection, or equivalent senses allow a hunter to follow moving prey through a sustained chase.",
         listOf(
             TraitEffect.StrategySupport(EcoStrategy.PURSUIT_PREDATION, 0.70),
             TraitEffect.CaptureAbility(0.18),
-            TraitEffect.WaterRequirement(0.06),
-            TraitEffect.MaintenanceCost(0.19),
+            TraitEffect.MaintenanceCost(0.13),
         ),
     ),
     CAMOUFLAGE_PATTERN(
@@ -645,9 +707,17 @@ enum class CommonTrait(
         "bare heat-dissipating skin",
         "Exposed, well-supplied skin sheds heat efficiently but sacrifices insulation and physical protection.",
         listOf(
-            TraitEffect.TemperatureTolerance(colderC = -2.0, hotterC = 5.0),
+            TraitEffect.TemperatureTolerance(colderC = -5.0, hotterC = 6.0),
             TraitEffect.Defense(-0.03),
             TraitEffect.MaintenanceCost(0.03),
+        ),
+    ),
+    CONCENTRATED_URINE(
+        "concentrated urine",
+        "Highly water-retentive kidneys excrete dissolved wastes in a small volume of concentrated urine.",
+        listOf(
+            TraitEffect.MaintenanceCost(0.03),
+            TraitEffect.WaterRequirement(-0.1),
         ),
     ),
     SWEAT_GLANDS(
@@ -789,8 +859,8 @@ enum class CommonTrait(
         "blubber",
         "A thick subcutaneous fat layer that insulates the body in water and doubles as an energy reserve.",
         listOf(
-//            TraitEffect.TemperatureTolerance(colderC = 9.0, hotterC = -4.0),
             TraitEffect.TemperatureShift(-10.0),
+            TraitEffect.TemperatureTolerance(colderC = 6.0),
             TraitEffect.ReserveCapacity(0.28),
             TraitEffect.CaptureAbility(-0.03),
             TraitEffect.MaintenanceCost(0.08),
@@ -800,9 +870,9 @@ enum class CommonTrait(
         "antifreeze proteins",
         "Circulating molecules inhibit destructive ice-crystal growth in exposed body fluids.",
         listOf(
-            TraitEffect.TemperatureTolerance(colderC = 8.0, hotterC = -1.0),
+            TraitEffect.TemperatureTolerance(colderC = 12.0, hotterC = -1.0),
             TraitEffect.ReproductionMultiplier(0.92),
-            TraitEffect.MaintenanceCost(0.06),
+            TraitEffect.MaintenanceCost(0.12),
         ),
     ),
     COLD_ACTIVE_ENZYMES(
@@ -920,7 +990,7 @@ enum class CommonTrait(
         "reef nesting",
         "Reproduction or shelter depends on cavities and protected surfaces within an aquatic reef.",
         listOf(
-            TraitEffect.ReefUse(0.22),
+            TraitEffect.ReefUse(0.75),
             TraitEffect.Defense(0.08),
             TraitEffect.MaintenanceCost(0.04),
         ),
@@ -929,7 +999,7 @@ enum class CommonTrait(
         "reef camouflage",
         "Color, texture, and body outline resemble the varied surfaces of an aquatic reef.",
         listOf(
-            TraitEffect.ReefUse(0.20),
+            TraitEffect.ReefUse(0.33),
             TraitEffect.Camouflage(Habitat.COASTAL, 0.18),
             TraitEffect.Camouflage(Habitat.SUNLIT_WATER, 0.18),
             TraitEffect.MaintenanceCost(0.04),
@@ -939,7 +1009,7 @@ enum class CommonTrait(
         "reef-boring mouthparts",
         "Hard scraping or drilling structures open cavities and expose food within reef material.",
         listOf(
-            TraitEffect.ReefUse(0.18),
+            TraitEffect.ReefUse(0.75),
             TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.28),
             TraitEffect.MaintenanceCost(0.05),
         ),
@@ -1125,10 +1195,52 @@ enum class CommonTrait(
         "nectar-sipping tongue",
         "An elongated tongue or proboscis reaches energy-rich secretions within elevated reproductive structures.",
         listOf(
-            TraitEffect.StrategySupport(EcoStrategy.GRAZING, 0.46),
+            TraitEffect.StrategySupport(EcoStrategy.NECTAR_FEEDING, 0.70),
             TraitEffect.HabitatSupport(Habitat.CANOPY, 0.24),
             TraitEffect.CaptureAbility(-0.04),
             TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    POLLEN_CARRYING_SURFACES(
+        "pollen-carrying surfaces",
+        "Branched hairs, scales, feathers, or other textured body surfaces retain pollen while an animal moves among flowers.",
+        listOf(
+            TraitEffect.PollinationEfficiency(0.70),
+            TraitEffect.CaptureAbility(-0.02),
+            TraitEffect.MaintenanceCost(0.03),
+        ),
+    ),
+    APOSEMATIC_COLORATION(
+        "aposematic coloration",
+        "Conspicuous colors advertise a dangerous or distasteful organism—or mimic another local organism carrying the same warning colors.",
+        listOf(
+            TraitEffect.AposematicColoration,
+            TraitEffect.MaintenanceCost(0.04),
+        ),
+    ),
+    RAPID_GROWTH(
+        "rapid growth",
+        "Exceptionally fast production of new shoots and tissues allows an organism to replace losses and spread quickly when conditions are favorable.",
+        listOf(
+            TraitEffect.ReproductionMultiplier(1.75),
+            TraitEffect.MaintenanceCost(0.35),
+        ),
+    ),
+    NEST_PROBING_TONGUE(
+        "nest-probing tongue",
+        "An extremely elongated adhesive tongue reaches ants and termites through narrow passages in opened colony nests.",
+        listOf(
+            TraitEffect.CaptureAbility(0.28),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    PROJECTILE_TONGUE(
+        "projectile tongue",
+        "A rapidly projected adhesive tongue lets a stationary hunter seize small moving prey before it can escape.",
+        listOf(
+            TraitEffect.StrategySupport(EcoStrategy.AMBUSH_PREDATION, 0.62),
+            TraitEffect.CaptureAbility(0.22),
+            TraitEffect.MaintenanceCost(0.07),
         ),
     ),
     SAP_SUCKING_PROBOSCIS(
@@ -1179,6 +1291,24 @@ enum class CommonTrait(
             TraitEffect.Defense(0.18),
             TraitEffect.ReproductionMultiplier(1.08),
             TraitEffect.MaintenanceCost(0.09),
+        ),
+    ),
+    VENOMOUS_STINGER(
+        "defensive venomous stinger",
+        "A barbed or reusable ovipositor-derived weapon injects venom into attackers, strongly deterring predation on the colony.",
+        listOf(
+            TraitEffect.Defense(0.45),
+            TraitEffect.ReproductionMultiplier(0.97),
+            TraitEffect.MaintenanceCost(0.06),
+        ),
+    ),
+    HONEY_STORES(
+        "communal honey stores",
+        "Workers concentrate floral sugars into stable comb stores that feed the colony through winter or other seasonal shortages.",
+        listOf(
+            TraitEffect.ReserveCapacity(0.90),
+            TraitEffect.ReproductionMultiplier(0.93),
+            TraitEffect.MaintenanceCost(0.05),
         ),
     ),
     OPEN_COUNTRY_HERDING(

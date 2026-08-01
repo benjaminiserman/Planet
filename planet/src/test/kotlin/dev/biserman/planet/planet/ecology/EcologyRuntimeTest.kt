@@ -8,6 +8,184 @@ import kotlin.test.assertTrue
 
 class EcologyRuntimeTest {
     @Test
+    fun `nectar feeding consumes seasonal flowers and pollen carrying returns a benefit`() {
+        fun visitor(id: String, pollinator: Boolean) = SpeciesDefinition(
+            id = id,
+            displayName = id,
+            sizeClass = SizeClass.TINY,
+            motile = true,
+            traits = buildList {
+                add(CommonTrait.TEMPERATE_BIOCHEMISTRY)
+                add(CommonTrait.ECTOTHERMY)
+                add(CommonTrait.POWERED_FLIGHT)
+                add(CommonTrait.NECTAR_SIPPING_TONGUE)
+                if (pollinator) add(CommonTrait.POLLEN_CARRYING_SURFACES)
+            },
+        )
+        val flower = landProducer(
+            extraTraits = listOf(CommonTrait.FLOWERS, CommonTrait.NECTARIES),
+        )
+
+        fun fluxesFor(pollinator: Boolean): CellTurnFluxes {
+            val ecology = EcologyCompiler.compile(listOf(flower, visitor("visitor", pollinator)))
+            val environment = landEnvironment()
+            val community = TileCommunity().apply {
+                ecology.species.forEach { species ->
+                    add(
+                        species.index,
+                        NicheSelection.choose(species, ecology, environment),
+                        activeBiomass = if (species.motile) 100_000.0 else 10_000_000.0,
+                    )
+                }
+            }
+            return CellTurnFluxes().also { fluxes ->
+                EcologyRuntime(ecology).advanceSeason(
+                    community,
+                    environment,
+                    fluxes,
+                    finalizeExtinctions = false,
+                )
+            }
+        }
+
+        val robberFluxes = fluxesFor(pollinator = false)
+        val pollinatorFluxes = fluxesFor(pollinator = true)
+        assertTrue(robberFluxes.nectarBiomass > 0.0)
+        assertTrue(robberFluxes.nectarConsumedBiomass > 0.0)
+        assertEquals(0.0, robberFluxes.pollinationBenefitBiomass)
+        assertTrue(pollinatorFluxes.nectarConsumedBiomass > 0.0)
+        assertTrue(pollinatorFluxes.pollinationBenefitBiomass > 0.0)
+    }
+
+    @Test
+    fun `suspended plankton biomass does not crowd an attached freshwater producer`() {
+        val waterLily = EarthSpeciesCatalog.ALL.single { it.id == "white-water-lily" }
+        val environment = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 24.0,
+            annualAverageTemperatureC = 22.0,
+            insolation = 0.8,
+            precipitationMm = 100.0,
+            surfaceFertilityModifier = 0.5,
+            isLand = true,
+            adjacentToMajorRiver = true,
+        )
+
+        fun lilyBiomassAfterSeason(withPlankton: Boolean): Double {
+            val ecology = EcologyCompiler.compile(
+                if (withPlankton) listOf(waterLily, InvariantSpecies.PLANKTON)
+                else listOf(waterLily),
+            )
+            val lily = ecology.species.single { it.id == waterLily.id }
+            val lilyNiche = NicheSelection.choose(lily, ecology, environment)
+            val community = TileCommunity().apply {
+                add(lily.index, lilyNiche, 1.0e9)
+                if (withPlankton) {
+                    val plankton = ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
+                    add(
+                        plankton.index,
+                        NicheSelection.choose(plankton, ecology, environment),
+                        1.0e11,
+                    )
+                }
+            }
+            EcologyRuntime(ecology).advanceSeason(community, environment)
+            val population = community.find(lily.index)
+            return if (population < 0) 0.0 else community.activeBiomass[population]
+        }
+
+        assertEquals(
+            lilyBiomassAfterSeason(withPlankton = false),
+            lilyBiomassAfterSeason(withPlankton = true),
+            1.0e-6,
+        )
+    }
+
+    @Test
+    fun `aposematic prey require a same-color dangerous model in the same habitat`() {
+        fun prey(
+            id: String,
+            color: BiologicalColor,
+            dangerous: Boolean = false,
+        ) = SpeciesDefinition(
+            id = id,
+            displayName = id,
+            sizeClass = SizeClass.TINY,
+            motile = true,
+            traits = listOfNotNull(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ECTOTHERMY,
+                CommonTrait.TERRESTRIAL_LOCOMOTION,
+                CommonTrait.GRAZING_MOUTHPARTS,
+                CommonTrait.APOSEMATIC_COLORATION,
+                CommonTrait.TOXIC_SKIN.takeIf { dangerous },
+            ),
+            camouflageColor = color,
+        )
+        val predator = SpeciesDefinition(
+            id = "warning-test-predator",
+            displayName = "Warning test predator",
+            sizeClass = SizeClass.SMALL,
+            motile = true,
+            traits = listOf(
+                CommonTrait.TEMPERATE_BIOCHEMISTRY,
+                CommonTrait.ENDOTHERMY,
+                CommonTrait.TERRESTRIAL_LOCOMOTION,
+                CommonTrait.AMBUSH_MUSCULATURE,
+            ),
+            camouflageColor = BiologicalColor.BROWN,
+        )
+        val dangerousRedModel = prey("dangerous-red-model", BiologicalColor.RED, dangerous = true)
+        val redMimic = prey("red-mimic", BiologicalColor.RED)
+        val blueMimic = prey("blue-mimic", BiologicalColor.BLUE)
+        val ecology = EcologyCompiler.compile(
+            listOf(predator, dangerousRedModel, redMimic, blueMimic),
+        )
+        val predatorNiche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.AMBUSH_PREDATION)
+        val redModelNiche = nicheFor(ecology, 1, Habitat.LAND_SURFACE, EcoStrategy.GRAZING)
+        val redMimicNiche = nicheFor(ecology, 2, Habitat.LAND_SURFACE, EcoStrategy.GRAZING)
+        val blueMimicNiche = nicheFor(ecology, 3, Habitat.LAND_SURFACE, EcoStrategy.GRAZING)
+        val withModel = TileCommunity().also {
+            it.add(0, predatorNiche, activeBiomass = 1_000.0)
+            it.add(1, redModelNiche, activeBiomass = 1.0)
+            it.add(2, redMimicNiche, activeBiomass = 100.0)
+            it.add(3, blueMimicNiche, activeBiomass = 100.0)
+        }
+        val withoutModel = TileCommunity().also {
+            it.add(0, predatorNiche, activeBiomass = 1_000.0)
+            it.add(2, redMimicNiche, activeBiomass = 100.0)
+            it.add(3, blueMimicNiche, activeBiomass = 100.0)
+        }
+        val runtime = EcologyRuntime(ecology)
+
+        runtime.advanceSeason(withModel, landEnvironment(), finalizeExtinctions = false)
+        runtime.advanceSeason(withoutModel, landEnvironment(), finalizeExtinctions = false)
+
+        assertTrue(withModel.activeBiomass[2] > withModel.activeBiomass[3])
+        assertEquals(withoutModel.activeBiomass[1], withoutModel.activeBiomass[2], 1.0e-9)
+    }
+
+    @Test
+    fun `living fruit-bearing producers replenish fruit consumed by frugivores`() {
+        val fig = EarthSpeciesCatalog.ALL.single { it.id == "strangler-fig" }
+        val flyingFox = EarthSpeciesCatalog.ALL.single { it.id == "large-flying-fox" }
+        val ecology = EcologyCompiler.compile(listOf(fig, flyingFox))
+        val environment = landEnvironment().withResources(FunctionalResources(fruit = 0.80))
+        val figNiche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.PHOTOSYNTHESIS)
+        val batNiche = nicheFor(ecology, 1, Habitat.AERIAL, EcoStrategy.FRUGIVORY)
+        val community = TileCommunity().also {
+            it.add(0, figNiche, activeBiomass = 1.0e9)
+            it.add(1, batNiche, activeBiomass = 1.0e6)
+        }
+        val fluxes = CellTurnFluxes()
+
+        EcologyRuntime(ecology).advanceSeason(community, environment, fluxes)
+
+        assertTrue(fluxes.fruitBiomass > 0.0)
+        assertTrue(fluxes.fruitConsumedBiomass > 0.0)
+    }
+
+    @Test
     fun `terrestrial animal above its lethal elevation suffers lethal mortality`() {
         val ecology = EcologyCompiler.compile(listOf(grazer()))
         val niche = nicheFor(ecology, 0, Habitat.LAND_SURFACE, EcoStrategy.GRAZING)

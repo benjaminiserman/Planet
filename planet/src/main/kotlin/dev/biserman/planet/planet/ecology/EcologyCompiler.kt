@@ -42,10 +42,18 @@ class CompiledSpecies(
     val dormantReactivationMultiplier: Double,
     val dispersalKind: DispersalKind,
     val captureAbility: Double,
+    val pursuitSpeed: Double,
     val defense: Double,
+    val aposematicColoration: Boolean,
+    val dangerousWarningModel: Boolean,
     val reefUse: Double,
     val reefBuilding: Double,
+    val fruitProduction: Double,
+    val flowering: Boolean,
+    val nectarProduction: Double,
+    val pollinationEfficiency: Double,
     val wasteFertilization: Double,
+    val producerCompetitionLayer: ProducerCompetitionLayer,
     val pelagicAerialResident: Boolean,
     val darkWaterAdapted: Boolean,
     val requiresAdjacentLand: Boolean,
@@ -57,6 +65,17 @@ class CompiledSpecies(
     val nicheFit: DoubleArray,
     val ancestorSpeciesId: String?,
 )
+
+/**
+ * Internal spatial partitioning for photosynthetic competitors. Suspended
+ * producers occupy the water column; attached producers occupy substrate.
+ * This is compiled from descriptive traits rather than authored by species.
+ */
+enum class ProducerCompetitionLayer {
+    NONE,
+    SUSPENDED,
+    ATTACHED,
+}
 
 enum class InteractionKind {
     NONE,
@@ -189,146 +208,64 @@ object EcologyCompiler {
             }
         }
 
-        val habitatSupport = DoubleArray(Habitat.entries.size)
-        val strategySupport = DoubleArray(EcoStrategy.entries.size)
-        val camouflage = DoubleArray(Habitat.entries.size)
-        var temperatureShift = 0.0
-        var colderTolerance = sizeTemperatureTolerance(definition.sizeClass)
-        var hotterTolerance = sizeTemperatureTolerance(definition.sizeClass)
-        var colderOptimalTolerance = 0.0
-        var hotterOptimalTolerance = 0.0
-        var minimumActiveTemperatureC = Double.NEGATIVE_INFINITY
-        var frozenDormantSurvival = 1.0
-        var seasonalColdTolerance = 0.0
-        var seasonalColdTrigger = 0.0
-        var thermalStrategy: ThermalStrategy? = null
-        var waterRequirement = 0.25
-        var optimalMaximumWater = 1.0
-        var maximumWater = 1.0
-        var optimalMaximumWaterDepthM = Double.POSITIVE_INFINITY
-        var absoluteMaximumWaterDepthM = Double.POSITIVE_INFINITY
-        var elevationToleranceShiftM = 0.0
-        var snowHydration = false
-        var insolationOptimum = 0.8
-        var canopyLightEfficiency = 0.0
-        var denseCanopyForagingPenalty = 0.0
-        var reserveCapacity = 0.25
-        var nicheCompetitionSensitivity = 1.0
-        var dormancyKind = DormancyKind.NONE
-        var dormantSurvival = 0.0
-        var dormantEntryBiomassRetention = 1.0
-        var dormantReactivationMultiplier = 1.0
-        var dispersalKind = DispersalKind.NONE
-        var reproductionMultiplier = 1.0
-        val maintenanceCost = definition.traits.sumOf { trait ->
-            val scale = if (trait.isFoundation) 1.0 else 0.35
-            trait.effects.filterIsInstance<TraitEffect.MaintenanceCost>()
-                .sumOf { it.fraction } * scale
-        }
-        var captureAbility = 0.5
-        var defense = 0.25
-        var reefUse = 0.0
-        var reefBuilding = 0.0
-        var wasteFertilization = 0.0
-        var pelagicAerialResident = false
-        var darkWaterAdapted = false
-        var freshwaterAdapted = false
-        var broadSalinityTolerance = false
-        var underwaterBreathing = false
-        var prolongedBreathHolding = false
-        var obligateResidentHabitat: Habitat? = null
-        var requiresAdjacentLand = false
+        val context = SpeciesCompilationContext(
+            speciesDisplayName = definition.displayName,
+            sizeTemperatureTolerance = sizeTemperatureTolerance(definition.sizeClass),
+        )
+        definition.traits.forEach(context::apply)
 
-        allEffects.forEach { effect ->
-            when (effect) {
-                is TraitEffect.HabitatSupport ->
-                    habitatSupport[effect.habitat.ordinal] += effect.amount
-                is TraitEffect.StrategySupport ->
-                    strategySupport[effect.strategy.ordinal] += effect.amount
-                is TraitEffect.TemperatureShift -> temperatureShift += effect.degreesC
-                is TraitEffect.TemperatureTolerance -> {
-                    colderTolerance += effect.colderC
-                    hotterTolerance += effect.hotterC
-                }
-                is TraitEffect.TemperatureOptimalTolerance -> {
-                    colderOptimalTolerance += effect.colderC
-                    hotterOptimalTolerance += effect.hotterC
-                }
-                is TraitEffect.MinimumActiveTemperature ->
-                    minimumActiveTemperatureC =
-                        max(minimumActiveTemperatureC, effect.temperatureC)
-                is TraitEffect.FrozenDormantSurvival ->
-                    frozenDormantSurvival *= effect.fractionPerSeason
-                is TraitEffect.ThermalRegulation -> thermalStrategy = effect.strategy
-                is TraitEffect.SeasonalColdTolerance -> {
-                    seasonalColdTolerance += effect.maximumBonusC
-                    seasonalColdTrigger = max(seasonalColdTrigger, effect.triggerInsolation)
-                }
-                is TraitEffect.WaterRequirement -> waterRequirement += effect.change
-                is TraitEffect.MaximumWaterTolerance -> {
-                    optimalMaximumWater += effect.optimalMaximumChange
-                    maximumWater += effect.absoluteMaximumChange
-                }
-                is TraitEffect.WaterDepthTolerance -> {
-                    optimalMaximumWaterDepthM =
-                        minOf(optimalMaximumWaterDepthM, effect.optimalMaximumM)
-                    absoluteMaximumWaterDepthM =
-                        minOf(absoluteMaximumWaterDepthM, effect.absoluteMaximumM)
-                }
-                is TraitEffect.ElevationToleranceShift ->
-                    elevationToleranceShiftM += effect.meters
-                TraitEffect.SnowHydration -> snowHydration = true
-                is TraitEffect.InsolationOptimum -> insolationOptimum += effect.change
-                is TraitEffect.CanopyLightEfficiency -> canopyLightEfficiency += effect.change
-                is TraitEffect.DenseCanopyForagingPenalty ->
-                    denseCanopyForagingPenalty += effect.maximumPenalty
-                is TraitEffect.CaptureAbility -> captureAbility += effect.change
-                is TraitEffect.Defense -> defense += effect.change
-                is TraitEffect.Camouflage -> camouflage[effect.habitat.ordinal] += effect.change
-                is TraitEffect.ReefUse -> reefUse += effect.change
-                is TraitEffect.ReefBuilding -> reefBuilding += effect.change
-                is TraitEffect.WasteFertilization -> wasteFertilization += effect.change
-                is TraitEffect.ReserveCapacity -> reserveCapacity += effect.change
-                is TraitEffect.NicheCompetitionSensitivity ->
-                    nicheCompetitionSensitivity *= effect.multiplier
-                is TraitEffect.Dormancy -> {
-                    require(dormancyKind == DormancyKind.NONE) {
-                        "${definition.displayName} has multiple dormancy modes"
-                    }
-                    dormancyKind = effect.kind
-                    dormantSurvival = effect.survivalPerSeason
-                }
-                is TraitEffect.DormantEntryBiomassRetention ->
-                    dormantEntryBiomassRetention *= effect.fraction
-                is TraitEffect.DormantReactivationMultiplier ->
-                    dormantReactivationMultiplier *= effect.multiplier
-                is TraitEffect.Dispersal -> {
-                    if (effect.kind.rangeClass > dispersalKind.rangeClass) {
-                        dispersalKind = effect.kind
-                    }
-                }
-                is TraitEffect.ReproductionMultiplier -> reproductionMultiplier *= effect.multiplier
-                TraitEffect.FreshwaterOsmoregulation -> freshwaterAdapted = true
-                TraitEffect.BroadSalinityTolerance -> broadSalinityTolerance = true
-                is TraitEffect.AquaticRespiration -> when (effect.mode) {
-                    AquaticRespirationMode.UNDERWATER -> underwaterBreathing = true
-                    AquaticRespirationMode.BREATH_HOLDING -> prolongedBreathHolding = true
-                }
-                TraitEffect.PelagicAerialResidency -> pelagicAerialResident = true
-                TraitEffect.DarkWaterAdaptation -> darkWaterAdapted = true
-                is TraitEffect.ObligateResidentHabitat -> {
-                    require(
-                        obligateResidentHabitat == null ||
-                            obligateResidentHabitat == effect.habitat,
-                    ) {
-                        "${definition.displayName} requires multiple exclusive resident habitats"
-                    }
-                    obligateResidentHabitat = effect.habitat
-                }
-                TraitEffect.RequiresAdjacentLand -> requiresAdjacentLand = true
-                is TraitEffect.MaintenanceCost -> Unit
-            }
-        }
+        val habitatSupport = context.habitatSupport
+        val strategySupport = context.strategySupport
+        val camouflage = context.camouflage
+        val temperatureShift = context.temperatureShift
+        val colderTolerance = context.colderTolerance
+        val hotterTolerance = context.hotterTolerance
+        val colderOptimalTolerance = context.colderOptimalTolerance
+        val hotterOptimalTolerance = context.hotterOptimalTolerance
+        val minimumActiveTemperatureC = context.minimumActiveTemperatureC
+        val frozenDormantSurvival = context.frozenDormantSurvival
+        val seasonalColdTolerance = context.seasonalColdTolerance
+        val seasonalColdTrigger = context.seasonalColdTrigger
+        val thermalStrategy = context.thermalStrategy
+        val waterRequirement = context.waterRequirement
+        val optimalMaximumWater = context.optimalMaximumWater
+        val maximumWater = context.maximumWater
+        val optimalMaximumWaterDepthM = context.optimalMaximumWaterDepthM
+        val absoluteMaximumWaterDepthM = context.absoluteMaximumWaterDepthM
+        val elevationToleranceShiftM = context.elevationToleranceShiftM
+        val snowHydration = context.snowHydration
+        val insolationOptimum = context.insolationOptimum
+        val canopyLightEfficiency = context.canopyLightEfficiency
+        val denseCanopyForagingPenalty = context.denseCanopyForagingPenalty
+        val reserveCapacity = context.reserveCapacity
+        val nicheCompetitionSensitivity = context.nicheCompetitionSensitivity
+        val dormancyKind = context.dormancyKind
+        val dormantSurvival = context.dormantSurvival
+        val dormantEntryBiomassRetention = context.dormantEntryBiomassRetention
+        val dormantReactivationMultiplier = context.dormantReactivationMultiplier
+        val dispersalKind = context.dispersalKind
+        val reproductionMultiplier = context.reproductionMultiplier
+        val metabolicDemandMultiplier = context.metabolicDemandMultiplier
+        val maintenanceCost = context.maintenanceCost
+        val captureAbility = context.captureAbility
+        val pursuitSpeed = context.pursuitSpeed
+        val defense = context.defense
+        val aposematicColoration = context.aposematicColoration
+        val reefUse = context.reefUse
+        val reefBuilding = context.reefBuilding
+        val fruitProduction = context.fruitProduction
+        val flowering = context.flowering
+        val nectarProduction = context.nectarProduction
+        val pollinationEfficiency = context.pollinationEfficiency
+        val wasteFertilization = context.wasteFertilization
+        val pelagicAerialResident = context.pelagicAerialResident
+        val darkWaterAdapted = context.darkWaterAdapted
+        val freshwaterAdapted = context.freshwaterAdapted
+        val broadSalinityTolerance = context.broadSalinityTolerance
+        val underwaterBreathing = context.underwaterBreathing
+        val prolongedBreathHolding = context.prolongedBreathHolding
+        val obligateResidentHabitat = context.obligateResidentHabitat
+        val requiresAdjacentLand = context.requiresAdjacentLand
 
         val aquaticSalinityTolerance = when {
             broadSalinityTolerance -> AquaticSalinityTolerance.BROAD
@@ -383,6 +320,14 @@ object EcologyCompiler {
                 (max(grazingSupport, predationSupport) + GENERALIST_BREADTH_BONUS)
                     .coerceAtMost(1.0)
         }
+        if (
+            CommonTrait.NEST_PROBING_TONGUE in commonTraits &&
+            CommonTrait.DIGGING_CLAWS in commonTraits
+        ) {
+            // The tongue reaches prey within galleries after the claws breach
+            // the nest; neither adaptation alone defines colony raiding.
+            strategySupport[EcoStrategy.COLONY_RAIDING.ordinal] = 0.86
+        }
 
         habitatSupport.indices.forEach { habitatSupport[it] = habitatSupport[it].coerceIn(0.0, 1.0) }
         strategySupport.indices.forEach { strategySupport[it] = strategySupport[it].coerceIn(0.0, 1.0) }
@@ -407,6 +352,7 @@ object EcologyCompiler {
             definition.sizeClass.typicalMassKg *
                 definition.sizeClass.maintenancePerKg *
                 max(0.15, 1.0 + maintenanceCost) *
+                metabolicDemandMultiplier *
                 sessilePhotosyntheticMaintenance
         val compiledMinimumWater = waterRequirement.coerceIn(0.0, 1.0)
         val compiledOptimalMaximumWater =
@@ -455,10 +401,27 @@ object EcologyCompiler {
             dormantReactivationMultiplier = dormantReactivationMultiplier,
             dispersalKind = dispersalKind,
             captureAbility = captureAbility.coerceIn(0.05, 1.5),
+            pursuitSpeed = pursuitSpeed.coerceIn(0.0, 1.0),
             defense = defense.coerceIn(0.0, 1.5),
+            aposematicColoration = aposematicColoration,
+            dangerousWarningModel =
+                CommonTrait.VENOMOUS_STINGER in commonTraits ||
+                    CommonTrait.TOXIC_SKIN in commonTraits,
             reefUse = reefUse.coerceIn(0.0, 1.0),
             reefBuilding = reefBuilding.coerceIn(0.0, 0.25),
+            fruitProduction = fruitProduction.coerceIn(0.0, 0.10),
+            flowering = flowering,
+            nectarProduction = nectarProduction.coerceIn(0.0, 0.10),
+            pollinationEfficiency = pollinationEfficiency.coerceIn(0.0, 1.0),
             wasteFertilization = wasteFertilization.coerceIn(0.0, 1.0),
+            producerCompetitionLayer = when {
+                strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] <= 0.0 ->
+                    ProducerCompetitionLayer.NONE
+                CommonTrait.ROOTED_BODY in commonTraits ||
+                    CommonTrait.SUBSTRATE_HOLDFAST in commonTraits ->
+                    ProducerCompetitionLayer.ATTACHED
+                else -> ProducerCompetitionLayer.SUSPENDED
+            },
             pelagicAerialResident = pelagicAerialResident,
             darkWaterAdapted = darkWaterAdapted,
             requiresAdjacentLand = requiresAdjacentLand,
@@ -499,6 +462,73 @@ object EcologyCompiler {
                 .flatMap { it.relationships }
                 .any { it is RelationshipEffect.ObligateFood }
         }
+
+        fun sharesFeedingHabitat(consumer: CompiledSpecies, target: CompiledSpecies): Boolean {
+            val directlyShared = Habitat.entries.any {
+                consumer.habitatSupport[it.ordinal] > 0.0 &&
+                    target.habitatSupport[it.ordinal] > 0.0
+            }
+            val seaIceMarineInterface =
+                (
+                    consumer.habitatSupport[Habitat.SEA_ICE.ordinal] > 0.0 &&
+                        EcologyFitness.aquaticHabitats.any {
+                            target.habitatSupport[it.ordinal] > 0.0
+                        }
+                    ) ||
+                    (
+                        target.habitatSupport[Habitat.SEA_ICE.ordinal] > 0.0 &&
+                            EcologyFitness.aquaticHabitats.any {
+                                consumer.habitatSupport[it.ordinal] > 0.0
+                            }
+                        )
+            return directlyShared || seaIceMarineInterface
+        }
+
+        fun sizeCompatiblePredation(consumer: CompiledSpecies, target: CompiledSpecies): Boolean {
+            val sizeRatio = consumer.massKg / target.massKg
+            val sharedAquaticHabitat = EcologyFitness.aquaticHabitats.any {
+                consumer.habitatSupport[it.ordinal] > 0.0 &&
+                    target.habitatSupport[it.ordinal] > 0.0
+            } || (
+                consumer.habitatSupport[Habitat.SEA_ICE.ordinal] > 0.0 &&
+                    EcologyFitness.aquaticHabitats.any { target.habitatSupport[it.ordinal] > 0.0 }
+                ) || (
+                target.habitatSupport[Habitat.SEA_ICE.ordinal] > 0.0 &&
+                    EcologyFitness.aquaticHabitats.any { consumer.habitatSupport[it.ordinal] > 0.0 }
+                )
+            val aquaticTinyPreyCompatible =
+                sharedAquaticHabitat &&
+                    consumer.sizeClass == SizeClass.MEDIUM &&
+                    target.sizeClass == SizeClass.TINY &&
+                    sizeRatio <= 1_000_000.0
+            return sizeRatio in 0.25..1_000.0 ||
+                (target.sizeClass == SizeClass.SMALL && sizeRatio <= 10_000.0) ||
+                aquaticTinyPreyCompatible
+        }
+
+        // Diet overlap is a compiled property of the potential food web. It
+        // distinguishes genuine intraguild competitors from separated trophic
+        // tiers such as orca -> seal -> fish.
+        val potentialPredation = Array(count) { BooleanArray(count) }
+        for (consumer in species) {
+            val predatorSupport = max(
+                consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
+                consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
+            )
+            if (predatorSupport <= 0.0 || obligateFoodConsumers[consumer.index]) continue
+            for (target in species) {
+                potentialPredation[consumer.index][target.index] =
+                    consumer.index != target.index && target.motile &&
+                        sharesFeedingHabitat(consumer, target) &&
+                        sizeCompatiblePredation(consumer, target)
+            }
+        }
+        fun dietsOverlap(firstIndex: Int, secondIndex: Int): Boolean =
+            species.indices.any { preyIndex ->
+                preyIndex != firstIndex && preyIndex != secondIndex &&
+                    potentialPredation[firstIndex][preyIndex] &&
+                    potentialPredation[secondIndex][preyIndex]
+            }
 
         for (consumer in species) {
             for (target in species) {
@@ -578,31 +608,49 @@ object EcologyCompiler {
                     consumerGain[offset] = attack * 0.65
                     continue
                 }
+                val colonyRaidingSupport =
+                    consumer.strategySupport[EcoStrategy.COLONY_RAIDING.ordinal]
+                val sharedColonyRaidingHabitat =
+                    EcoStrategy.COLONY_RAIDING.supportedHabitats.any {
+                        consumer.habitatSupport[it.ordinal] > 0.0 &&
+                            target.habitatSupport[it.ordinal] > 0.0
+                    }
+                val targetColonial =
+                    CommonTrait.COLONY_LIVING in definitions[target.index].traits
+                if (
+                    target.motile &&
+                    target.sizeClass == SizeClass.MINUSCULE &&
+                    targetColonial &&
+                    sharedColonyRaidingHabitat &&
+                    colonyRaidingSupport > 0.0
+                ) {
+                    val attack =
+                        (
+                            0.10 *
+                                colonyRaidingSupport *
+                                consumer.captureAbility /
+                                max(0.25, target.defense)
+                            ).coerceIn(0.0, 0.30)
+                    kinds[offset] = InteractionKind.PREDATION.ordinal.toByte()
+                    targetLoss[offset] = attack
+                    consumerGain[offset] = attack * 1.20
+                    continue
+                }
                 if (!target.motile) continue
-                val predatorSupport = max(
-                    consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
-                    consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
-                )
+                val ambushSupport =
+                    consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal]
+                val pursuitSupport =
+                    consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal]
+                val predatorSupport = max(ambushSupport, pursuitSupport)
+                val pursuitInteraction = pursuitSupport > ambushSupport
                 val targetPredatorSupport = max(
                     target.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
                     target.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
                 )
                 val sizeRatio = consumer.massKg / target.massKg
                 val meaningfulIntraguildPredation =
-                    targetPredatorSupport <= 0.0 || sizeRatio >= 4.0
-                val sharedAquaticHabitat = EcologyFitness.aquaticHabitats.any {
-                    consumer.habitatSupport[it.ordinal] > 0.0 &&
-                        target.habitatSupport[it.ordinal] > 0.0
-                } || seaIceMarineInterface
-                val aquaticTinyPreyCompatible =
-                    sharedAquaticHabitat &&
-                        consumer.sizeClass == SizeClass.MEDIUM &&
-                        target.sizeClass == SizeClass.TINY &&
-                        sizeRatio <= 1_000_000.0
-                val sizeCompatible =
-                    sizeRatio in 0.25..1_000.0 ||
-                        (target.sizeClass == SizeClass.SMALL && sizeRatio <= 10_000.0) ||
-                        aquaticTinyPreyCompatible
+                    targetPredatorSupport <= 0.0 || sizeRatio >= 1.5
+                val sizeCompatible = sizeCompatiblePredation(consumer, target)
                 if (
                     sharedHabitat &&
                     predatorSupport > 0.0 &&
@@ -610,13 +658,27 @@ object EcologyCompiler {
                     sizeCompatible
                 ) {
                     val intraguildAttackMultiplier =
-                        if (targetPredatorSupport > 0.0) 0.10 else 1.0
+                        if (
+                            targetPredatorSupport > 0.0 &&
+                            sizeRatio < 4.0 &&
+                            dietsOverlap(consumer.index, target.index)
+                        ) {
+                            0.50
+                        } else {
+                            1.0
+                        }
+                    val effectiveCapture =
+                        consumer.captureAbility +
+                            if (pursuitInteraction) consumer.pursuitSpeed else 0.0
+                    val effectiveDefense =
+                        target.defense +
+                            if (pursuitInteraction) target.pursuitSpeed else 0.0
                     val attack = (
                         0.07 *
                             intraguildAttackMultiplier *
                             predatorSupport *
-                            consumer.captureAbility /
-                            max(0.25, target.defense)
+                            effectiveCapture /
+                            max(0.25, effectiveDefense)
                         ).coerceIn(0.0, 0.25)
                     kinds[offset] = InteractionKind.PREDATION.ordinal.toByte()
                     targetLoss[offset] = attack

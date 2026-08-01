@@ -9,6 +9,7 @@ data class FunctionalResources(
     val detritus: Double = 0.0,
     val waste: Double = 0.0,
     val marineSnow: Double = 0.0,
+    val fruit: Double = 0.0,
 )
 
 /**
@@ -100,7 +101,9 @@ class SeasonalCellEnvironment private constructor(
             require(surfaceMoistureCapacityMultiplier > 0.0)
             require(canopyCover in 0.0..1.0)
             require(reefCover in 0.0..1.0)
-            require(elevationM >= 0.0)
+            // Exposed land can lie below mean sea level in enclosed basins.
+            // Water depth remains the separate non-negative aquatic measure.
+            require(elevationM.isFinite())
             require(waterDepthM >= 0.0)
             require(!permanentSeaIce || !isLand)
 
@@ -168,11 +171,13 @@ object EcologyFitness {
         temperatureC <= species.temperatureOuterLow -> 0.0
         temperatureC < species.temperatureOptimalLow ->
             (temperatureC - species.temperatureOuterLow) /
-                (species.temperatureOptimalLow - species.temperatureOuterLow)
+                    (species.temperatureOptimalLow - species.temperatureOuterLow)
+
         temperatureC <= species.temperatureOptimalHigh -> 1.0
         temperatureC < species.temperatureOuterHigh ->
             (species.temperatureOuterHigh - temperatureC) /
-                (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+                    (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+
         else -> 0.0
     }.coerceIn(0.0, 1.0)
 
@@ -193,10 +198,12 @@ object EcologyFitness {
             temperatureC <= adjustedOuterLow -> 0.0
             temperatureC < adjustedOptimalLow ->
                 (temperatureC - adjustedOuterLow) / (adjustedOptimalLow - adjustedOuterLow)
+
             temperatureC <= species.temperatureOptimalHigh -> 1.0
             temperatureC < species.temperatureOuterHigh ->
                 (species.temperatureOuterHigh - temperatureC) /
-                    (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+                        (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+
             else -> 0.0
         }.coerceIn(0.0, 1.0)
     }
@@ -205,13 +212,13 @@ object EcologyFitness {
         if (habitat.aquatic) return 1.0
         val frozenWaterAvailable =
             environment.snowOrIce ||
-                (
-                    environment.waterAvailability > 0.0 &&
-                        (
-                            environment.temperatureC <= 0.0 ||
-                                environment.annualAverageTemperatureC <= 0.0
+                    (
+                            environment.waterAvailability > 0.0 &&
+                                    (
+                                            environment.temperatureC <= 0.0 ||
+                                                    environment.annualAverageTemperatureC <= 0.0
+                                            )
                             )
-                    )
         val water =
             if (species.snowHydration && frozenWaterAvailable) {
                 max(environment.waterAvailability, species.minimumWater)
@@ -225,9 +232,9 @@ object EcologyFitness {
         if (water <= species.optimalMaximumWater) return 1.0
         if (species.maximumWater <= species.optimalMaximumWater) return 0.0
         return (
-            (species.maximumWater - water) /
-                (species.maximumWater - species.optimalMaximumWater)
-            ).coerceIn(0.0, 1.0)
+                (species.maximumWater - water) /
+                        (species.maximumWater - species.optimalMaximumWater)
+                ).coerceIn(0.0, 1.0)
     }
 
     fun light(species: CompiledSpecies, environment: SeasonalCellEnvironment, habitat: Habitat): Double {
@@ -251,11 +258,11 @@ object EcologyFitness {
         habitat: Habitat,
     ): Double =
         habitat(species, environment, habitat) *
-            elevation(species, environment, habitat) *
-            thermal(species, environment) *
-            water(species, environment, habitat) *
-            light(species, environment, habitat) *
-            vegetationStructure(species, environment, habitat)
+                elevation(species, environment, habitat) *
+                thermal(species, environment) *
+                water(species, environment, habitat) *
+                light(species, environment, habitat) *
+                vegetationStructure(species, environment, habitat)
 
     fun elevation(
         species: CompiledSpecies,
@@ -265,16 +272,27 @@ object EcologyFitness {
         if (!species.motile || !environment.isLand || habitat == Habitat.AERIAL || habitat.aquatic) {
             return 1.0
         }
+        // Elevation adaptations shift the whole viable band upward. This
+        // grants access to thin-air habitats while making a high-altitude
+        // specialist progressively less fit below its adapted range.
+        val optimalMinimumM =
+            EcologyGlobals.normalMinimumElevationM + species.elevationToleranceShiftM
+        val lethalMinimumM =
+            EcologyGlobals.lethalMinimumElevationM + species.elevationToleranceShiftM
         val optimalMaximumM =
             EcologyGlobals.normalElevationLimitM + species.elevationToleranceShiftM
         val lethalMaximumM =
             EcologyGlobals.lethalElevationLimitM + species.elevationToleranceShiftM
         return when {
+            environment.elevationM <= lethalMinimumM -> 0.0
+            environment.elevationM < optimalMinimumM ->
+                (environment.elevationM - lethalMinimumM) /
+                        (optimalMinimumM - lethalMinimumM)
             environment.elevationM <= optimalMaximumM -> 1.0
             environment.elevationM >= lethalMaximumM -> 0.0
             else ->
                 (lethalMaximumM - environment.elevationM) /
-                    (lethalMaximumM - optimalMaximumM)
+                        (lethalMaximumM - optimalMaximumM)
         }.coerceIn(0.0, 1.0)
     }
 
@@ -285,10 +303,10 @@ object EcologyFitness {
     ): Double {
         if (habitat != Habitat.LAND_SURFACE) return 1.0
         return (
-            1.0 -
-                environment.canopyCover *
-                species.denseCanopyForagingPenalty
-            ).coerceIn(0.0, 1.0)
+                1.0 -
+                        environment.canopyCover *
+                        species.denseCanopyForagingPenalty
+                ).coerceIn(0.0, 1.0)
     }
 
     fun habitat(
@@ -314,7 +332,7 @@ object EcologyFitness {
         depthM >= absoluteMaximumM -> 0.0
         else ->
             (absoluteMaximumM - depthM) /
-                (absoluteMaximumM - optimalMaximumM)
+                    (absoluteMaximumM - optimalMaximumM)
     }.coerceIn(0.0, 1.0)
 
     fun thermal(
@@ -336,19 +354,25 @@ object EcologyFitness {
                     passiveFit <= 0.0 -> 0.0
                     environment.temperatureC < species.temperatureOptimalLow ->
                         passiveFit.pow(0.55)
+
                     environment.temperatureC > species.temperatureOptimalHigh ->
                         passiveFit.pow(0.80)
+
                     else -> 1.0
                 }
+
             ThermalStrategy.HETEROTHERMY ->
                 when {
                     passiveFit <= 0.0 -> 0.0
                     environment.temperatureC < species.temperatureOptimalLow ->
                         0.35 + passiveFit * 0.65
+
                     environment.temperatureC > species.temperatureOptimalHigh ->
                         passiveFit.pow(0.95)
+
                     else -> 1.0
                 }
+
             null -> passiveFit
         }
     }
@@ -362,9 +386,6 @@ object LightColorModel {
         val byPigment: Map<BiologicalColor, Double>,
     ) {
         init {
-            require(byPigment.keys == BiologicalColor.entries.toSet()) {
-                "Every biological color needs an authored compatibility"
-            }
             require(byPigment.values.all { it in 0.0..1.0 })
         }
     }
@@ -377,13 +398,20 @@ object LightColorModel {
         StarLight.RED to compatibility(0.82, 0.74, 0.66, 0.54, 1.00, 0.88, 0.36),
     )
 
-    private val compiledCompatibility: Array<DoubleArray> =
+    private val compiledCompatibility: Array<DoubleArray> by lazy {
         Array(StarLight.entries.size) { starIndex ->
-            val compatibility = requireNotNull(authoredCompatibility[StarLight.entries[starIndex]])
+            val starLight = StarLight.entries[starIndex]
+            val compatibility = requireNotNull(authoredCompatibility[starLight]) {
+                "Missing photosynthetic compatibility for $starLight"
+            }
             DoubleArray(BiologicalColor.entries.size) { colorIndex ->
-                requireNotNull(compatibility.byPigment[BiologicalColor.entries[colorIndex]])
+                val color = BiologicalColor.entries[colorIndex]
+                requireNotNull(compatibility.byPigment[color]) {
+                    "Missing $color photosynthetic compatibility for $starLight"
+                }
             }
         }
+    }
 
     fun photosyntheticMatch(starLight: StarLight, pigment: BiologicalColor): Double =
         compiledCompatibility[starLight.ordinal][pigment.ordinal]
@@ -409,7 +437,7 @@ object LightColorModel {
             BiologicalColor.PALE to pale,
             BiologicalColor.WHITE to white,
             BiologicalColor.COUNTERSHADE to countershade,
-        ),
+        ).let { it.plus(BiologicalColor.ADAPTIVE to it.values.max()) },
     )
 }
 
@@ -429,18 +457,18 @@ object NicheSelection {
             .filter { nicheIndex ->
                 val habitat = ecology.niches[nicheIndex].habitat
                 environment.habitatAvailability(habitat) > 0.0 &&
-                    EcologyFitness.habitat(species, environment, habitat) > 0.0 &&
-                    !(
-                        !environment.isLand &&
-                            habitat == Habitat.AERIAL &&
-                            !species.pelagicAerialResident
-                        ) &&
-                    !(
-                        !environment.isLand &&
-                            species.pelagicAerialResident &&
-                            habitat != Habitat.AERIAL
-                        ) &&
-                    !(habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
+                        EcologyFitness.habitat(species, environment, habitat) > 0.0 &&
+                        !(
+                                !environment.isLand &&
+                                        habitat == Habitat.AERIAL &&
+                                        !species.pelagicAerialResident
+                                ) &&
+                        !(
+                                !environment.isLand &&
+                                        species.pelagicAerialResident &&
+                                        habitat != Habitat.AERIAL
+                                ) &&
+                        !(habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
             }
             .maxOfOrNull { species.nicheFit[it] }
             ?: 0.0
@@ -482,13 +510,13 @@ object NicheSelection {
                 max(0.01, environment.resourceSupport(niche, species.sizeClass))
             val score =
                 species.nicheFit[nicheIndex] *
-                    environment.habitatAvailability(niche.habitat) *
-                    establishmentResource /
-                    if (competitionAffectsSelection) {
-                        1.0 + competitionByNiche[nicheIndex]
-                    } else {
-                        1.0
-                    }
+                        environment.habitatAvailability(niche.habitat) *
+                        establishmentResource /
+                        if (competitionAffectsSelection) {
+                            1.0 + competitionByNiche[nicheIndex]
+                        } else {
+                            1.0
+                        }
             if (score > bestScore) {
                 bestScore = score
                 bestIndex = nicheIndex

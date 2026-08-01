@@ -25,6 +25,14 @@ enum class EcoStrategy(
         "grazing",
         setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.SUNLIT_WATER),
     ),
+    FRUGIVORY(
+        "fruit-eating",
+        setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.AERIAL),
+    ),
+    COLONY_RAIDING(
+        "colony-raiding",
+        setOf(Habitat.LAND_SURFACE, Habitat.CANOPY),
+    ),
     GENERALIST_FORAGING(
         "generalist-foraging",
         setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.SUNLIT_WATER),
@@ -88,6 +96,12 @@ enum class EcoStrategy(
     ABSORPTION(
         "absorption",
         setOf(Habitat.LAND_SURFACE, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.DARK_WATER),
+    ),
+    // Keep new strategies at the end: niche indices are persisted in saved
+    // tile communities and therefore depend on enum order.
+    NECTAR_FEEDING(
+        "nectar-feeding",
+        setOf(Habitat.LAND_SURFACE, Habitat.CANOPY, Habitat.AERIAL),
     );
 
     /**
@@ -99,11 +113,14 @@ enum class EcoStrategy(
         get() = when (this) {
             FILTER_FEEDING,
             GRAZING,
+            NECTAR_FEEDING,
+            COLONY_RAIDING,
             GENERALIST_FORAGING,
             AMBUSH_PREDATION,
             PURSUIT_PREDATION,
             PARASITISM,
-            -> true
+                -> true
+
             else -> false
         }
 
@@ -118,6 +135,9 @@ enum class EcoStrategy(
         // precompiled interaction matrix, not from background resource pools.
         FILTER_FEEDING -> 0.0
         GRAZING -> 0.0
+        FRUGIVORY -> environment.resources.fruit
+        NECTAR_FEEDING -> 0.0
+        COLONY_RAIDING -> 0.0
         // This niche groups omnivores for competition; their food still comes
         // from the ordinary grazing and predation interaction edges.
         GENERALIST_FORAGING -> 0.0

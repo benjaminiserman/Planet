@@ -1,5 +1,7 @@
 {
   "backgroundMortality": 0.012,
+  "aposematicPredationMultiplier": 0.2,
+  "dormantLeafColdProtectionC": 20.0,
   "dormantEntryFitness": 0.35,
   "dormantEntryFraction": 0.88,
   "dormantExitFitness": 0.58,
@@ -9,9 +11,13 @@
   "habitatDiversityBaseSlots": 3.0,
   "interspecificNicheCompetition": 0.15,
   "lethalTemperatureMortality": 0.9,
+  "normalMinimumElevationM": 0.0,
+  "lethalMinimumElevationM": -1000.0,
   "normalElevationLimitM": 2000.0,
   "lethalElevationLimitM": 3000.0,
   "maximumConsumedBiomassFraction": 0.75,
+  "nectarAssimilationEfficiency": 0.68,
+  "maximumPollinationBenefitFraction": 0.04,
   "maximumHabitatDiversityMortality": 0.9,
   "maximumStarvationMortality": 0.72,
   "migrationRadiationChancePerSeason": 0.06,
@@ -19,6 +25,8 @@
   "minimumViableIndividuals": 2.0,
   "neighborRadiationChancePerSeason": 0.012,
   "stressMortality": 0.42,
+  "seasonalTorporColdBufferC": 5.0,
+  "seasonalTorporLethalRampC": 10.0,
   "strongestCompetitorMortalityFraction": 0.2,
   "unassistedRadiationChancePerSeason": 0.002
 }

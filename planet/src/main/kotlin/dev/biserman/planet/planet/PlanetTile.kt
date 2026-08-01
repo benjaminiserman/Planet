@@ -409,7 +409,8 @@ class PlanetTile(
                 "resources: carrion=${ecosystem.resources.carrion.formatDigits(3)}, " +
                     "detritus=${ecosystem.resources.detritus.formatDigits(3)}, " +
                     "waste=${ecosystem.resources.waste.formatDigits(3)}, " +
-                    "marine snow=${ecosystem.resources.marineSnow.formatDigits(3)}"
+                    "marine snow=${ecosystem.resources.marineSnow.formatDigits(3)}, " +
+                    "fruit=${ecosystem.resources.fruit.formatDigits(3)}"
             )
             val speciesCount = ecosystem.populations.map { it.speciesId }.distinct().size
             appendLine("populations ($speciesCount):")

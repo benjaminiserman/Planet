@@ -17,6 +17,8 @@ object InvariantSpecies {
             CommonTrait.THAW_DEPENDENT_GROWTH,
             CommonTrait.PHOTOSYNTHETIC_SURFACE,
             CommonTrait.ROOTED_BODY,
+            CommonTrait.FLOWERS,
+            CommonTrait.NECTARIES,
         ),
         photosyntheticColor = BiologicalColor.GREEN,
         kind = SpeciesKind.INVARIANT,

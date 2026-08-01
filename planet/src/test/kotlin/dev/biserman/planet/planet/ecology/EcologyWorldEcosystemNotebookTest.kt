@@ -19,13 +19,13 @@ class EcologyWorldEcosystemNotebookTest {
             .map { cell -> cell["source"].joinToString("") { it.asText() } }
             .filter { source -> Regex("""runEcosystem\(\s*"""").containsMatchIn(source) }
 
-        assertEquals(23, scenarioCells.size)
-        assertEquals(2, scenarioCells.count { "intendedStable = false" in it })
-        assertEquals(2, scenarioCells.count { "introductions = listOf(" in it })
+        assertEquals(22, scenarioCells.size)
+        assertEquals(1, scenarioCells.count { "intendedStable = false" in it })
+        assertEquals(1, scenarioCells.count { "introductions = listOf(" in it })
         assertEquals(2, scenarioCells.count { "climateShifts = listOf(" in it })
         assertEquals(2, scenarioCells.count { "habitatShifts = listOf(" in it })
         assertEquals(2, scenarioCells.count { "populationRemovals = listOf(" in it })
-        assertEquals(7, scenarioCells.count { "expectedExtinctions = setOf(" in it })
+        assertEquals(6, scenarioCells.count { "expectedExtinctions = setOf(" in it })
         assertEquals(1, scenarioCells.count { "includeAeroplankton = true" in it })
         scenarioCells.forEach { source ->
             assertTrue("seasonalClimate(" in source)

@@ -31,6 +31,7 @@ enum class Habitat(
         reefCover: Double,
     ): Double {
         if (color == null) return 0.0
+        if (color == BiologicalColor.ADAPTIVE) return 0.35
         if (snowOrIce && color == BiologicalColor.WHITE) return 0.35
         if (aquatic && reefCover > 0.45) {
             return when (color) {

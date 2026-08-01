@@ -40,10 +40,23 @@ class EcologyEnvironmentTest {
     }
 
     @Test
-    fun `authored light table covers every strongly typed star and pigment`() {
-        assertEquals(StarLight.entries.toSet(), LightColorModel.authoredCompatibility.keys)
-        LightColorModel.authoredCompatibility.values.forEach { compatibility ->
-            assertEquals(BiologicalColor.entries.toSet(), compatibility.byPigment.keys)
+    fun `authored light table covers every strongly typed star`() {
+        assertEquals(
+            StarLight.entries.toSet(),
+            LightColorModel.authoredCompatibility.keys,
+            "Every StarLight needs an authored photosynthetic compatibility table",
+        )
+    }
+
+    @Test
+    fun `adding a biological color requires an explicit light compatibility`() {
+        val expectedColors = BiologicalColor.entries.toSet()
+        LightColorModel.authoredCompatibility.forEach { (starLight, compatibility) ->
+            assertEquals(
+                expectedColors,
+                compatibility.byPigment.keys,
+                "$starLight is missing an authored BiologicalColor compatibility",
+            )
         }
     }
 
@@ -240,7 +253,7 @@ class EcologyEnvironmentTest {
     }
 
     @Test
-    fun `terrestrial motile elevation fitness declines from 2000 to 3000 meters`() {
+    fun `terrestrial motile elevation fitness declines outside a shifted optimal band`() {
         fun organism(
             id: String,
             motile: Boolean,
@@ -279,9 +292,15 @@ class EcologyEnvironmentTest {
         val flying = ecology.species[2]
         val rooted = ecology.species[3]
 
+        assertEquals(0.0, EcologyFitness.elevation(lowland, land(elevationM = -1_000.0), Habitat.LAND_SURFACE))
+        assertEquals(0.5, EcologyFitness.elevation(lowland, land(elevationM = -500.0), Habitat.LAND_SURFACE))
+        assertEquals(1.0, EcologyFitness.elevation(lowland, land(elevationM = 0.0), Habitat.LAND_SURFACE))
         assertEquals(1.0, EcologyFitness.elevation(lowland, land(elevationM = 2_000.0), Habitat.LAND_SURFACE))
         assertEquals(0.5, EcologyFitness.elevation(lowland, land(elevationM = 2_500.0), Habitat.LAND_SURFACE))
         assertEquals(0.0, EcologyFitness.elevation(lowland, land(elevationM = 3_000.0), Habitat.LAND_SURFACE))
+        assertEquals(0.0, EcologyFitness.elevation(highland, land(elevationM = 1_500.0), Habitat.LAND_SURFACE))
+        assertEquals(0.5, EcologyFitness.elevation(highland, land(elevationM = 2_000.0), Habitat.LAND_SURFACE))
+        assertEquals(1.0, EcologyFitness.elevation(highland, land(elevationM = 2_500.0), Habitat.LAND_SURFACE))
         assertEquals(1.0, EcologyFitness.elevation(highland, land(elevationM = 4_500.0), Habitat.LAND_SURFACE))
         assertEquals(0.5, EcologyFitness.elevation(highland, land(elevationM = 5_000.0), Habitat.LAND_SURFACE))
         assertEquals(0.0, EcologyFitness.elevation(highland, land(elevationM = 5_500.0), Habitat.LAND_SURFACE))

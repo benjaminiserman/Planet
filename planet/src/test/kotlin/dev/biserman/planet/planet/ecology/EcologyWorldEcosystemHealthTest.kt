@@ -110,8 +110,7 @@ class EcologyWorldEcosystemHealthTest {
                 }
                 "Himalayan alpine meadow" -> {
                     val namedPreyBiomass =
-                        result.finalBiomassById.getOrDefault("snowshoe-hare", 0.0) +
-                            result.finalBiomassById.getOrDefault("white-tailed-deer", 0.0)
+                        result.finalBiomassById.getOrDefault("himalayan-pika", 0.0)
                     if (result.finalBiomassById.getOrDefault("snow-leopard", 0.0) >= namedPreyBiomass) {
                         failures += "${result.name} had at least as much snow leopard biomass as named prey biomass"
                     }
@@ -407,8 +406,10 @@ class EcologyWorldEcosystemHealthTest {
         val viableSeedMultiplier = when (niche.strategy) {
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.COLONY_RAIDING,
             EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.FILTER_FEEDING,
+            EcoStrategy.NECTAR_FEEDING,
             EcoStrategy.SCAVENGING -> 20.0
             else -> 100.0
         }
@@ -416,11 +417,14 @@ class EcologyWorldEcosystemHealthTest {
             EcoStrategy.PHOTOSYNTHESIS, EcoStrategy.ABSORPTION -> 0.65
             EcoStrategy.FILTER_FEEDING,
             EcoStrategy.GRAZING,
+            EcoStrategy.FRUGIVORY,
+            EcoStrategy.NECTAR_FEEDING,
             EcoStrategy.DEPOSIT_FEEDING,
             EcoStrategy.DECOMPOSITION,
             EcoStrategy.COPROPHAGY -> 0.45
             EcoStrategy.AMBUSH_PREDATION,
             EcoStrategy.PURSUIT_PREDATION,
+            EcoStrategy.COLONY_RAIDING,
             EcoStrategy.GENERALIST_FORAGING,
             EcoStrategy.SCAVENGING,
             EcoStrategy.PARASITISM -> 0.015
@@ -454,6 +458,7 @@ class EcologyWorldEcosystemHealthTest {
             adjacentToOcean = tile.adjacentToOcean,
             adjacentToLand = tile.adjacentToLand,
             adjacentToMajorRiver = tile.adjacentToMajorRiver,
+            elevationM = tile.elevationM,
             waterDepthM = tile.waterDepthM,
             usefulSunlightReachesWater = tile.usefulSunlightReachesWater,
             canopyCover = tile.canopyCover,
@@ -506,6 +511,7 @@ class EcologyWorldEcosystemHealthTest {
             adjacentToOcean = tileValues["adjacentToOcean"]?.toBoolean() ?: false,
             adjacentToLand = tileValues["adjacentToLand"]?.toBoolean() ?: false,
             adjacentToMajorRiver = tileValues["adjacentToMajorRiver"]?.toBoolean() ?: false,
+            elevationM = tileValues["elevationM"]?.replace("_", "")?.toDouble() ?: 0.0,
             waterDepthM = tileValues["waterDepthM"]?.toDouble() ?: 0.0,
             usefulSunlightReachesWater =
                 tileValues["usefulSunlightReachesWater"]?.toBoolean() ?: true,
@@ -643,6 +649,7 @@ class EcologyWorldEcosystemHealthTest {
         val adjacentToOcean: Boolean = false,
         val adjacentToLand: Boolean = false,
         val adjacentToMajorRiver: Boolean = false,
+        val elevationM: Double = 0.0,
         val waterDepthM: Double = 0.0,
         val usefulSunlightReachesWater: Boolean = true,
         val canopyCover: Double = 0.0,
@@ -711,10 +718,12 @@ class EcologyWorldEcosystemHealthTest {
         TrophicRole.PRIMARY_CONSUMER ->
             strategySupport[EcoStrategy.FILTER_FEEDING.ordinal] > 0.0 ||
                 strategySupport[EcoStrategy.GRAZING.ordinal] > 0.0 ||
+                strategySupport[EcoStrategy.NECTAR_FEEDING.ordinal] > 0.0 ||
                 strategySupport[EcoStrategy.DEPOSIT_FEEDING.ordinal] > 0.0
         TrophicRole.PREDATOR ->
             strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] > 0.0
+                strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] > 0.0 ||
+                strategySupport[EcoStrategy.COLONY_RAIDING.ordinal] > 0.0
     }
 
     private companion object {
