@@ -1,4 +1,5 @@
 {
+  "starLight": "YELLOW",
   "backgroundMortality": 0.012,
   "aposematicPredationMultiplier": 0.2,
   "dormantLeafColdProtectionC": 20.0,

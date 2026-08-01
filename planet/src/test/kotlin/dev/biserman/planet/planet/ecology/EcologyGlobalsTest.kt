@@ -33,4 +33,27 @@ class EcologyGlobalsTest {
             EcologyGlobals.backgroundMortality = original
         }
     }
+
+    @Test
+    fun `star light can be loaded from ecology config`() {
+        val original = EcologyGlobals.starLight
+        try {
+            Serialization.configMapper.readValue<EcologyGlobals>(
+                """{"starLight":"RED"}""",
+            )
+
+            assertEquals(StarLight.RED, EcologyGlobals.starLight)
+        } finally {
+            EcologyGlobals.starLight = original
+        }
+    }
+
+    @Test
+    fun `refreshing runtime configuration advances the cache revision`() {
+        val originalRevision = PlanetEcology.runtimeConfigRevision
+
+        PlanetEcology.refreshRuntimeConfig()
+
+        assertEquals(originalRevision + 1, PlanetEcology.runtimeConfigRevision)
+    }
 }

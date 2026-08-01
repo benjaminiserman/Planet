@@ -52,7 +52,7 @@ object EcologySuitability {
                 val seasonalFitness = annualEnvironments.map { environment ->
                     (
                             EcologyFitness.combined(species, environment, niche.habitat) *
-                                    ((1 - species.reefUse) + environment.reefCover * species.reefUse * 2.0)
+                                    EcologyFitness.reefAssociationMultiplier(species, environment)
                             ).coerceIn(0.0, 1.0)
                 }
                 NicheSuitability(

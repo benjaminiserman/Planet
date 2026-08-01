@@ -46,6 +46,8 @@ object PlanetEcologyEnvironment {
     fun areaKm2(tile: PlanetTile): Double =
         max(1.0, tile.tile.area * tile.planet.radiusMeters.pow(2) / 1_000_000.0)
 
+    internal fun signedElevationM(tileElevationM: Double): Double = tileElevationM
+
     fun environment(
         tile: PlanetTile,
         climate: ClimateDatum,
@@ -76,7 +78,7 @@ object PlanetEcologyEnvironment {
             adjacentToOcean = adjacentToOcean,
             adjacentToLand = adjacentToLand,
             adjacentToMajorRiver = adjacentToMajorRiver,
-            elevationM = tile.elevation.coerceAtLeast(0.0),
+            elevationM = signedElevationM(tile.elevation),
             waterDepthM = waterDepthM,
             // Depth decides whether a dark compartment exists; illumination
             // decides whether the surface compartment exists. A deep lit ocean
@@ -90,7 +92,7 @@ object PlanetEcologyEnvironment {
                     supportsSeaIceHabitat(climate),
             canopyCover = estimatedCanopyCover(climate, isLand),
             reefCover = tile.ecosystem.reefCover.coerceIn(0.0, 1.0),
-            starLight = StarLight.YELLOW,
+            starLight = EcologyGlobals.starLight,
             resources = resources,
         )
     }

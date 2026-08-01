@@ -9,6 +9,9 @@ package dev.biserman.planet.planet.ecology
  */
 @Suppress("MayBeConstant")
 object EcologyGlobals {
+    /** Spectrum emitted by the planet's star and used by photosynthetic pigments. */
+    var starLight = StarLight.YELLOW
+
     /** Fraction of every active population lost each season even under ideal conditions. */
     var backgroundMortality = 0.012
 

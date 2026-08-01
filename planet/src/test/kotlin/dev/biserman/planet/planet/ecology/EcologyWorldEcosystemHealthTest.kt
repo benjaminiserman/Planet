@@ -1,10 +1,6 @@
 package dev.biserman.planet.planet.ecology
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.ClimateDatumSample
-import java.nio.file.Path
-import kotlin.io.path.readText
 import kotlin.math.sqrt
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -12,7 +8,7 @@ import kotlin.test.assertTrue
 class EcologyWorldEcosystemHealthTest {
     @Test
     fun `authored ecosystems meet their stability or collapse expectation`() {
-        val results = notebookScenarios().map(::simulate)
+        val results = AuthoredEcosystems.ALL.map(::simulate)
         val failures = mutableListOf<String>()
 
         results.forEach { result ->
@@ -136,7 +132,7 @@ class EcologyWorldEcosystemHealthTest {
         assertTrue(failures.isEmpty(), failures.joinToString(separator = "\n"))
     }
 
-    private fun simulate(scenario: ParsedScenario): HealthResult {
+    private fun simulate(scenario: AuthoredEcosystemScenario): HealthResult {
         val ecology = EcologyCompiler.compile(
             scenario.species + invariantGuilds(scenario.tile),
         )
@@ -149,7 +145,7 @@ class EcologyWorldEcosystemHealthTest {
             scenario.tile,
             scenario.climate.tileId,
             0.5,
-            marineSnow = initialMarineSnow,
+            resources = FunctionalResources(marineSnow = initialMarineSnow),
         )
         val nicheBySpecies = ecology.species.associate { species ->
             species.index to NicheSelection.choose(species, ecology, seedEnvironment).also {
@@ -174,10 +170,7 @@ class EcologyWorldEcosystemHealthTest {
 
         val fluxes = CellTurnFluxes()
         val totals = DoubleArray(SIMULATION_SEASONS)
-        var carrion = 0.0
-        var detritus = 0.0
-        var waste = 0.0
-        var marineSnow = initialMarineSnow
+        var resources = FunctionalResources(marineSnow = initialMarineSnow)
         var activeClimate = scenario.climate
         var activeTile = scenario.tile
         val extinctionSeasons = linkedMapOf<String, Int>()
@@ -197,10 +190,7 @@ class EcologyWorldEcosystemHealthTest {
                 activeTile,
                 activeClimate.tileId,
                 season / 4.0,
-                carrion = carrion,
-                detritus = detritus,
-                waste = waste,
-                marineSnow = marineSnow,
+                resources = resources,
             )
             val presentBefore = (0 until community.size)
                 .map { ecology.species[community.speciesIndices[it]].id }
@@ -233,35 +223,11 @@ class EcologyWorldEcosystemHealthTest {
                 .map { ecology.species[community.speciesIndices[it]].id }
                 .toSet()
             (presentBefore - presentAfter).forEach { extinctionSeasons[it] = season }
-            carrion = OrganicPoolDynamics.update(
-                carrion,
-                fluxes.carrionBiomass,
-                fluxes.carrionConsumedBiomass,
-                40_000.0 * 10.0,
-                0.55,
-            )
-            detritus = OrganicPoolDynamics.update(
-                detritus,
-                fluxes.detritusBiomass,
-                fluxes.detritusConsumedBiomass,
-                40_000.0 * 12.0,
-                0.68,
-                maximumAccessibleFraction = 0.75,
-            )
-            waste = OrganicPoolDynamics.update(
-                waste,
-                fluxes.wasteBiomass,
-                fluxes.wasteConsumedBiomass,
-                40_000.0 * 10.0,
-                0.60,
-                maximumAccessibleFraction = 0.80,
-            )
-            marineSnow = OrganicPoolDynamics.update(
-                marineSnow,
-                fluxes.marineSnowBiomass,
-                fluxes.marineSnowConsumedBiomass,
-                40_000.0 * 15.0,
-                0.72,
+            resources = FunctionalResourceDynamics.update(
+                previous = resources,
+                fluxes = fluxes,
+                areaKm2 = 40_000.0,
+                hasMarineCompartment = !activeTile.isLand || activeTile.adjacentToOcean,
             )
             totals[season] = community.totalBiomass()
         }
@@ -325,7 +291,7 @@ class EcologyWorldEcosystemHealthTest {
                         scenario.tile,
                         scenario.climate.tileId,
                         year,
-                        marineSnow = initialMarineSnow,
+                        resources = FunctionalResources(marineSnow = initialMarineSnow),
                     )
                     EcologyFitness.combined(species, environment, niche.habitat)
                 } < 0.35
@@ -383,7 +349,7 @@ class EcologyWorldEcosystemHealthTest {
         return TrophicBiomass(producers, primaryConsumers, predators, apexPredators, other)
     }
 
-    private fun invariantGuilds(tile: ParsedTile): List<SpeciesDefinition> = buildList {
+    private fun invariantGuilds(tile: AuthoredEcosystemTile): List<SpeciesDefinition> = buildList {
         if (tile.includeAeroplankton) add(InvariantSpecies.AEROPLANKTON)
         if (tile.isLand) {
             add(InvariantSpecies.CARPET_PLANTS)
@@ -438,13 +404,10 @@ class EcologyWorldEcosystemHealthTest {
     private fun environmentAt(
         sample: ClimateDatumSample,
         annualAverageTemperature: Double,
-        tile: ParsedTile,
+        tile: AuthoredEcosystemTile,
         climateTileId: Int,
         year: Double,
-        carrion: Double = 0.0,
-        detritus: Double = 0.0,
-        waste: Double = 0.0,
-        marineSnow: Double = 0.0,
+        resources: FunctionalResources = FunctionalResources(),
     ): SeasonalCellEnvironment {
         val anomaly = EcologyClimateVariability.anomaly(climateTileId, year)
         val base = SeasonalCellEnvironment.create(
@@ -464,222 +427,8 @@ class EcologyWorldEcosystemHealthTest {
             canopyCover = tile.canopyCover,
             reefCover = tile.reefCover,
         )
-        return base.withResources(
-            FunctionalResources(
-                carrion = carrion,
-                detritus = detritus,
-                waste = waste,
-                marineSnow = marineSnow,
-            ),
-        )
+        return base.withResources(resources)
     }
-
-    private fun notebookScenarios(): List<ParsedScenario> {
-        val notebook = ObjectMapper().readTree(
-            Path.of(
-                "src/main/kotlin/dev/biserman/planet/notebooks/ecology_world_ecosystems.ipynb",
-            ).readText(),
-        )
-        return notebook["cells"]
-            .filter { it["cell_type"].asText() == "code" }
-            .map { cell -> cell["source"].joinToString("") { it.asText() } }
-            .filter { Regex("""runEcosystem\(\s*"""").containsMatchIn(it) }
-            .map(::parseScenario)
-    }
-
-    private fun parseScenario(source: String): ParsedScenario {
-        val name = requireMatch(Regex("""runEcosystem\(\s*"([^"]+)""""), source).groupValues[1]
-        val climateMatch = requireMatch(
-            Regex(
-                """seasonalClimate\((\d+), listOf\(([^)]*)\), listOf\(([^)]*)\), listOf\(([^)]*)\)\)""",
-            ),
-            source,
-        )
-        val climate = seasonalClimate(
-            climateMatch.groupValues[1].toInt(),
-            doubles(climateMatch.groupValues[2]),
-            doubles(climateMatch.groupValues[3]),
-            doubles(climateMatch.groupValues[4]),
-        )
-        val tileArguments =
-            requireMatch(Regex("""TileTemplate\(([^)]*)\)"""), source).groupValues[1]
-        val tileValues = Regex("""(\w+)\s*=\s*([^,\n]+)""")
-            .findAll(tileArguments)
-            .associate { it.groupValues[1] to it.groupValues[2].trim() }
-        val tile = ParsedTile(
-            isLand = tileValues.getValue("isLand").toBoolean(),
-            adjacentToOcean = tileValues["adjacentToOcean"]?.toBoolean() ?: false,
-            adjacentToLand = tileValues["adjacentToLand"]?.toBoolean() ?: false,
-            adjacentToMajorRiver = tileValues["adjacentToMajorRiver"]?.toBoolean() ?: false,
-            elevationM = tileValues["elevationM"]?.replace("_", "")?.toDouble() ?: 0.0,
-            waterDepthM = tileValues["waterDepthM"]?.toDouble() ?: 0.0,
-            usefulSunlightReachesWater =
-                tileValues["usefulSunlightReachesWater"]?.toBoolean() ?: true,
-            canopyCover = tileValues["canopyCover"]?.toDouble() ?: 0.0,
-            reefCover = tileValues["reefCover"]?.toDouble() ?: 0.0,
-            fertilityModifier = tileValues["fertilityModifier"]?.toDouble() ?: 0.0,
-            includeAeroplankton = tileValues["includeAeroplankton"]?.toBoolean() ?: false,
-        )
-
-        val catalogById = EarthSpeciesCatalog.ALL.associateBy { it.id }
-        val species = Regex("""earth\("([^"]+)"\)""")
-            .findAll(source)
-            .map { match ->
-                val id = match.groupValues[1]
-                requireNotNull(catalogById[id]) {
-                    "$name references $id, which is not in EarthSpeciesCatalog.ALL"
-                }
-            }
-            .toList()
-        require(species.isNotEmpty()) { "No species parsed for $name" }
-
-        val introductions = Regex(
-            """Introduction\("([^"]+)", year = (\d+), biomassKg = ([\d_.]+)\)""",
-        ).findAll(source).map { match ->
-            ParsedIntroduction(
-                match.groupValues[1],
-                match.groupValues[2].toInt(),
-                match.groupValues[3].replace("_", "").toDouble(),
-            )
-        }.toList()
-        val climateShifts = Regex(
-            """ClimateShift\((\d+), seasonalClimate\((\d+), listOf\(([^)]*)\), listOf\(([^)]*)\), listOf\(([^)]*)\)\)\)""",
-        ).findAll(source).map { match ->
-            ParsedClimateShift(
-                match.groupValues[1].toInt(),
-                seasonalClimate(
-                    match.groupValues[2].toInt(),
-                    doubles(match.groupValues[3]),
-                    doubles(match.groupValues[4]),
-                    doubles(match.groupValues[5]),
-                ),
-            )
-        }.toList()
-        val habitatShifts = Regex(
-            """HabitatShift\((\d+), ([^)]*)\)""",
-        ).findAll(source).map { match ->
-            val values = Regex("""(\w+)\s*=\s*([^,\n]+)""")
-                .findAll(match.groupValues[2])
-                .associate { it.groupValues[1] to it.groupValues[2].trim() }
-            ParsedHabitatShift(
-                match.groupValues[1].toInt(),
-                values["canopyCover"]?.toDouble(),
-                values["reefCover"]?.toDouble(),
-            )
-        }.toList()
-        val populationRemovals = Regex(
-            """PopulationRemoval\("([^"]+)", year = (\d+)(?:, fraction = ([\d_.]+))?\)""",
-        ).findAll(source).map { match ->
-            ParsedPopulationRemoval(
-                match.groupValues[1],
-                match.groupValues[2].toInt(),
-                match.groupValues[3].takeIf { it.isNotEmpty() }
-                    ?.replace("_", "")
-                    ?.toDouble() ?: 1.0,
-            )
-        }.toList()
-        val expectedExtinctions =
-            Regex("""expectedExtinctions\s*=\s*setOf\(([^)]*)\)""")
-                .find(source)
-                ?.groupValues
-                ?.get(1)
-                ?.let { ids ->
-                    Regex(""""([^"]+)"""").findAll(ids).map { it.groupValues[1] }.toSet()
-                }
-                ?: emptySet()
-        return ParsedScenario(
-            name,
-            climate,
-            tile,
-            species,
-            introductions,
-            climateShifts,
-            habitatShifts,
-            populationRemovals,
-            expectedExtinctions,
-            intendedStable = "intendedStable = false" !in source,
-        )
-    }
-
-    private fun seasonalClimate(
-        tileId: Int,
-        temperatures: List<Double>,
-        insolations: List<Double>,
-        precipitation: List<Double>,
-    ): ClimateDatum {
-        fun interpolate(values: List<Double>, month: Int): Double {
-            val quarter = month / 3
-            val next = (quarter + 1) % 4
-            val fraction = (month % 3) / 3.0
-            return values[quarter] + (values[next] - values[quarter]) * fraction
-        }
-        return ClimateDatum(
-            tileId,
-            (0 until 12).map { month ->
-                ClimateDatumSample(
-                    interpolate(temperatures, month),
-                    interpolate(insolations, month),
-                    interpolate(precipitation, month),
-                )
-            },
-        )
-    }
-
-    private fun doubles(source: String): List<Double> =
-        source.split(",").map { it.trim().toDouble() }
-
-    private fun requireMatch(pattern: Regex, source: String): MatchResult =
-        requireNotNull(pattern.find(source)) { "Could not parse ${pattern.pattern} from scenario cell" }
-
-    private data class ParsedScenario(
-        val name: String,
-        val climate: ClimateDatum,
-        val tile: ParsedTile,
-        val species: List<SpeciesDefinition>,
-        val introductions: List<ParsedIntroduction>,
-        val climateShifts: List<ParsedClimateShift>,
-        val habitatShifts: List<ParsedHabitatShift>,
-        val populationRemovals: List<ParsedPopulationRemoval>,
-        val expectedExtinctions: Set<String>,
-        val intendedStable: Boolean,
-    )
-
-    private data class ParsedTile(
-        val isLand: Boolean,
-        val adjacentToOcean: Boolean = false,
-        val adjacentToLand: Boolean = false,
-        val adjacentToMajorRiver: Boolean = false,
-        val elevationM: Double = 0.0,
-        val waterDepthM: Double = 0.0,
-        val usefulSunlightReachesWater: Boolean = true,
-        val canopyCover: Double = 0.0,
-        val reefCover: Double = 0.0,
-        val fertilityModifier: Double = 0.0,
-        val includeAeroplankton: Boolean = false,
-    )
-
-    private data class ParsedIntroduction(
-        val speciesId: String,
-        val year: Int,
-        val biomassKg: Double?,
-    )
-
-    private data class ParsedClimateShift(
-        val year: Int,
-        val climate: ClimateDatum,
-    )
-
-    private data class ParsedHabitatShift(
-        val year: Int,
-        val canopyCover: Double?,
-        val reefCover: Double?,
-    )
-
-    private data class ParsedPopulationRemoval(
-        val speciesId: String,
-        val year: Int,
-        val fraction: Double,
-    )
 
     private data class HealthResult(
         val name: String,

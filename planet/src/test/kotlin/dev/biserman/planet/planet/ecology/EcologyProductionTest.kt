@@ -14,6 +14,17 @@ class EcologyProductionTest {
     )
 
     @Test
+    fun `every current habitat has a distinct byte cache bit`() {
+        HabitatCacheMask.validateCapacity()
+        val roundTrippedBits = Habitat.entries.map { habitat ->
+            HabitatCacheMask.bit(habitat).toByte().toInt() and 0xFF
+        }
+
+        assertEquals(Habitat.entries.size, roundTrippedBits.toSet().size)
+        assertTrue(roundTrippedBits.none { it == 0 })
+    }
+
+    @Test
     fun `colossal Earth species are redwoods and baleen whales`() {
         assertEquals(
             setOf("coast-redwood", "blue-whale", "humpback-whale"),

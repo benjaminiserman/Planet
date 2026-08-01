@@ -172,7 +172,12 @@ object RandomEcosystemExperiment {
             (presentBefore - presentAfter).forEach { id ->
                 extinctionSeasons.putIfAbsent(id, season)
             }
-            resources = updateResources(resources, fluxes)
+            resources = FunctionalResourceDynamics.update(
+                previous = resources,
+                fluxes = fluxes,
+                areaKm2 = AREA_KM2,
+                hasMarineCompartment = !tile.isLand || tile.adjacentToOcean,
+            )
 
             ecology.species.forEach { species ->
                 val population = community.find(species.index)
@@ -402,50 +407,6 @@ object RandomEcosystemExperiment {
             resources = resources,
         )
     }
-
-    private fun updateResources(
-        resources: FunctionalResources,
-        fluxes: CellTurnFluxes,
-    ) = FunctionalResources(
-        carrion = OrganicPoolDynamics.update(
-            resources.carrion,
-            fluxes.carrionBiomass,
-            fluxes.carrionConsumedBiomass,
-            AREA_KM2 * 10.0,
-            0.55,
-        ),
-        detritus = OrganicPoolDynamics.update(
-            resources.detritus,
-            fluxes.detritusBiomass,
-            fluxes.detritusConsumedBiomass,
-            AREA_KM2 * 12.0,
-            0.68,
-            maximumAccessibleFraction = 0.75,
-        ),
-        waste = OrganicPoolDynamics.update(
-            resources.waste,
-            fluxes.wasteBiomass,
-            fluxes.wasteConsumedBiomass,
-            AREA_KM2 * 10.0,
-            0.60,
-            maximumAccessibleFraction = 0.80,
-        ),
-        marineSnow = OrganicPoolDynamics.update(
-            resources.marineSnow,
-            fluxes.marineSnowBiomass,
-            fluxes.marineSnowConsumedBiomass,
-            AREA_KM2 * 15.0,
-            0.72,
-        ),
-        fruit = OrganicPoolDynamics.update(
-            resources.fruit,
-            fluxes.fruitBiomass,
-            fluxes.fruitConsumedBiomass,
-            AREA_KM2 * 2_500.0,
-            0.20,
-            maximumAccessibleFraction = 0.85,
-        ),
-    )
 
     private fun presentSpeciesIds(
         community: TileCommunity,

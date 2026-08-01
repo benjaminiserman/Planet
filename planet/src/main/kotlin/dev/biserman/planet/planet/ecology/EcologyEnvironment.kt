@@ -167,6 +167,12 @@ class SeasonalCellEnvironment private constructor(
 }
 
 object EcologyFitness {
+    fun reefAssociationMultiplier(
+        species: CompiledSpecies,
+        environment: SeasonalCellEnvironment,
+    ): Double =
+        (1.0 - species.reefUse) + environment.reefCover * species.reefUse * 2.0
+
     fun temperature(species: CompiledSpecies, temperatureC: Double): Double = when {
         temperatureC <= species.temperatureOuterLow -> 0.0
         temperatureC < species.temperatureOptimalLow ->

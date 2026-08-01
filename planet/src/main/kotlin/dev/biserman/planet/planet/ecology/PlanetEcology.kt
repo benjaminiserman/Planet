@@ -27,6 +27,8 @@ object PlanetEcology {
     private var cachedPlanet: Planet? = null
     private var cachedWorld: WorldCache? = null
     private var radiationScratch: MovementScratch? = null
+    internal var runtimeConfigRevision: Long = 0
+        private set
 
     /**
      * Makes values reloaded into [EcologyGlobals] effective on the next turn.
@@ -37,6 +39,9 @@ object PlanetEcology {
         EcologyGlobals.validate()
         runtimeConfig = EcologyRuntimeConfig()
         runtimeInstance = null
+        runtimeConfigRevision++
+        cachedWorld = null
+        cachedPlanet = null
     }
 
     private fun newRuntime() = EcologyRuntime(
@@ -227,7 +232,7 @@ object PlanetEcology {
                 finalizeExtinctions = false,
             )
             val tile = tiles[index]
-            tile.ecosystem.resources = updateResources(
+            tile.ecosystem.resources = FunctionalResourceDynamics.update(
                 previous = tile.ecosystem.resources,
                 fluxes = fluxes,
                 areaKm2 = environments[index].areaKm2,
@@ -358,57 +363,6 @@ object PlanetEcology {
         }
     }
 
-    private fun updateResources(
-        previous: FunctionalResources,
-        fluxes: CellTurnFluxes,
-        areaKm2: Double,
-        hasMarineCompartment: Boolean,
-    ): FunctionalResources = FunctionalResources(
-        carrion = OrganicPoolDynamics.update(
-            previous.carrion,
-            fluxes.carrionBiomass,
-            fluxes.carrionConsumedBiomass,
-            areaKm2 * 10.0,
-            0.55,
-        ),
-        detritus = OrganicPoolDynamics.update(
-            previous.detritus,
-            fluxes.detritusBiomass,
-            fluxes.detritusConsumedBiomass,
-            areaKm2 * 12.0,
-            0.68,
-            maximumAccessibleFraction = 0.75,
-        ),
-        waste = OrganicPoolDynamics.update(
-            previous.waste,
-            fluxes.wasteBiomass,
-            fluxes.wasteConsumedBiomass,
-            areaKm2 * 10.0,
-            0.60,
-            maximumAccessibleFraction = 0.80,
-        ),
-        marineSnow =
-            if (hasMarineCompartment) {
-                OrganicPoolDynamics.update(
-                    previous.marineSnow,
-                    fluxes.marineSnowBiomass,
-                    fluxes.marineSnowConsumedBiomass,
-                    areaKm2 * 15.0,
-                    0.72,
-                )
-            } else {
-                0.0
-            },
-        fruit = OrganicPoolDynamics.update(
-            previous.fruit,
-            fluxes.fruitBiomass,
-            fluxes.fruitConsumedBiomass,
-            areaKm2 * 2_500.0,
-            0.20,
-            maximumAccessibleFraction = 0.85,
-        ),
-    )
-
     private fun initialReefCover(tile: PlanetTile, averageTemperatureC: Double): Double {
         val depth = (tile.planet.seaLevel - tile.elevation).coerceAtLeast(0.0)
         val climateFit = if (
@@ -448,7 +402,7 @@ object PlanetEcology {
         habitat: Habitat,
     ): Boolean {
         val cacheIndex = tileIndex * compiled.species.size + speciesIndex
-        val habitatBit = 1 shl habitat.ordinal
+        val habitatBit = HabitatCacheMask.bit(habitat)
         val knownMask = cache.knownSuitabilityHabitats[cacheIndex].toInt() and 0xFF
         if (knownMask and habitatBit == 0) {
             val tile = cache.tiles[tileIndex]
@@ -479,9 +433,11 @@ object PlanetEcology {
 
     @Synchronized
     private fun worldCache(planet: Planet): WorldCache {
+        HabitatCacheMask.validateCapacity()
         val existing = if (cachedPlanet === planet) cachedWorld else null
         if (
             existing != null &&
+            existing.runtimeConfigRevision == runtimeConfigRevision &&
             existing.terrainRevision == planet.terrainChangeCount &&
             existing.climateMap === planet.climateMap &&
             existing.tiles.size == planet.planetTiles.size
@@ -508,6 +464,7 @@ object PlanetEcology {
                 .toIntArray()
         }
         return WorldCache(
+            runtimeConfigRevision = runtimeConfigRevision,
             terrainRevision = planet.terrainChangeCount,
             climateMap = planet.climateMap,
             tiles = tiles,
@@ -524,6 +481,7 @@ object PlanetEcology {
     }
 
     private data class WorldCache(
+        val runtimeConfigRevision: Long,
         val terrainRevision: ULong,
         val climateMap: Any,
         val tiles: List<PlanetTile>,
@@ -534,4 +492,18 @@ object PlanetEcology {
     )
 
     private const val RANDOMIZATION_PROCESS = 0x2C71_4A19
+}
+
+internal object HabitatCacheMask {
+    fun validateCapacity() {
+        require(Habitat.entries.size <= Byte.SIZE_BITS) {
+            "The suitability cache uses one byte per species/tile and supports at most " +
+                "${Byte.SIZE_BITS} habitats"
+        }
+    }
+
+    fun bit(habitat: Habitat): Int {
+        validateCapacity()
+        return 1 shl habitat.ordinal
+    }
 }

@@ -6,6 +6,24 @@ import kotlin.test.assertTrue
 
 class EcologySeasonalDynamicsTest {
     @Test
+    fun `shared resource dynamics omit marine snow without a marine compartment`() {
+        val fluxes = CellTurnFluxes().apply {
+            carrionBiomass = 4_000.0
+            marineSnowBiomass = 4_000.0
+        }
+
+        val updated = FunctionalResourceDynamics.update(
+            previous = FunctionalResources(marineSnow = 0.8),
+            fluxes = fluxes,
+            areaKm2 = 40_000.0,
+            hasMarineCompartment = false,
+        )
+
+        assertTrue(updated.carrion > 0.0)
+        assertEquals(0.0, updated.marineSnow)
+    }
+
+    @Test
     fun `climate anomalies are deterministic and remain within authored bounds`() {
         val first = EcologyClimateVariability.anomaly(tileId = 42, year = 17.25)
         val repeated = EcologyClimateVariability.anomaly(tileId = 42, year = 17.25)

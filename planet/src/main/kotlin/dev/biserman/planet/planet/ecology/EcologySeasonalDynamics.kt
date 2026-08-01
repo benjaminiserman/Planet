@@ -76,3 +76,56 @@ object OrganicPoolDynamics {
         return (retainedOldPool - consumedOldPool + newProduction).coerceIn(0.0, 1.0)
     }
 }
+
+/** Advances all climate-independent resource pools with production runtime semantics. */
+object FunctionalResourceDynamics {
+    fun update(
+        previous: FunctionalResources,
+        fluxes: CellTurnFluxes,
+        areaKm2: Double,
+        hasMarineCompartment: Boolean,
+    ): FunctionalResources = FunctionalResources(
+        carrion = OrganicPoolDynamics.update(
+            previous.carrion,
+            fluxes.carrionBiomass,
+            fluxes.carrionConsumedBiomass,
+            areaKm2 * 10.0,
+            0.55,
+        ),
+        detritus = OrganicPoolDynamics.update(
+            previous.detritus,
+            fluxes.detritusBiomass,
+            fluxes.detritusConsumedBiomass,
+            areaKm2 * 12.0,
+            0.68,
+            maximumAccessibleFraction = 0.75,
+        ),
+        waste = OrganicPoolDynamics.update(
+            previous.waste,
+            fluxes.wasteBiomass,
+            fluxes.wasteConsumedBiomass,
+            areaKm2 * 10.0,
+            0.60,
+            maximumAccessibleFraction = 0.80,
+        ),
+        marineSnow = if (hasMarineCompartment) {
+            OrganicPoolDynamics.update(
+                previous.marineSnow,
+                fluxes.marineSnowBiomass,
+                fluxes.marineSnowConsumedBiomass,
+                areaKm2 * 15.0,
+                0.72,
+            )
+        } else {
+            0.0
+        },
+        fruit = OrganicPoolDynamics.update(
+            previous.fruit,
+            fluxes.fruitBiomass,
+            fluxes.fruitConsumedBiomass,
+            areaKm2 * 2_500.0,
+            0.20,
+            maximumAccessibleFraction = 0.85,
+        ),
+    )
+}
