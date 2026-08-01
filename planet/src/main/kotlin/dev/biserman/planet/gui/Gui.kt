@@ -15,6 +15,8 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.ecology.EcologyGlobals
+import dev.biserman.planet.planet.ecology.PlanetEcology
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.rendering.MeshData
 import dev.biserman.planet.rendering.SimpleDebugRenderer
@@ -28,6 +30,8 @@ import godot.core.PackedByteArray
 import godot.core.connect
 import godot.global.GD
 import java.awt.image.BufferedImage
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.util.Locale.getDefault
 import kotlin.random.Random
@@ -43,6 +47,8 @@ class Gui() : Node() {
 
     val showSettingsButton by lazy { findChild("ShowSettingsButton") as ShowSettingsButton }
     val clearMapButton by lazy { findChild("ClearMapButton") as Button }
+    val randomizeEcosystemsButton by lazy { findChild("RandomizeEcosystemsButton") as Button }
+    val clearEcosystemsButton by lazy { findChild("ClearEcosystemsButton") as Button }
 
     val saveButton by lazy { findChild("SaveButton") as Button }
     val loadButton by lazy { findChild("LoadButton") as Button }
@@ -61,6 +67,7 @@ class Gui() : Node() {
     val mapPreviewContainer by lazy { findChild("MapPreviewContainer") as PanelContainer }
     val mapPreview by lazy { findChild("MapPreview") as TextureRect }
     val recenterMapPreviewButton by lazy { findChild("RecenterMapPreviewButton") as Button }
+    val copyTileInfoButton by lazy { findChild("CopyTileInfoButton") as Button }
 
     val simulationOptionButton by lazy { findChild("SimulationOptionButton") as OptionButton }
     val selectedSimulation get() = simulationOptions[simulationOptionButton.selected]
@@ -125,10 +132,12 @@ class Gui() : Node() {
             selectedTileRenderer.update(value)
             if (value == null) {
                 infoboxContainer.visible = false
+                copyTileInfoButton.visible = false
                 selectedTileRenderer.visible = false
             } else {
                 updateInfobox()
                 infoboxContainer.visible = true
+                copyTileInfoButton.visible = true
                 selectedTileRenderer.visible = true
             }
         }
@@ -173,10 +182,13 @@ class Gui() : Node() {
             autoTurnsButton,
             historyYearLabel,
             historySeasonLabel,
+            randomizeEcosystemsButton,
+            clearEcosystemsButton,
         ).forEach { it.visible = !isEditMode }
 
         modeToggleButton.buttonPressed = !isEditMode
         modeToggleButton.text = if (isEditMode) "Edit Mode" else "Play Mode"
+        statsGraph.setHistoryMode(!isEditMode)
         brushTool.setEditModeEnabled(isEditMode)
 
         if (!isEditMode) {
@@ -296,8 +308,34 @@ class Gui() : Node() {
                 updateMapPreview()
             }
         }
+        copyTileInfoButton.pressed.connect {
+            if (selectedTile != null) {
+                val tab = infoboxContainer.getChild(infoboxContainer.currentTab)
+                val label = tab?.findChild("Label") as? Label
+                label?.text?.let { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(it), null) }
+            }
+        }
 
         clearMapButton.pressed.connect { showSettingsButton.resetToggles() }
+        randomizeEcosystemsButton.pressed.connect {
+            if (Main.instance.hasPlanet) {
+                val planet = Main.instance.planet
+                if (planet.climateMap.size != planet.planetTiles.size) {
+                    planet.climateMap =
+                        ClimateSimulation.calculateClimate(planet).mapKeys { it.key.tileId }
+                }
+                PlanetEcology.randomizeEcosystems(planet)
+                Main.instance.planetRenderer.update(planet)
+                updateInfobox()
+            }
+        }
+        clearEcosystemsButton.pressed.connect {
+            if (Main.instance.hasPlanet) {
+                PlanetEcology.clearEcosystems(Main.instance.planet)
+                Main.instance.planetRenderer.update(Main.instance.planet)
+                updateInfobox()
+            }
+        }
 
         simulationOptions.clear()
         Main.simulations.keys.forEachIndexed { index, simulationName ->
@@ -349,6 +387,16 @@ class Gui() : Node() {
                 Serialization.configMapper.writeValue(climateConfig, ClimateSimulationGlobals)
                 GD.print("No climate_config.json file found, created one with default values.")
             }
+
+            val ecologyConfig = File("ecology_config.json")
+            if (ecologyConfig.exists()) {
+                Serialization.configMapper.readValue<EcologyGlobals>(ecologyConfig)
+                PlanetEcology.refreshRuntimeConfig()
+                GD.print("Config refreshed!")
+            } else {
+                Serialization.configMapper.writeValue(ecologyConfig, EcologyGlobals)
+                GD.print("No ecology_config.json file found, created one with default values.")
+            }
         }
         refreshConfigButton.pressed.connect { reloadConfigFiles() }
         calculateClimateButton.pressed.connect {
@@ -392,7 +440,11 @@ class Gui() : Node() {
         }
     }
 
-    class MapLayerCheckButton(val button: ToggleButton, val categories: List<String>)
+    class MapLayerCheckButton(
+        val button: ToggleButton,
+        val categories: List<String>,
+        var available: Boolean = true,
+    )
 
     companion object {
         const val MAP_PREVIEW_WIDTH = 256

@@ -20,20 +20,22 @@ class StatsGraph(val rootNode: CanvasItem) {
     val currentValueLabel = rootNode.findChild("GraphCurrentValue") as Label
 
     private lateinit var stats: PlanetStats
+    private var historyMode = false
+    private val activeStats get() = if (historyMode) stats.historyStats else stats.tectonicStats
     var planet: Planet? = null
         set(value) {
             field = value
             if (value != null) {
                 stats = value.planetStats
                 menuButton.getPopup()!!.clear()
-                stats.tectonicStats.forEach { stat ->
+                activeStats.forEach { stat ->
                     menuButton.getPopup()!!.addItem(stat.name)
                 }
                 shownStat = null
             }
         }
 
-    val statValues get() = planet!!.planetStats.tectonicStatValues
+    val statValues get() = planet!!.planetStats.allStatValues
 
     var visible = true
         set(value) {
@@ -44,7 +46,19 @@ class StatsGraph(val rootNode: CanvasItem) {
     var trackStats = true
 
     init {
-        menuButton.getPopup()!!.idPressed.connect { shownStat = stats.tectonicStats[it.toInt()] }
+        menuButton.getPopup()!!.idPressed.connect { shownStat = activeStats[it.toInt()] }
+    }
+
+    fun setHistoryMode(enabled: Boolean) {
+        historyMode = enabled
+        graph.xLabel = if (enabled) "Years" else "Million years"
+        if (::stats.isInitialized) rebuildMenu()
+    }
+
+    private fun rebuildMenu() {
+        menuButton.getPopup()!!.clear()
+        activeStats.forEach { menuButton.getPopup()!!.addItem(it.name) }
+        shownStat = null
     }
 
     var shownStat: Stat<*>? = null
@@ -73,9 +87,12 @@ class StatsGraph(val rootNode: CanvasItem) {
 
         var currentShownValue: Number? = null
         val timeTaken = measureTime {
-            stats.tectonicStats.forEach { stat ->
+            activeStats.forEach { stat ->
                 val value = stat.getter(planet)
-                statValues[stat.name]?.add(Vector2(planet.tectonicAge.toDouble(), value.toDouble()))
+                val time = if (historyMode) planet.historyTurn / 4.0 else planet.tectonicAge.toDouble()
+                val values = statValues[stat.name] ?: return@forEach
+                val point = Vector2(time, value.toDouble())
+                if (values.lastOrNull()?.x == time) values[values.lastIndex] = point else values.add(point)
                 if (stat == shownStat) currentShownValue = value
             }
         }
@@ -84,8 +101,7 @@ class StatsGraph(val rootNode: CanvasItem) {
         GD.print("Updating stats graph took ${timeTaken.inWholeMilliseconds}ms")
 
         if (shownStat != null) {
-            val (time, value) = statValues[shownStat!!.name]!!.last()
-            graph.addPoint(Vector2(time, value))
+            graph.setPoints(statValues[shownStat!!.name]!!)
             rescale(shownStat!!)
         }
     }

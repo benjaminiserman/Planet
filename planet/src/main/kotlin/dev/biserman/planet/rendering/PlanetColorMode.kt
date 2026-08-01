@@ -9,6 +9,7 @@ abstract class PlanetColorMode(val planetRenderer: PlanetRenderer) {
     open val displayName: String get() = name.split("_").joinToString(" ") { it.capitalize() }
 
     open val categories: List<String> = listOf()
+    private lateinit var toggleEntry: Gui.MapLayerCheckButton
     var visible: Boolean = false
         set(value) {
             field = value
@@ -17,7 +18,11 @@ abstract class PlanetColorMode(val planetRenderer: PlanetRenderer) {
 
     fun init() {
         visible = "default" in categories
-        Gui.instance.showSettingsButton.addToggle("$displayName Color Mode", categories) { visible = it }
+        toggleEntry = Gui.instance.showSettingsButton.addToggle("$displayName Color Mode", categories) { visible = it }
+    }
+
+    fun setAvailable(available: Boolean) {
+        if (::toggleEntry.isInitialized) Gui.instance.showSettingsButton.setAvailable(toggleEntry, available)
     }
 
     abstract fun colorsFor(planetTile: PlanetTile): Sequence<Color?>
