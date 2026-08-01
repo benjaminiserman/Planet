@@ -11,11 +11,11 @@ class EarthSpeciesCatalogTest {
         val bee = ecology.species.single { it.id == "western-honey-bee" }
         val sunflower = ecology.species.single { it.id == "common-sunflower" }
 
-        assertTrue(bee.strategySupport[EcoStrategy.NECTAR_FEEDING.ordinal] > 0.0)
-        assertEquals(0.0, bee.strategySupport[EcoStrategy.GRAZING.ordinal])
-        assertTrue(bee.pollinationEfficiency > 0.0)
-        assertTrue(sunflower.flowering)
-        assertTrue(sunflower.nectarProduction > 0.0)
+        assertTrue(bee.niche.supportFor(EcoStrategy.NECTAR_FEEDING) > 0.0)
+        assertEquals(0.0, bee.niche.supportFor(EcoStrategy.GRAZING))
+        assertTrue(bee.interactions.pollinationEfficiency > 0.0)
+        assertTrue(sunflower.interactions.flowering)
+        assertTrue(sunflower.interactions.nectarProduction > 0.0)
     }
 
     @Test
@@ -63,8 +63,8 @@ class EarthSpeciesCatalogTest {
             ),
         ).species.single()
         assertTrue(CommonTrait.DEEP_DIVING_PHYSIOLOGY in orca.traits)
-        assertTrue(compiledOrca.habitatSupport[Habitat.DARK_WATER.ordinal] > 0.0)
-        assertTrue(compiledOrca.seasonalReproduction < ordinaryOrca.seasonalReproduction)
+        assertTrue(compiledOrca.niche.supportFor(Habitat.DARK_WATER) > 0.0)
+        assertTrue(compiledOrca.lifeHistory.seasonalReproduction < ordinaryOrca.lifeHistory.seasonalReproduction)
     }
 
     @Test
@@ -88,8 +88,8 @@ class EarthSpeciesCatalogTest {
                 traits = adapted.traits - CommonTrait.CONCENTRATED_URINE,
             )
             val compiled = EcologyCompiler.compile(listOf(adapted, baseline)).species
-            assertTrue(compiled[0].minimumWater < compiled[1].minimumWater)
-            assertTrue(compiled[0].maintenanceDemand > compiled[1].maintenanceDemand)
+            assertTrue(compiled[0].physiology.hydration.minimumWater < compiled[1].physiology.hydration.minimumWater)
+            assertTrue(compiled[0].physiology.maintenanceDemand > compiled[1].physiology.maintenanceDemand)
         }
     }
 
@@ -103,8 +103,8 @@ class EarthSpeciesCatalogTest {
         )
         val compiled = EcologyCompiler.compile(listOf(bamboo, ordinaryGrowth)).species
 
-        assertTrue(compiled[0].seasonalReproduction > compiled[1].seasonalReproduction)
-        assertTrue(compiled[0].maintenanceDemand > compiled[1].maintenanceDemand)
+        assertTrue(compiled[0].lifeHistory.seasonalReproduction > compiled[1].lifeHistory.seasonalReproduction)
+        assertTrue(compiled[0].physiology.maintenanceDemand > compiled[1].physiology.maintenanceDemand)
     }
 
     @Test
@@ -151,12 +151,12 @@ class EarthSpeciesCatalogTest {
             ecology.interactions.get(anteaterIndex, ecology.speciesIndex(solitaryInsect.id)).kind,
         )
         val compiledAnteater = ecology.species[anteaterIndex]
-        assertTrue(compiledAnteater.strategySupport[EcoStrategy.COLONY_RAIDING.ordinal] > 0.0)
-        assertEquals(0.0, compiledAnteater.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal])
+        assertTrue(compiledAnteater.niche.supportFor(EcoStrategy.COLONY_RAIDING) > 0.0)
+        assertEquals(0.0, compiledAnteater.niche.supportFor(EcoStrategy.AMBUSH_PREDATION))
         assertEquals(
             0.0,
             ecology.species[ecology.speciesIndex(chameleon.id)]
-                .strategySupport[EcoStrategy.COLONY_RAIDING.ordinal],
+                .niche.supportFor(EcoStrategy.COLONY_RAIDING),
         )
 
         val undefendedBee = bee.copy(
@@ -164,9 +164,9 @@ class EarthSpeciesCatalogTest {
             traits = bee.traits - CommonTrait.VENOMOUS_STINGER - CommonTrait.HONEY_STORES,
         )
         val beeComparison = EcologyCompiler.compile(listOf(bee, undefendedBee)).species
-        assertTrue(beeComparison[0].defense > beeComparison[1].defense)
-        assertTrue(beeComparison[0].reserveCapacity > beeComparison[1].reserveCapacity)
-        assertTrue(beeComparison[0].seasonalReproduction < beeComparison[1].seasonalReproduction)
+        assertTrue(beeComparison[0].interactions.defense > beeComparison[1].interactions.defense)
+        assertTrue(beeComparison[0].lifeHistory.reserveCapacity > beeComparison[1].lifeHistory.reserveCapacity)
+        assertTrue(beeComparison[0].lifeHistory.seasonalReproduction < beeComparison[1].lifeHistory.seasonalReproduction)
     }
 
     @Test
@@ -179,8 +179,8 @@ class EarthSpeciesCatalogTest {
         )
         val compiled = EcologyCompiler.compile(listOf(sloth, ordinaryMetabolism)).species
 
-        assertTrue(compiled[0].maintenanceDemand < compiled[1].maintenanceDemand)
-        assertTrue(compiled[0].seasonalReproduction < compiled[1].seasonalReproduction)
+        assertTrue(compiled[0].physiology.maintenanceDemand < compiled[1].physiology.maintenanceDemand)
+        assertTrue(compiled[0].lifeHistory.seasonalReproduction < compiled[1].lifeHistory.seasonalReproduction)
     }
 
     @Test
@@ -198,10 +198,10 @@ class EarthSpeciesCatalogTest {
         val compiled = EcologyCompiler.compile(
             listOf(definitions.getValue("bornean-orangutan")),
         ).species.single()
-        assertTrue(compiled.strategySupport[EcoStrategy.FRUGIVORY.ordinal] > 0.0)
+        assertTrue(compiled.niche.supportFor(EcoStrategy.FRUGIVORY) > 0.0)
         assertTrue(
-            compiled.strategySupport[EcoStrategy.FRUGIVORY.ordinal] >
-                compiled.strategySupport[EcoStrategy.GRAZING.ordinal],
+            compiled.niche.supportFor(EcoStrategy.FRUGIVORY) >
+                compiled.niche.supportFor(EcoStrategy.GRAZING),
         )
     }
 
@@ -218,7 +218,7 @@ class EarthSpeciesCatalogTest {
         val compiledGazelle = EcologyCompiler.compile(listOf(gazelle)).species.single()
         assertEquals(
             0.0,
-            compiledGazelle.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
+            compiledGazelle.niche.supportFor(EcoStrategy.PURSUIT_PREDATION),
         )
 
         val slowCheetah = cheetah.copy(
@@ -322,10 +322,10 @@ class EarthSpeciesCatalogTest {
         val compiledWalrus = ecology.species.single { it.id == "walrus" }
         assertEquals(
             0.0,
-            compiledWalrus.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal],
+            compiledWalrus.niche.supportFor(EcoStrategy.FILTER_FEEDING),
         )
         assertTrue(
-            compiledWalrus.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0,
+            compiledWalrus.niche.supportFor(EcoStrategy.AMBUSH_PREDATION) > 0.0,
         )
     }
 
@@ -358,8 +358,8 @@ class EarthSpeciesCatalogTest {
 
         val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL)
         val carp = ecology.species.single { it.id == "common-carp" }
-        assertTrue(carp.strategySupport[EcoStrategy.GENERALIST_FORAGING.ordinal] > 0.0)
-        assertEquals(0.0, carp.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal])
+        assertTrue(carp.niche.supportFor(EcoStrategy.GENERALIST_FORAGING) > 0.0)
+        assertEquals(0.0, carp.niche.supportFor(EcoStrategy.FILTER_FEEDING))
     }
 
     @Test
@@ -374,17 +374,17 @@ class EarthSpeciesCatalogTest {
         val carp = ecology.species.single { it.id == "common-carp" }
         val salmon = ecology.species.single { it.id == "atlantic-salmon" }
 
-        assertEquals(AquaticSalinityTolerance.SALTWATER_ONLY, blueWhale.aquaticSalinityTolerance)
-        assertEquals(0.0, blueWhale.habitatSupport[Habitat.FRESHWATER.ordinal])
-        assertTrue(blueWhale.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+        assertEquals(AquaticSalinityTolerance.SALTWATER_ONLY, blueWhale.physiology.respiration.salinityTolerance)
+        assertEquals(0.0, blueWhale.niche.supportFor(Habitat.FRESHWATER))
+        assertTrue(blueWhale.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0)
 
-        assertEquals(AquaticSalinityTolerance.FRESHWATER_ONLY, carp.aquaticSalinityTolerance)
-        assertTrue(carp.habitatSupport[Habitat.FRESHWATER.ordinal] > 0.0)
-        assertEquals(0.0, carp.habitatSupport[Habitat.SUNLIT_WATER.ordinal])
+        assertEquals(AquaticSalinityTolerance.FRESHWATER_ONLY, carp.physiology.respiration.salinityTolerance)
+        assertTrue(carp.niche.supportFor(Habitat.FRESHWATER) > 0.0)
+        assertEquals(0.0, carp.niche.supportFor(Habitat.SUNLIT_WATER))
 
-        assertEquals(AquaticSalinityTolerance.BROAD, salmon.aquaticSalinityTolerance)
-        assertTrue(salmon.habitatSupport[Habitat.FRESHWATER.ordinal] > 0.0)
-        assertTrue(salmon.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+        assertEquals(AquaticSalinityTolerance.BROAD, salmon.physiology.respiration.salinityTolerance)
+        assertTrue(salmon.niche.supportFor(Habitat.FRESHWATER) > 0.0)
+        assertTrue(salmon.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0)
     }
 
     @Test
@@ -400,7 +400,7 @@ class EarthSpeciesCatalogTest {
             isLand = true,
         )
 
-        assertEquals(0.0, orca.habitatSupport[Habitat.AERIAL.ordinal])
+        assertEquals(0.0, orca.niche.supportFor(Habitat.AERIAL))
         assertEquals(-1, NicheSelection.choose(orca, EcologyCompiler.compile(
             listOf(EarthSpeciesCatalog.MAMMALS.single { it.id == "orca" }),
         ), land))
@@ -426,7 +426,7 @@ class EarthSpeciesCatalogTest {
             waterDepthM = 50.0,
         )
 
-        assertTrue(saguaro.temperatureOuterLow > 0.0)
+        assertTrue(saguaro.physiology.thermal.outerLowC > 0.0)
         assertTrue(EcologyFitness.thermal(penguin, tropicalReef) < 0.35)
     }
 
@@ -495,7 +495,7 @@ class EarthSpeciesCatalogTest {
         val ecology = EcologyCompiler.compile(definitions)
         ecology.species.forEach { species ->
             assertTrue(
-                species.nicheFit.any { it > 0.0 },
+                species.niche.hasViableNiche(),
                 "${species.displayName} has no supported niche",
             )
         }
@@ -537,11 +537,11 @@ class EarthSpeciesCatalogTest {
         val baobab = ecology.species.single { it.id == "african-baobab" }
         val kelp = ecology.species.single { it.id == "giant-kelp" }
 
-        assertEquals(0.0, baobab.habitatSupport[Habitat.SUNLIT_WATER.ordinal])
-        assertEquals(0.0, baobab.habitatSupport[Habitat.DARK_WATER.ordinal])
-        assertEquals(0.0, kelp.habitatSupport[Habitat.LAND_SURFACE.ordinal])
-        assertEquals(0.0, kelp.habitatSupport[Habitat.CANOPY.ordinal])
-        assertTrue(kelp.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+        assertEquals(0.0, baobab.niche.supportFor(Habitat.SUNLIT_WATER))
+        assertEquals(0.0, baobab.niche.supportFor(Habitat.DARK_WATER))
+        assertEquals(0.0, kelp.niche.supportFor(Habitat.LAND_SURFACE))
+        assertEquals(0.0, kelp.niche.supportFor(Habitat.CANOPY))
+        assertTrue(kelp.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0)
     }
 
     private fun predationRate(

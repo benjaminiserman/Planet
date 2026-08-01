@@ -14,58 +14,58 @@ class SpeciesCompilationContext internal constructor(
     private val speciesDisplayName: String,
     sizeTemperatureTolerance: Double,
 ) {
-    internal val habitatSupport = DoubleArray(Habitat.entries.size)
-    internal val strategySupport = DoubleArray(EcoStrategy.entries.size)
-    internal val camouflage = DoubleArray(Habitat.entries.size)
-    internal var temperatureShift = 0.0
-    internal var colderTolerance = sizeTemperatureTolerance
-    internal var hotterTolerance = sizeTemperatureTolerance
-    internal var colderOptimalTolerance = 0.0
-    internal var hotterOptimalTolerance = 0.0
-    internal var minimumActiveTemperatureC = Double.NEGATIVE_INFINITY
-    internal var frozenDormantSurvival = 1.0
-    internal var seasonalColdTolerance = 0.0
-    internal var seasonalColdTrigger = 0.0
-    internal var thermalStrategy: ThermalStrategy? = null
-    internal var waterRequirement = 0.25
-    internal var optimalMaximumWater = 1.0
-    internal var maximumWater = 1.0
-    internal var optimalMaximumWaterDepthM = Double.POSITIVE_INFINITY
-    internal var absoluteMaximumWaterDepthM = Double.POSITIVE_INFINITY
-    internal var elevationToleranceShiftM = 0.0
-    internal var snowHydration = false
-    internal var insolationOptimum = 0.8
-    internal var canopyLightEfficiency = 0.0
-    internal var denseCanopyForagingPenalty = 0.0
-    internal var reserveCapacity = 0.25
-    internal var nicheCompetitionSensitivity = 1.0
-    internal var dormancyKind = DormancyKind.NONE
-    internal var dormantSurvival = 0.0
-    internal var dormantEntryBiomassRetention = 1.0
-    internal var dormantReactivationMultiplier = 1.0
-    internal var dispersalKind = DispersalKind.NONE
-    internal var reproductionMultiplier = 1.0
-    internal var metabolicDemandMultiplier = 1.0
-    internal var maintenanceCost = 0.0
-    internal var captureAbility = 0.5
-    internal var pursuitSpeed = 0.0
-    internal var defense = 0.25
-    internal var aposematicColoration = false
-    internal var reefUse = 0.0
-    internal var reefBuilding = 0.0
-    internal var fruitProduction = 0.0
-    internal var flowering = false
-    internal var nectarProduction = 0.0
-    internal var pollinationEfficiency = 0.0
-    internal var wasteFertilization = 0.0
-    internal var pelagicAerialResident = false
-    internal var darkWaterAdapted = false
-    internal var freshwaterAdapted = false
-    internal var broadSalinityTolerance = false
-    internal var underwaterBreathing = false
-    internal var prolongedBreathHolding = false
-    internal var obligateResidentHabitat: Habitat? = null
-    internal var requiresAdjacentLand = false
+    private val habitatSupport = DoubleArray(Habitat.entries.size)
+    private val strategySupport = DoubleArray(EcoStrategy.entries.size)
+    private val camouflage = DoubleArray(Habitat.entries.size)
+    private var temperatureShift = 0.0
+    private var colderTolerance = sizeTemperatureTolerance
+    private var hotterTolerance = sizeTemperatureTolerance
+    private var colderOptimalTolerance = 0.0
+    private var hotterOptimalTolerance = 0.0
+    private var minimumActiveTemperatureC = Double.NEGATIVE_INFINITY
+    private var frozenDormantSurvival = 1.0
+    private var seasonalColdTolerance = 0.0
+    private var seasonalColdTrigger = 0.0
+    private var thermalStrategy: ThermalStrategy? = null
+    private var waterRequirement = 0.25
+    private var optimalMaximumWater = 1.0
+    private var maximumWater = 1.0
+    private var optimalMaximumWaterDepthM = Double.POSITIVE_INFINITY
+    private var absoluteMaximumWaterDepthM = Double.POSITIVE_INFINITY
+    private var elevationToleranceShiftM = 0.0
+    private var snowHydration = false
+    private var insolationOptimum = 0.8
+    private var canopyLightEfficiency = 0.0
+    private var denseCanopyForagingPenalty = 0.0
+    private var reserveCapacity = 0.25
+    private var nicheCompetitionSensitivity = 1.0
+    private var dormancyKind = DormancyKind.NONE
+    private var dormantSurvival = 0.0
+    private var dormantEntryBiomassRetention = 1.0
+    private var dormantReactivationMultiplier = 1.0
+    private var dispersalKind = DispersalKind.NONE
+    private var reproductionMultiplier = 1.0
+    private var metabolicDemandMultiplier = 1.0
+    private var maintenanceCost = 0.0
+    private var captureAbility = 0.5
+    private var pursuitSpeed = 0.0
+    private var defense = 0.25
+    private var aposematicColoration = false
+    private var reefUse = 0.0
+    private var reefBuilding = 0.0
+    private var fruitProduction = 0.0
+    private var flowering = false
+    private var nectarProduction = 0.0
+    private var pollinationEfficiency = 0.0
+    private var wasteFertilization = 0.0
+    private var pelagicAerialResident = false
+    private var darkWaterAdapted = false
+    private var freshwaterAdapted = false
+    private var broadSalinityTolerance = false
+    private var underwaterBreathing = false
+    private var prolongedBreathHolding = false
+    private var obligateResidentHabitat: Habitat? = null
+    private var requiresAdjacentLand = false
 
     private var maintenanceCostScale = 1.0
 
@@ -73,6 +73,195 @@ class SpeciesCompilationContext internal constructor(
         maintenanceCostScale = if (trait.isFoundation) 1.0 else 0.35
         trait.effects.forEach { it.applyTo(this) }
         maintenanceCostScale = 1.0
+    }
+
+    /** Applies phenotype rules that emerge from combinations of authored traits. */
+    internal fun applyCrossTraitRules(
+        sizeClass: SizeClass,
+        commonTraits: Set<CommonTrait>,
+    ) {
+        when (compiledSalinityTolerance()) {
+            AquaticSalinityTolerance.SALTWATER_ONLY ->
+                habitatSupport[Habitat.FRESHWATER.ordinal] = 0.0
+            AquaticSalinityTolerance.FRESHWATER_ONLY -> {
+                habitatSupport[Habitat.COASTAL.ordinal] = 0.0
+                habitatSupport[Habitat.SUNLIT_WATER.ordinal] = 0.0
+                habitatSupport[Habitat.DARK_WATER.ordinal] = 0.0
+            }
+            AquaticSalinityTolerance.BROAD -> Unit
+        }
+        if (sizeClass.ordinal >= SizeClass.HUGE.ordinal) {
+            habitatSupport[Habitat.FRESHWATER.ordinal] = 0.0
+        }
+        if (!underwaterBreathing && !prolongedBreathHolding) {
+            habitatSupport[Habitat.SUNLIT_WATER.ordinal] = 0.0
+            habitatSupport[Habitat.DARK_WATER.ordinal] = 0.0
+        }
+        obligateResidentHabitat?.let { requiredHabitat ->
+            habitatSupport.indices.forEach { habitatIndex ->
+                if (habitatIndex != requiredHabitat.ordinal) {
+                    habitatSupport[habitatIndex] = 0.0
+                }
+            }
+        }
+
+        val grazingSupport = strategySupport[EcoStrategy.GRAZING.ordinal]
+        val predationSupport = max(
+            strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
+            strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
+        )
+        if (
+            grazingSupport >= GENERALIST_MINIMUM_METHOD_SUPPORT &&
+            predationSupport >= GENERALIST_MINIMUM_METHOD_SUPPORT
+        ) {
+            strategySupport[EcoStrategy.GENERALIST_FORAGING.ordinal] =
+                (max(grazingSupport, predationSupport) + GENERALIST_BREADTH_BONUS)
+                    .coerceAtMost(1.0)
+        }
+        if (
+            CommonTrait.NEST_PROBING_TONGUE in commonTraits &&
+            CommonTrait.DIGGING_CLAWS in commonTraits
+        ) {
+            strategySupport[EcoStrategy.COLONY_RAIDING.ordinal] = 0.86
+        }
+    }
+
+    internal fun finish(
+        index: Int,
+        definition: SpeciesDefinition,
+        niches: List<NicheDefinition>,
+        commonTraits: Set<CommonTrait>,
+    ): CompiledSpecies {
+        habitatSupport.indices.forEach {
+            habitatSupport[it] = habitatSupport[it].coerceIn(0.0, 1.0)
+        }
+        strategySupport.indices.forEach {
+            strategySupport[it] = strategySupport[it].coerceIn(0.0, 1.0)
+        }
+
+        val nicheFit = DoubleArray(niches.size) { nicheIndex ->
+            val niche = niches[nicheIndex]
+            val habitat = habitatSupport[niche.habitat.ordinal]
+            val strategy = strategySupport[niche.strategy.ordinal]
+            if (habitat <= 0.0 || strategy <= 0.0) 0.0 else habitat * strategy
+        }
+        val massKg = definition.sizeClass.typicalMassKg
+        val sessilePhotosyntheticMaintenance =
+            if (
+                !definition.motile &&
+                strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] > 0.0
+            ) {
+                0.30
+            } else {
+                1.0
+            }
+        val maintenanceDemand =
+            massKg *
+                definition.sizeClass.maintenancePerKg *
+                max(0.15, 1.0 + maintenanceCost) *
+                metabolicDemandMultiplier *
+                sessilePhotosyntheticMaintenance
+        val minimumWater = waterRequirement.coerceIn(0.0, 1.0)
+        val optimalWater = optimalMaximumWater.coerceIn(minimumWater, 1.0)
+        val compiledMaximumWater = maximumWater.coerceIn(optimalWater, 1.0)
+
+        return CompiledSpecies(
+            index = index,
+            id = definition.id,
+            displayName = definition.displayName,
+            sizeClass = definition.sizeClass,
+            motile = definition.motile,
+            kind = definition.kind,
+            ancestorSpeciesId = definition.ancestorSpeciesId,
+            physiology = PhysiologyProfile(
+                massKg = massKg,
+                maintenanceDemand = maintenanceDemand,
+                thermal = ThermalProfile(
+                    outerLowC = 5.0 + temperatureShift - colderTolerance,
+                    optimalLowC = 15.0 + temperatureShift - colderOptimalTolerance,
+                    optimalHighC = 25.0 + temperatureShift + hotterOptimalTolerance,
+                    outerHighC = 30.0 + temperatureShift + hotterTolerance,
+                    minimumActiveC = minimumActiveTemperatureC,
+                    frozenDormantSurvival = frozenDormantSurvival.coerceIn(0.0, 1.0),
+                    seasonalColdToleranceC = seasonalColdTolerance,
+                    seasonalColdTriggerInsolation = seasonalColdTrigger,
+                    regulation = thermalStrategy,
+                ),
+                hydration = HydrationProfile(
+                    minimumWater = minimumWater,
+                    optimalMaximumWater = optimalWater,
+                    maximumWater = compiledMaximumWater,
+                    snowHydration = snowHydration,
+                ),
+                respiration = RespirationProfile(
+                    salinityTolerance = compiledSalinityTolerance(),
+                    underwaterBreathing = underwaterBreathing,
+                    prolongedBreathHolding = prolongedBreathHolding,
+                ),
+            ),
+            environment = EnvironmentalProfile(
+                optimalMaximumWaterDepthM = optimalMaximumWaterDepthM,
+                absoluteMaximumWaterDepthM = absoluteMaximumWaterDepthM,
+                elevationToleranceShiftM = elevationToleranceShiftM,
+                insolationOptimum = insolationOptimum.coerceIn(0.05, 1.0),
+                canopyLightEfficiency = canopyLightEfficiency.coerceIn(0.0, 0.8),
+                denseCanopyForagingPenalty =
+                    denseCanopyForagingPenalty.coerceIn(0.0, 1.0),
+                pelagicAerialResident = pelagicAerialResident,
+                darkWaterAdapted = darkWaterAdapted,
+                requiresAdjacentLand = requiresAdjacentLand,
+            ),
+            lifeHistory = LifeHistoryProfile(
+                seasonalReproduction =
+                    definition.sizeClass.seasonalReproduction * reproductionMultiplier,
+                reserveCapacity = reserveCapacity.coerceIn(0.0, 1.5),
+                nicheCompetitionSensitivity = nicheCompetitionSensitivity.coerceIn(0.0, 1.0),
+                dormancyKind = dormancyKind,
+                dormantSurvival = dormantSurvival,
+                dormantEntryBiomassRetention =
+                    dormantEntryBiomassRetention.coerceIn(0.0, 1.0),
+                dormantReactivationMultiplier = dormantReactivationMultiplier,
+                dispersalKind = dispersalKind,
+            ),
+            interactions = InteractionProfile(
+                captureAbility = captureAbility.coerceIn(0.05, 1.5),
+                pursuitSpeed = pursuitSpeed.coerceIn(0.0, 1.0),
+                defense = defense.coerceIn(0.0, 1.5),
+                aposematicColoration = aposematicColoration,
+                dangerousWarningModel =
+                    CommonTrait.VENOMOUS_STINGER in commonTraits ||
+                        CommonTrait.TOXIC_SKIN in commonTraits,
+                reefUse = reefUse.coerceIn(0.0, 1.0),
+                reefBuilding = reefBuilding.coerceIn(0.0, 0.25),
+                fruitProduction = fruitProduction.coerceIn(0.0, 0.10),
+                flowering = flowering,
+                nectarProduction = nectarProduction.coerceIn(0.0, 0.10),
+                pollinationEfficiency = pollinationEfficiency.coerceIn(0.0, 1.0),
+                wasteFertilization = wasteFertilization.coerceIn(0.0, 1.0),
+            ),
+            niche = NicheProfile(
+                producerCompetitionLayer = when {
+                    strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] <= 0.0 ->
+                        ProducerCompetitionLayer.NONE
+                    CommonTrait.ROOTED_BODY in commonTraits ||
+                        CommonTrait.SUBSTRATE_HOLDFAST in commonTraits ->
+                        ProducerCompetitionLayer.ATTACHED
+                    else -> ProducerCompetitionLayer.SUSPENDED
+                },
+                photosyntheticColor = definition.photosyntheticColor,
+                camouflageColor = definition.camouflageColor,
+                habitatSupport = habitatSupport,
+                strategySupport = strategySupport,
+                camouflage = camouflage,
+                nicheFit = nicheFit,
+            ),
+        )
+    }
+
+    private fun compiledSalinityTolerance(): AquaticSalinityTolerance = when {
+        broadSalinityTolerance -> AquaticSalinityTolerance.BROAD
+        freshwaterAdapted -> AquaticSalinityTolerance.FRESHWATER_ONLY
+        else -> AquaticSalinityTolerance.SALTWATER_ONLY
     }
 
     fun supportHabitat(habitat: Habitat, amount: Double) {
@@ -163,4 +352,9 @@ class SpeciesCompilationContext internal constructor(
     }
     fun requireAdjacentLand() { requiresAdjacentLand = true }
     fun addMaintenanceCost(fraction: Double) { maintenanceCost += fraction * maintenanceCostScale }
+
+    private companion object {
+        const val GENERALIST_MINIMUM_METHOD_SUPPORT = 0.20
+        const val GENERALIST_BREADTH_BONUS = 0.05
+    }
 }

@@ -35,7 +35,7 @@ class CompiledMovementPlan private constructor(
             routes.forEach { route ->
                 val speciesIndex = ecology.speciesIndex(route.speciesId)
                 val species = ecology.species[speciesIndex]
-                require(species.dispersalKind.rangeClass >= DispersalKind.SHORT_MIGRATION.rangeClass) {
+                require(species.lifeHistory.dispersalKind.rangeClass >= DispersalKind.SHORT_MIGRATION.rangeClass) {
                     "${species.displayName} has a cached migration route but no migration trait"
                 }
                 require(route.destinationsBySeason.size == seasonCount)
@@ -105,7 +105,7 @@ object EcologyMovement {
                 val speciesIndex = origin.speciesIndices[populationIndex]
                 val species = ecology.species[speciesIndex]
                 if (species.kind == SpeciesKind.INVARIANT) continue
-                val chance = when (species.dispersalKind) {
+                val chance = when (species.lifeHistory.dispersalKind) {
                     DispersalKind.NEIGHBOR ->
                         config.neighborRadiationChancePerSeason
                     DispersalKind.SHORT_MIGRATION,
@@ -155,7 +155,7 @@ object EcologyMovement {
                 if (destination < 0) continue
 
                 val active = origin.activeBiomass[populationIndex]
-                val founderFloor = species.massKg * 4.0
+                val founderFloor = species.physiology.massKg * 4.0
                 if (active < founderFloor * 4.0) continue
                 val transferFraction = if (species.motile) 0.010 else 0.005
                 val transfer = maxOf(active * transferFraction, founderFloor)
@@ -226,7 +226,7 @@ object EcologyMovement {
             for (populationIndex in 0 until origin.size) {
                 val speciesIndex = origin.speciesIndices[populationIndex]
                 val species = ecology.species[speciesIndex]
-                val destination = when (species.dispersalKind) {
+                val destination = when (species.lifeHistory.dispersalKind) {
                     DispersalKind.NONE -> -1
                     DispersalKind.NEIGHBOR -> {
                         val adjacent = neighbors[originTile]
@@ -255,7 +255,7 @@ object EcologyMovement {
                 require(scratch.size < scratch.originTiles.size) {
                     "Movement scratch capacity exceeded"
                 }
-                val transferFraction = when (species.dispersalKind) {
+                val transferFraction = when (species.lifeHistory.dispersalKind) {
                     DispersalKind.NEIGHBOR -> 0.025
                     DispersalKind.SHORT_MIGRATION -> 0.08
                     DispersalKind.REGIONAL_MIGRATION -> 0.12

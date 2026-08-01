@@ -36,16 +36,16 @@ object EcologySuitability {
             .filter { nicheIndex ->
                 val niche = ecology.niches[nicheIndex]
                 (habitat == null || niche.habitat == habitat) &&
-                        species.nicheFit[nicheIndex] > 0.0 &&
+                        species.niche.fitFor(nicheIndex) > 0.0 &&
                         annualEnvironments.any {
                             it.habitatAvailability(niche.habitat) > 0.0
                         } &&
                         !(
                                 annualEnvironments.all { !it.isLand } &&
                                         niche.habitat == Habitat.AERIAL &&
-                                        !species.pelagicAerialResident
+                                        !species.environment.pelagicAerialResident
                                 ) &&
-                        !(niche.habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
+                        !(niche.habitat == Habitat.DARK_WATER && !species.environment.darkWaterAdapted)
             }
             .map { nicheIndex ->
                 val niche = ecology.niches[nicheIndex]
@@ -59,7 +59,7 @@ object EcologySuitability {
                     nicheIndex = nicheIndex,
                     seasonalFitness = seasonalFitness,
                     structuralFit = (
-                            species.nicheFit[nicheIndex] *
+                            species.niche.fitFor(nicheIndex) *
                                     annualEnvironments
                                         .map { it.habitatAvailability(niche.habitat) }
                                         .average()
@@ -87,12 +87,12 @@ object EcologySuitability {
             candidate.seasonalFitness.count { it >= MINIMUM_ACTIVE_FITNESS }.toDouble() /
                     candidate.seasonalFitness.size
         val torporExceedsColdProtection =
-            species.dormancyKind == DormancyKind.SEASONAL_TORPOR &&
+            species.lifeHistory.dormancyKind == DormancyKind.SEASONAL_TORPOR &&
                     annualEnvironments.any {
                         it.temperatureC <=
-                                species.temperatureOuterLow - SEASONAL_TORPOR_COLD_BUFFER_C
+                                species.physiology.thermal.outerLowC - SEASONAL_TORPOR_COLD_BUFFER_C
                     }
-        val lifecycleCanProtectWorstSeason = when (species.dormancyKind) {
+        val lifecycleCanProtectWorstSeason = when (species.lifeHistory.dormancyKind) {
             DormancyKind.NONE -> false
             DormancyKind.SEASONAL_TORPOR -> !torporExceedsColdProtection
             else -> true

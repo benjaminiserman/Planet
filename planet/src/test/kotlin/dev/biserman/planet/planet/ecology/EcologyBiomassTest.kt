@@ -112,7 +112,7 @@ class EcologyBiomassTest {
             val biomass = if (species.id == InvariantSpecies.PLANKTON.id) {
                 carryingCapacity * 0.65
             } else {
-                maxOf(species.massKg * 20.0, carryingCapacity * 0.10)
+                maxOf(species.physiology.massKg * 20.0, carryingCapacity * 0.10)
             }
             community.add(species.index, nicheIndex, biomass, biomass * 0.10)
         }

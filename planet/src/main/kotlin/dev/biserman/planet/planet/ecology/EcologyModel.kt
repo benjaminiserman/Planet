@@ -291,6 +291,7 @@ sealed interface SpeciesSelector {
 }
 
 sealed interface RelationshipEffect {
+    fun compile(context: RelationshipCompilationContext)
     /**
      * All ordinary feeding edges are replaced by the selected food taxa. At
      * least one selected target must be locally present for the consumer to
@@ -300,23 +301,64 @@ sealed interface RelationshipEffect {
         val target: SpeciesSelector,
         val attackRate: Double,
         val assimilationEfficiency: Double,
-    ) : RelationshipEffect
+    ) : RelationshipEffect {
+        override fun compile(context: RelationshipCompilationContext) {
+            context.forEachTarget(target) { targetIndex ->
+                context.requireProducerTarget(targetIndex)
+                context.setInteraction(
+                    targetIndex,
+                    InteractionKind.GRAZING,
+                    attackRate,
+                    attackRate * assimilationEfficiency,
+                    required = true,
+                )
+            }
+        }
+    }
 
     data class SupplementalFood(
         val target: SpeciesSelector,
         val attackRate: Double,
         val assimilationEfficiency: Double,
-    ) : RelationshipEffect
+    ) : RelationshipEffect {
+        override fun compile(context: RelationshipCompilationContext) {
+            context.forEachTarget(target) { targetIndex ->
+                context.setInteraction(
+                    targetIndex,
+                    InteractionKind.SUPPLEMENTAL_FEEDING,
+                    attackRate,
+                    attackRate * assimilationEfficiency,
+                )
+            }
+        }
+    }
 
     data class ParasiteOf(
         val target: SpeciesSelector,
         val drainRate: Double,
-    ) : RelationshipEffect
+    ) : RelationshipEffect {
+        override fun compile(context: RelationshipCompilationContext) {
+            context.forEachTarget(target) { targetIndex ->
+                context.setInteraction(
+                    targetIndex,
+                    InteractionKind.PARASITISM,
+                    drainRate,
+                    drainRate * 0.35,
+                )
+            }
+        }
+    }
 
     data class BenefitsTargetWhenFeeding(
         val target: SpeciesSelector,
         val benefitRate: Double,
-    ) : RelationshipEffect
+    ) : RelationshipEffect {
+        override fun compile(context: RelationshipCompilationContext) {
+            context.forEachTarget(target) { targetIndex ->
+                context.addTargetBenefit(targetIndex, benefitRate)
+            }
+        }
+    }
 
     /**
      * The consumer can remain active only while at least one selected target is
@@ -325,7 +367,11 @@ sealed interface RelationshipEffect {
      */
     data class RequiresTarget(
         val target: SpeciesSelector,
-    ) : RelationshipEffect
+    ) : RelationshipEffect {
+        override fun compile(context: RelationshipCompilationContext) {
+            context.forEachTarget(target, context::requireTarget)
+        }
+    }
 }
 
 data class NicheDefinition(

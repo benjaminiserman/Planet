@@ -140,7 +140,7 @@ object RandomEcosystemExperiment {
                 species.index,
                 nicheIndex,
                 biomass,
-                reserves = biomass * minOf(0.40, species.reserveCapacity * 0.60),
+                reserves = biomass * minOf(0.40, species.lifeHistory.reserveCapacity * 0.60),
             )
         }
 
@@ -372,7 +372,7 @@ object RandomEcosystemExperiment {
             EcoStrategy.PARASITISM -> 0.015
         }
         return maxOf(
-            species.massKg * viableSeedMultiplier,
+            species.physiology.massKg * viableSeedMultiplier,
             carryingBiomass * trophicSeedFraction / speciesSharingNiche.coerceAtLeast(1),
         )
     }
@@ -430,7 +430,7 @@ object RandomEcosystemExperiment {
         ecology.species.forEach { consumer ->
             val population = community.find(consumer.index)
             if (population < 0 || consumer.kind == SpeciesKind.INVARIANT) return@forEach
-            if (community.activeBiomass[population] < consumer.massKg * 2.0) return@forEach
+            if (community.activeBiomass[population] < consumer.physiology.massKg * 2.0) return@forEach
             val climateFitness = maximumAnnualClimateFitness.getValue(consumer.displayName)
             if (climateFitness < 0.35) {
                 add(

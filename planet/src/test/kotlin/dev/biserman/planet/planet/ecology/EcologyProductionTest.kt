@@ -129,8 +129,8 @@ class EcologyProductionTest {
 
         val tiger = ecology.species.single { it.id == "bengal-tiger" }
         val kangaroo = ecology.species.single { it.id == "red-kangaroo" }
-        assertTrue(tiger.minimumWater > 0.0)
-        assertTrue(kangaroo.minimumWater > 0.0)
+        assertTrue(tiger.physiology.hydration.minimumWater > 0.0)
+        assertTrue(kangaroo.physiology.hydration.minimumWater > 0.0)
     }
 
     @Test

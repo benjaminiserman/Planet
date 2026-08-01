@@ -427,7 +427,7 @@ class PlanetTile(
                             "${population.habitat.displayName} " +
                                 population.strategy.displayName
                         val biomassKg = population.activeBiomassKg + population.dormantBiomassKg
-                        val populationCount = species?.massKg?.let { biomassKg / it }
+                        val populationCount = species?.physiology?.massKg?.let { biomassKg / it }
                         appendLine(
                             "  $name: ${biomassKg.scientific2()} kg, " +
                                 "population count: ${populationCount?.scientific2() ?: "unknown"} ($niche)"

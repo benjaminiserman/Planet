@@ -84,7 +84,7 @@ object EcologyBiomass {
     ): Double {
         val habitat = environment.habitatAvailability(niche.habitat).coerceAtLeast(0.02)
         val photosynthetic =
-            species.strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] > 0.0
+            species.niche.supportFor(EcoStrategy.PHOTOSYNTHESIS) > 0.0
         val aquaticFilterFeeder =
             niche.strategy == EcoStrategy.FILTER_FEEDING &&
                 niche.habitat in EcologyFitness.aquaticHabitats
@@ -118,11 +118,11 @@ object EcologyBiomass {
 
     fun grazingAccessibility(species: CompiledSpecies): Double {
         val terrestrialSupport = maxOf(
-            species.habitatSupport[Habitat.LAND_SURFACE.ordinal],
-            species.habitatSupport[Habitat.CANOPY.ordinal],
+            species.niche.supportFor(Habitat.LAND_SURFACE),
+            species.niche.supportFor(Habitat.CANOPY),
         )
         val aquaticSupport = EcologyFitness.aquaticHabitats.maxOf { habitat ->
-            species.habitatSupport[habitat.ordinal]
+            species.niche.supportFor(habitat)
         }
         return if (terrestrialSupport >= aquaticSupport) {
             terrestrialGrazingAccessibility[species.sizeClass.ordinal]

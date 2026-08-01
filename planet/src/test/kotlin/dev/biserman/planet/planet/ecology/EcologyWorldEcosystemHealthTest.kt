@@ -164,7 +164,7 @@ class EcologyWorldEcosystemHealthTest {
                 seedEnvironment,
                 nicheCounts.getValue(nicheIndex),
             )
-            val startingReserves = biomass * minOf(0.40, species.reserveCapacity * 0.60)
+            val startingReserves = biomass * minOf(0.40, species.lifeHistory.reserveCapacity * 0.60)
             community.add(species.index, nicheIndex, biomass, startingReserves)
         }
 
@@ -205,7 +205,7 @@ class EcologyWorldEcosystemHealthTest {
                     environment,
                     1,
                 )
-                val startingReserves = biomass * minOf(0.40, species.reserveCapacity * 0.60)
+                val startingReserves = biomass * minOf(0.40, species.lifeHistory.reserveCapacity * 0.60)
                 community.add(species.index, nicheIndex, biomass, startingReserves)
             }
             scenario.populationRemovals.filter { it.year * 4 == season }.forEach { removal ->
@@ -269,7 +269,7 @@ class EcologyWorldEcosystemHealthTest {
             val species = ecology.species[community.speciesIndices[populationIndex]]
             if (
                 species.kind == SpeciesKind.EVOLVING &&
-                species.strategySupport[EcoStrategy.FILTER_FEEDING.ordinal] > 0.0
+                species.niche.supportFor(EcoStrategy.FILTER_FEEDING) > 0.0
             ) {
                 finalBiomassById.getValue(species.id)
             } else {
@@ -396,7 +396,7 @@ class EcologyWorldEcosystemHealthTest {
             EcoStrategy.PARASITISM -> 0.015
         }
         return maxOf(
-            species.massKg * viableSeedMultiplier,
+            species.physiology.massKg * viableSeedMultiplier,
             carryingBiomass * trophicSeedFraction / speciesSharingNiche.coerceAtLeast(1),
         )
     }
@@ -463,16 +463,16 @@ class EcologyWorldEcosystemHealthTest {
 
     private fun CompiledSpecies.supports(role: TrophicRole): Boolean = when (role) {
         TrophicRole.PRODUCER ->
-            strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] > 0.0
+            niche.supportFor(EcoStrategy.PHOTOSYNTHESIS) > 0.0
         TrophicRole.PRIMARY_CONSUMER ->
-            strategySupport[EcoStrategy.FILTER_FEEDING.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.GRAZING.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.NECTAR_FEEDING.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.DEPOSIT_FEEDING.ordinal] > 0.0
+            niche.supportFor(EcoStrategy.FILTER_FEEDING) > 0.0 ||
+                niche.supportFor(EcoStrategy.GRAZING) > 0.0 ||
+                niche.supportFor(EcoStrategy.NECTAR_FEEDING) > 0.0 ||
+                niche.supportFor(EcoStrategy.DEPOSIT_FEEDING) > 0.0
         TrophicRole.PREDATOR ->
-            strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] > 0.0 ||
-                strategySupport[EcoStrategy.COLONY_RAIDING.ordinal] > 0.0
+            niche.supportFor(EcoStrategy.AMBUSH_PREDATION) > 0.0 ||
+                niche.supportFor(EcoStrategy.PURSUIT_PREDATION) > 0.0 ||
+                niche.supportFor(EcoStrategy.COLONY_RAIDING) > 0.0
     }
 
     private companion object {

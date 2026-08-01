@@ -180,7 +180,7 @@ object PlanetEcology {
                 EcoStrategy.PARASITISM -> random.nextDouble(0.006, 0.018)
             }
             val biomass = max(
-                species.massKg * 20.0,
+                species.physiology.massKg * 20.0,
                 carryingCapacity * capacityFraction /
                     nicheCounts.getValue(suitability.nicheIndex),
             )
@@ -189,7 +189,7 @@ object PlanetEcology {
                 habitat = niche.habitat,
                 strategy = niche.strategy,
                 activeBiomassKg = biomass,
-                reservesKg = biomass * minOf(0.40, species.reserveCapacity * 0.60),
+                reservesKg = biomass * minOf(0.40, species.lifeHistory.reserveCapacity * 0.60),
             )
         }
         tile.ecosystem.invalidateRuntimeCache()

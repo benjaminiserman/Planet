@@ -49,9 +49,9 @@ class EcologyHabitatConstraintTest {
             catalogEcology.niches[NicheSelection.choose(penguin, catalogEcology, coastalIce)].habitat,
         )
 
-        assertTrue(polarBear.habitatSupport[Habitat.SEA_ICE.ordinal] > 0.0)
-        assertEquals(0.0, polarBear.habitatSupport[Habitat.SUNLIT_WATER.ordinal])
-        assertEquals(0.0, polarBear.habitatSupport[Habitat.DARK_WATER.ordinal])
+        assertTrue(polarBear.niche.supportFor(Habitat.SEA_ICE) > 0.0)
+        assertEquals(0.0, polarBear.niche.supportFor(Habitat.SUNLIT_WATER))
+        assertEquals(0.0, polarBear.niche.supportFor(Habitat.DARK_WATER))
     }
 
     @Test
@@ -76,20 +76,20 @@ class EcologyHabitatConstraintTest {
         val offshoreOcean = ocean(depthM = 250.0)
         val coastalOcean = ocean(depthM = 45.0, adjacentToLand = true)
 
-        assertTrue(blueWhale.prolongedBreathHolding)
-        assertFalse(blueWhale.underwaterBreathing)
-        assertTrue(blueWhale.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+        assertTrue(blueWhale.physiology.respiration.prolongedBreathHolding)
+        assertFalse(blueWhale.physiology.respiration.underwaterBreathing)
+        assertTrue(blueWhale.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0)
 
-        assertTrue(greatWhiteShark.underwaterBreathing)
-        assertFalse(greatWhiteShark.prolongedBreathHolding)
-        assertTrue(greatWhiteShark.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0)
+        assertTrue(greatWhiteShark.physiology.respiration.underwaterBreathing)
+        assertFalse(greatWhiteShark.physiology.respiration.prolongedBreathHolding)
+        assertTrue(greatWhiteShark.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0)
 
         for (coastalDiver in listOf(manatee, seaOtter)) {
-            assertFalse(coastalDiver.underwaterBreathing)
-            assertFalse(coastalDiver.prolongedBreathHolding)
-            assertTrue(coastalDiver.habitatSupport[Habitat.COASTAL.ordinal] > 0.0)
-            assertEquals(0.0, coastalDiver.habitatSupport[Habitat.SUNLIT_WATER.ordinal])
-            assertEquals(0.0, coastalDiver.habitatSupport[Habitat.DARK_WATER.ordinal])
+            assertFalse(coastalDiver.physiology.respiration.underwaterBreathing)
+            assertFalse(coastalDiver.physiology.respiration.prolongedBreathHolding)
+            assertTrue(coastalDiver.niche.supportFor(Habitat.COASTAL) > 0.0)
+            assertEquals(0.0, coastalDiver.niche.supportFor(Habitat.SUNLIT_WATER))
+            assertEquals(0.0, coastalDiver.niche.supportFor(Habitat.DARK_WATER))
             assertEquals(-1, NicheSelection.choose(coastalDiver, catalogEcology, offshoreOcean))
             assertTrue(NicheSelection.choose(coastalDiver, catalogEcology, coastalOcean) >= 0)
         }
@@ -99,11 +99,11 @@ class EcologyHabitatConstraintTest {
     fun `every species with open-ocean habitat support can respire there`() {
         for (species in catalogEcology.species) {
             val hasOpenOceanSupport =
-                species.habitatSupport[Habitat.SUNLIT_WATER.ordinal] > 0.0 ||
-                    species.habitatSupport[Habitat.DARK_WATER.ordinal] > 0.0
+                species.niche.supportFor(Habitat.SUNLIT_WATER) > 0.0 ||
+                    species.niche.supportFor(Habitat.DARK_WATER) > 0.0
             if (hasOpenOceanSupport) {
                 assertTrue(
-                    species.underwaterBreathing || species.prolongedBreathHolding,
+                    species.physiology.respiration.underwaterBreathing || species.physiology.respiration.prolongedBreathHolding,
                     "${species.displayName} has open-ocean support without a qualifying respiration trait",
                 )
             }

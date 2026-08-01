@@ -171,18 +171,18 @@ object EcologyFitness {
         species: CompiledSpecies,
         environment: SeasonalCellEnvironment,
     ): Double =
-        (1.0 - species.reefUse) + environment.reefCover * species.reefUse * 2.0
+        (1.0 - species.interactions.reefUse) + environment.reefCover * species.interactions.reefUse * 2.0
 
     fun temperature(species: CompiledSpecies, temperatureC: Double): Double = when {
-        temperatureC <= species.temperatureOuterLow -> 0.0
-        temperatureC < species.temperatureOptimalLow ->
-            (temperatureC - species.temperatureOuterLow) /
-                    (species.temperatureOptimalLow - species.temperatureOuterLow)
+        temperatureC <= species.physiology.thermal.outerLowC -> 0.0
+        temperatureC < species.physiology.thermal.optimalLowC ->
+            (temperatureC - species.physiology.thermal.outerLowC) /
+                    (species.physiology.thermal.optimalLowC - species.physiology.thermal.outerLowC)
 
-        temperatureC <= species.temperatureOptimalHigh -> 1.0
-        temperatureC < species.temperatureOuterHigh ->
-            (species.temperatureOuterHigh - temperatureC) /
-                    (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+        temperatureC <= species.physiology.thermal.optimalHighC -> 1.0
+        temperatureC < species.physiology.thermal.outerHighC ->
+            (species.physiology.thermal.outerHighC - temperatureC) /
+                    (species.physiology.thermal.outerHighC - species.physiology.thermal.optimalHighC)
 
         else -> 0.0
     }.coerceIn(0.0, 1.0)
@@ -192,23 +192,23 @@ object EcologyFitness {
         temperatureC: Double,
         insolation: Double,
     ): Double {
-        val trigger = species.seasonalColdTriggerInsolation
-        if (species.seasonalColdToleranceC <= 0.0 || trigger <= 0.0 || insolation >= trigger) {
+        val trigger = species.physiology.thermal.seasonalColdTriggerInsolation
+        if (species.physiology.thermal.seasonalColdToleranceC <= 0.0 || trigger <= 0.0 || insolation >= trigger) {
             return temperature(species, temperatureC)
         }
         val coatFraction = ((trigger - insolation) / trigger).coerceIn(0.0, 1.0)
-        val coldBonus = species.seasonalColdToleranceC * coatFraction
-        val adjustedOuterLow = species.temperatureOuterLow - coldBonus
-        val adjustedOptimalLow = species.temperatureOptimalLow - coldBonus * 0.45
+        val coldBonus = species.physiology.thermal.seasonalColdToleranceC * coatFraction
+        val adjustedOuterLow = species.physiology.thermal.outerLowC - coldBonus
+        val adjustedOptimalLow = species.physiology.thermal.optimalLowC - coldBonus * 0.45
         return when {
             temperatureC <= adjustedOuterLow -> 0.0
             temperatureC < adjustedOptimalLow ->
                 (temperatureC - adjustedOuterLow) / (adjustedOptimalLow - adjustedOuterLow)
 
-            temperatureC <= species.temperatureOptimalHigh -> 1.0
-            temperatureC < species.temperatureOuterHigh ->
-                (species.temperatureOuterHigh - temperatureC) /
-                        (species.temperatureOuterHigh - species.temperatureOptimalHigh)
+            temperatureC <= species.physiology.thermal.optimalHighC -> 1.0
+            temperatureC < species.physiology.thermal.outerHighC ->
+                (species.physiology.thermal.outerHighC - temperatureC) /
+                        (species.physiology.thermal.outerHighC - species.physiology.thermal.optimalHighC)
 
             else -> 0.0
         }.coerceIn(0.0, 1.0)
@@ -226,34 +226,34 @@ object EcologyFitness {
                                             )
                             )
         val water =
-            if (species.snowHydration && frozenWaterAvailable) {
-                max(environment.waterAvailability, species.minimumWater)
+            if (species.physiology.hydration.snowHydration && frozenWaterAvailable) {
+                max(environment.waterAvailability, species.physiology.hydration.minimumWater)
             } else {
                 environment.waterAvailability
             }
-        if (water < species.minimumWater) {
-            if (species.minimumWater <= 0.0) return 1.0
-            return (water / species.minimumWater).coerceIn(0.0, 1.0)
+        if (water < species.physiology.hydration.minimumWater) {
+            if (species.physiology.hydration.minimumWater <= 0.0) return 1.0
+            return (water / species.physiology.hydration.minimumWater).coerceIn(0.0, 1.0)
         }
-        if (water <= species.optimalMaximumWater) return 1.0
-        if (species.maximumWater <= species.optimalMaximumWater) return 0.0
+        if (water <= species.physiology.hydration.optimalMaximumWater) return 1.0
+        if (species.physiology.hydration.maximumWater <= species.physiology.hydration.optimalMaximumWater) return 0.0
         return (
-                (species.maximumWater - water) /
-                        (species.maximumWater - species.optimalMaximumWater)
+                (species.physiology.hydration.maximumWater - water) /
+                        (species.physiology.hydration.maximumWater - species.physiology.hydration.optimalMaximumWater)
                 ).coerceIn(0.0, 1.0)
     }
 
     fun light(species: CompiledSpecies, environment: SeasonalCellEnvironment, habitat: Habitat): Double {
-        if (species.strategySupport[EcoStrategy.PHOTOSYNTHESIS.ordinal] <= 0.0) return 1.0
+        if (species.niche.supportFor(EcoStrategy.PHOTOSYNTHESIS) <= 0.0) return 1.0
         var available = environment.lightAt(habitat)
         if (habitat == Habitat.LAND_SURFACE && environment.canopyCover > 0.0) {
-            available += environment.canopyCover * species.canopyLightEfficiency
+            available += environment.canopyCover * species.environment.canopyLightEfficiency
         }
-        val distance = abs(available - species.insolationOptimum)
+        val distance = abs(available - species.environment.insolationOptimum)
         val quantityFit = (1.0 - distance / 0.65).coerceIn(0.0, 1.0)
         val spectrumFit = LightColorModel.photosyntheticMatch(
             environment.starLight,
-            species.photosyntheticColor ?: BiologicalColor.GREEN,
+            species.niche.photosyntheticColor ?: BiologicalColor.GREEN,
         )
         return quantityFit * spectrumFit
     }
@@ -282,13 +282,13 @@ object EcologyFitness {
         // grants access to thin-air habitats while making a high-altitude
         // specialist progressively less fit below its adapted range.
         val optimalMinimumM =
-            EcologyGlobals.normalMinimumElevationM + species.elevationToleranceShiftM
+            EcologyGlobals.normalMinimumElevationM + species.environment.elevationToleranceShiftM
         val lethalMinimumM =
-            EcologyGlobals.lethalMinimumElevationM + species.elevationToleranceShiftM
+            EcologyGlobals.lethalMinimumElevationM + species.environment.elevationToleranceShiftM
         val optimalMaximumM =
-            EcologyGlobals.normalElevationLimitM + species.elevationToleranceShiftM
+            EcologyGlobals.normalElevationLimitM + species.environment.elevationToleranceShiftM
         val lethalMaximumM =
-            EcologyGlobals.lethalElevationLimitM + species.elevationToleranceShiftM
+            EcologyGlobals.lethalElevationLimitM + species.environment.elevationToleranceShiftM
         return when {
             environment.elevationM <= lethalMinimumM -> 0.0
             environment.elevationM < optimalMinimumM ->
@@ -311,7 +311,7 @@ object EcologyFitness {
         return (
                 1.0 -
                         environment.canopyCover *
-                        species.denseCanopyForagingPenalty
+                        species.environment.denseCanopyForagingPenalty
                 ).coerceIn(0.0, 1.0)
     }
 
@@ -320,12 +320,12 @@ object EcologyFitness {
         environment: SeasonalCellEnvironment,
         habitat: Habitat,
     ): Double {
-        if (species.requiresAdjacentLand && !environment.adjacentToLand) return 0.0
-        if (!habitat.aquatic || species.absoluteMaximumWaterDepthM.isInfinite()) return 1.0
+        if (species.environment.requiresAdjacentLand && !environment.adjacentToLand) return 0.0
+        if (!habitat.aquatic || species.environment.absoluteMaximumWaterDepthM.isInfinite()) return 1.0
         return waterDepth(
             environment.waterDepthM,
-            species.optimalMaximumWaterDepthM,
-            species.absoluteMaximumWaterDepthM,
+            species.environment.optimalMaximumWaterDepthM,
+            species.environment.absoluteMaximumWaterDepthM,
         )
     }
 
@@ -345,7 +345,7 @@ object EcologyFitness {
         species: CompiledSpecies,
         environment: SeasonalCellEnvironment,
     ): Double {
-        if (environment.temperatureC < species.minimumActiveTemperatureC) {
+        if (environment.temperatureC < species.physiology.thermal.minimumActiveC) {
             return 0.0
         }
         val passiveFit = seasonalTemperature(
@@ -353,15 +353,15 @@ object EcologyFitness {
             environment.temperatureC,
             environment.insolation,
         )
-        return when (species.thermalStrategy) {
+        return when (species.physiology.thermal.regulation) {
             ThermalStrategy.ECTOTHERMY -> passiveFit.pow(1.15)
             ThermalStrategy.ENDOTHERMY ->
                 when {
                     passiveFit <= 0.0 -> 0.0
-                    environment.temperatureC < species.temperatureOptimalLow ->
+                    environment.temperatureC < species.physiology.thermal.optimalLowC ->
                         passiveFit.pow(0.55)
 
-                    environment.temperatureC > species.temperatureOptimalHigh ->
+                    environment.temperatureC > species.physiology.thermal.optimalHighC ->
                         passiveFit.pow(0.80)
 
                     else -> 1.0
@@ -370,10 +370,10 @@ object EcologyFitness {
             ThermalStrategy.HETEROTHERMY ->
                 when {
                     passiveFit <= 0.0 -> 0.0
-                    environment.temperatureC < species.temperatureOptimalLow ->
+                    environment.temperatureC < species.physiology.thermal.optimalLowC ->
                         0.35 + passiveFit * 0.65
 
-                    environment.temperatureC > species.temperatureOptimalHigh ->
+                    environment.temperatureC > species.physiology.thermal.optimalHighC ->
                         passiveFit.pow(0.95)
 
                     else -> 1.0
@@ -467,23 +467,23 @@ object NicheSelection {
                         !(
                                 !environment.isLand &&
                                         habitat == Habitat.AERIAL &&
-                                        !species.pelagicAerialResident
+                                        !species.environment.pelagicAerialResident
                                 ) &&
                         !(
                                 !environment.isLand &&
-                                        species.pelagicAerialResident &&
+                                        species.environment.pelagicAerialResident &&
                                         habitat != Habitat.AERIAL
                                 ) &&
-                        !(habitat == Habitat.DARK_WATER && !species.darkWaterAdapted)
+                        !(habitat == Habitat.DARK_WATER && !species.environment.darkWaterAdapted)
             }
-            .maxOfOrNull { species.nicheFit[it] }
+            .maxOfOrNull { species.niche.fitFor(it) }
             ?: 0.0
         var bestIndex = -1
         var bestScore = 0.0
         ecology.niches.indices.forEach { nicheIndex ->
             val niche = ecology.niches[nicheIndex]
             if (
-                species.nicheFit[nicheIndex] <
+                species.niche.fitFor(nicheIndex) <
                 bestIntrinsicFit * minimumRelativeIntrinsicFit
             ) {
                 return@forEach
@@ -494,18 +494,18 @@ object NicheSelection {
             if (
                 !environment.isLand &&
                 niche.habitat == Habitat.AERIAL &&
-                !species.pelagicAerialResident
+                !species.environment.pelagicAerialResident
             ) {
                 return@forEach
             }
             if (
                 !environment.isLand &&
-                species.pelagicAerialResident &&
+                species.environment.pelagicAerialResident &&
                 niche.habitat != Habitat.AERIAL
             ) {
                 return@forEach
             }
-            if (niche.habitat == Habitat.DARK_WATER && !species.darkWaterAdapted) {
+            if (niche.habitat == Habitat.DARK_WATER && !species.environment.darkWaterAdapted) {
                 return@forEach
             }
             // A temporarily empty carrion, marine-snow, or seasonal resource
@@ -515,7 +515,7 @@ object NicheSelection {
             val establishmentResource =
                 max(0.01, environment.resourceSupport(niche, species.sizeClass))
             val score =
-                species.nicheFit[nicheIndex] *
+                species.niche.fitFor(nicheIndex) *
                         environment.habitatAvailability(niche.habitat) *
                         establishmentResource /
                         if (competitionAffectsSelection) {

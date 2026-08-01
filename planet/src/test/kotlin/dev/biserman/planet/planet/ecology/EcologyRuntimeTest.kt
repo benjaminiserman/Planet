@@ -684,7 +684,7 @@ class EcologyRuntimeTest {
     ): Int {
         val index = ecology.niches.indexOf(NicheDefinition(habitat, strategy))
         assertTrue(index >= 0)
-        assertTrue(ecology.species[speciesIndex].nicheFit[index] > 0.0)
+        assertTrue(ecology.species[speciesIndex].niche.fitFor(index) > 0.0)
         return index
     }
 

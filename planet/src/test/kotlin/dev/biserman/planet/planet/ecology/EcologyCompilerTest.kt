@@ -7,6 +7,39 @@ import kotlin.test.assertTrue
 
 class EcologyCompilerTest {
     @Test
+    fun `compiled niche profile owns its optimized arrays`() {
+        val habitatSupport = DoubleArray(Habitat.entries.size).also {
+            it[Habitat.LAND_SURFACE.ordinal] = 0.75
+        }
+        val strategySupport = DoubleArray(EcoStrategy.entries.size).also {
+            it[EcoStrategy.GRAZING.ordinal] = 0.60
+        }
+        val camouflage = DoubleArray(Habitat.entries.size).also {
+            it[Habitat.LAND_SURFACE.ordinal] = 0.40
+        }
+        val nicheFit = doubleArrayOf(0.45)
+        val profile = NicheProfile(
+            producerCompetitionLayer = ProducerCompetitionLayer.NONE,
+            photosyntheticColor = null,
+            camouflageColor = BiologicalColor.BROWN,
+            habitatSupport = habitatSupport,
+            strategySupport = strategySupport,
+            camouflage = camouflage,
+            nicheFit = nicheFit,
+        )
+
+        habitatSupport[Habitat.LAND_SURFACE.ordinal] = 0.0
+        strategySupport[EcoStrategy.GRAZING.ordinal] = 0.0
+        camouflage[Habitat.LAND_SURFACE.ordinal] = 0.0
+        nicheFit[0] = 0.0
+
+        assertEquals(0.75, profile.supportFor(Habitat.LAND_SURFACE))
+        assertEquals(0.60, profile.supportFor(EcoStrategy.GRAZING))
+        assertEquals(0.40, profile.camouflageFor(Habitat.LAND_SURFACE))
+        assertEquals(0.45, profile.fitFor(0))
+    }
+
+    @Test
     fun `traits compile into climate and niche parameters`() {
         val producer = producer(
             traits = listOf(
@@ -19,10 +52,10 @@ class EcologyCompilerTest {
 
         val compiled = EcologyCompiler.compile(listOf(producer)).species.single()
 
-        assertEquals(-4.0, compiled.temperatureOuterLow)
-        assertEquals(27.0, compiled.temperatureOuterHigh)
-        assertTrue(compiled.nicheFit.any { it > 0.0 })
-        assertTrue(compiled.maintenanceDemand > 0.0)
+        assertEquals(-4.0, compiled.physiology.thermal.outerLowC)
+        assertEquals(27.0, compiled.physiology.thermal.outerHighC)
+        assertTrue(compiled.niche.hasViableNiche())
+        assertTrue(compiled.physiology.maintenanceDemand > 0.0)
     }
 
     @Test
@@ -30,10 +63,10 @@ class EcologyCompilerTest {
         val small = EcologyCompiler.compile(listOf(predator("small", SizeClass.SMALL))).species.single()
         val huge = EcologyCompiler.compile(listOf(predator("huge", SizeClass.HUGE))).species.single()
 
-        assertEquals(SizeClass.SMALL.typicalMassKg, small.massKg)
-        assertEquals(SizeClass.HUGE.typicalMassKg, huge.massKg)
-        assertTrue(huge.temperatureOuterLow < small.temperatureOuterLow)
-        assertTrue(huge.temperatureOuterHigh > small.temperatureOuterHigh)
+        assertEquals(SizeClass.SMALL.typicalMassKg, small.physiology.massKg)
+        assertEquals(SizeClass.HUGE.typicalMassKg, huge.physiology.massKg)
+        assertTrue(huge.physiology.thermal.outerLowC < small.physiology.thermal.outerLowC)
+        assertTrue(huge.physiology.thermal.outerHighC > small.physiology.thermal.outerHighC)
     }
 
     @Test
@@ -61,7 +94,7 @@ class EcologyCompilerTest {
             listOf(predator("explicit-thermal-strategy")),
         ).species.single()
 
-        assertEquals(ThermalStrategy.ENDOTHERMY, compiled.thermalStrategy)
+        assertEquals(ThermalStrategy.ENDOTHERMY, compiled.physiology.thermal.regulation)
     }
 
     @Test
@@ -93,7 +126,7 @@ class EcologyCompilerTest {
         )
         val ecology = EcologyCompiler.compile(listOf(species))
         val compiled = ecology.species.single()
-        val strongest = ecology.niches[compiled.nicheFit.indices.maxBy { compiled.nicheFit[it] }]
+        val strongest = ecology.niches[compiled.niche.bestNicheIndex()]
 
         assertEquals(Habitat.AERIAL, strongest.habitat)
         assertEquals(EcoStrategy.FILTER_FEEDING, strongest.strategy)
@@ -120,7 +153,7 @@ class EcologyCompilerTest {
 
         val ecology = EcologyCompiler.compile(listOf(plant, herbivore, omnivore))
         val compiled = ecology.species[ecology.speciesIndex("omnivore")]
-        val strongest = ecology.niches[compiled.nicheFit.indices.maxBy { compiled.nicheFit[it] }]
+        val strongest = ecology.niches[compiled.niche.bestNicheIndex()]
 
         assertEquals(Habitat.LAND_SURFACE, strongest.habitat)
         assertEquals(EcoStrategy.GENERALIST_FORAGING, strongest.strategy)
@@ -135,7 +168,7 @@ class EcologyCompilerTest {
         assertEquals(
             0.0,
             ecology.species[ecology.speciesIndex("herbivore")]
-                .strategySupport[EcoStrategy.GENERALIST_FORAGING.ordinal],
+                .niche.supportFor(EcoStrategy.GENERALIST_FORAGING),
         )
     }
 
@@ -165,6 +198,42 @@ class EcologyCompilerTest {
 
         assertEquals(InteractionKind.SUPPLEMENTAL_FEEDING, cucumberEdge.kind)
         assertEquals(InteractionKind.NONE, otherEdge.kind)
+    }
+
+    @Test
+    fun `authored relationship effects compose on one interaction edge`() {
+        val producer = producer("flowering-producer")
+        val consumer = predator("specialist").copy(
+            traits = predator("specialist").traits + TargetedRelationshipTrait(
+                displayName = "specialist relationship",
+                description = "Multiple authored effects on the same target.",
+                maintenanceCost = 0.03,
+                relationships = listOf(
+                    RelationshipEffect.BenefitsTargetWhenFeeding(
+                        SpeciesSelector.ExactSpecies(producer.id),
+                        benefitRate = 0.07,
+                    ),
+                    RelationshipEffect.RequiresTarget(
+                        SpeciesSelector.ExactSpecies(producer.id),
+                    ),
+                    RelationshipEffect.SupplementalFood(
+                        SpeciesSelector.ExactSpecies(producer.id),
+                        attackRate = 0.04,
+                        assimilationEfficiency = 0.55,
+                    ),
+                ),
+            ),
+        )
+
+        val ecology = EcologyCompiler.compile(listOf(producer, consumer))
+        val interaction = ecology.interactions.get(
+            ecology.speciesIndex(consumer.id),
+            ecology.speciesIndex(producer.id),
+        )
+
+        assertEquals(InteractionKind.SUPPLEMENTAL_FEEDING, interaction.kind)
+        assertEquals(0.07, interaction.targetBenefitRate)
+        assertTrue(interaction.targetRequired)
     }
 
     @Test
@@ -226,7 +295,7 @@ class EcologyCompilerTest {
                 adjacentToMajorRiver = true,
             )
 
-            assertEquals(0.0, species.habitatSupport[Habitat.FRESHWATER.ordinal])
+            assertEquals(0.0, species.niche.supportFor(Habitat.FRESHWATER))
             assertEquals(-1, NicheSelection.choose(species, ecology, river))
         }
     }
@@ -309,14 +378,14 @@ class EcologyCompilerTest {
 
         fun undiscountedAttack(consumer: CompiledSpecies, target: CompiledSpecies): Double {
             val support = maxOf(
-                consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal],
-                consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal],
+                consumer.niche.supportFor(EcoStrategy.AMBUSH_PREDATION),
+                consumer.niche.supportFor(EcoStrategy.PURSUIT_PREDATION),
             )
             val pursuit =
-                consumer.strategySupport[EcoStrategy.PURSUIT_PREDATION.ordinal] >
-                    consumer.strategySupport[EcoStrategy.AMBUSH_PREDATION.ordinal]
-            val capture = consumer.captureAbility + if (pursuit) consumer.pursuitSpeed else 0.0
-            val defense = target.defense + if (pursuit) target.pursuitSpeed else 0.0
+                consumer.niche.supportFor(EcoStrategy.PURSUIT_PREDATION) >
+                    consumer.niche.supportFor(EcoStrategy.AMBUSH_PREDATION)
+            val capture = consumer.interactions.captureAbility + if (pursuit) consumer.interactions.pursuitSpeed else 0.0
+            val defense = target.interactions.defense + if (pursuit) target.interactions.pursuitSpeed else 0.0
             return (0.07 * support * capture / maxOf(0.25, defense)).coerceIn(0.0, 0.25)
         }
 
@@ -336,12 +405,12 @@ class EcologyCompilerTest {
 
         assertEquals(
             ProducerCompetitionLayer.ATTACHED,
-            ecology.species.single { it.id == waterLily.id }.producerCompetitionLayer,
+            ecology.species.single { it.id == waterLily.id }.niche.producerCompetitionLayer,
         )
         assertEquals(
             ProducerCompetitionLayer.SUSPENDED,
             ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
-                .producerCompetitionLayer,
+                .niche.producerCompetitionLayer,
         )
     }
 
@@ -362,22 +431,22 @@ class EcologyCompilerTest {
 
         assertEquals(5, ecology.species.size)
         assertTrue(ecology.species.all { it.kind == SpeciesKind.INVARIANT })
-        assertTrue(ecology.species.all { it.dormancyKind == DormancyKind.PROPAGULE })
-        assertTrue(ecology.species.all { it.nicheCompetitionSensitivity < 0.20 })
+        assertTrue(ecology.species.all { it.lifeHistory.dormancyKind == DormancyKind.PROPAGULE })
+        assertTrue(ecology.species.all { it.lifeHistory.nicheCompetitionSensitivity < 0.20 })
         assertEquals(
             0.10,
             ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
-                .dormantEntryBiomassRetention,
+                .lifeHistory.dormantEntryBiomassRetention,
         )
         assertEquals(
             10.0,
             ecology.species.single { it.id == InvariantSpecies.PLANKTON.id }
-                .dormantReactivationMultiplier,
+                .lifeHistory.dormantReactivationMultiplier,
         )
         assertTrue(
             ecology.species
                 .filterNot { it.id == InvariantSpecies.PLANKTON.id }
-                .all { it.dormantEntryBiomassRetention == 1.0 },
+                .all { it.lifeHistory.dormantEntryBiomassRetention == 1.0 },
         )
     }
 
