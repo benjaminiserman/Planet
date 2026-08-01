@@ -22,6 +22,10 @@ import dev.biserman.planet.planet.climate.Koppen
 import dev.biserman.planet.planet.climate.MonthIndex
 import dev.biserman.planet.planet.climate.UnproxiedKoppen
 import dev.biserman.planet.planet.climate.monthRange
+import dev.biserman.planet.planet.ecology.TileEcosystem
+import dev.biserman.planet.planet.ecology.PlanetEcology
+import dev.biserman.planet.planet.ecology.Habitat
+import dev.biserman.planet.planet.ecology.PlanetEcologyEnvironment
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -32,6 +36,7 @@ import dev.biserman.planet.utils.memo
 import godot.api.Time
 import godot.core.Color
 import godot.core.Vector3
+import java.util.Locale
 import godot.global.GD
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
@@ -62,8 +67,9 @@ class PlanetTile(
     @get:JsonIgnore
     val hotspot get() = planet.noise.hotspots.sample4d(tile.position, planet.tectonicAge.toDouble())
     var moisture = 0.0
+    var ecosystem = TileEcosystem()
     var elevation = -100000.0 // set it really low to make errors easier to see
-    val airPressure by memo(
+    val airPressure by memo( // air pressure at sea level
         { planet.terrainChangeCount }, { planet.daysPassed }, { ClimateRuntimeConfig.revision }
     ) { calculateAirPressure() }
     val prevailingWind by memo(
@@ -187,6 +193,11 @@ class PlanetTile(
         this.elevation = other.elevation
 //        this.temperature = other.temperature
         this.moisture = other.moisture
+        this.ecosystem = TileEcosystem(
+            populations = other.ecosystem.populations.map { it.copy() }.toMutableList(),
+            resources = other.ecosystem.resources.copy(),
+            reefCover = other.ecosystem.reefCover,
+        )
         this.tectonicPlate = other.tectonicPlate
         this.movement = other.movement
         this.springDisplacement = other.springDisplacement
@@ -367,6 +378,63 @@ class PlanetTile(
                 }.joinToString("\n") { "  ${it.first}: ${it.second}" }
             }"
         } else ""
+
+        "ecology" -> buildString {
+            fun Double.scientific2() = "%.1e".format(Locale.ROOT, this)
+            val habitatSummary = planet.climateMap[tileId]?.let { climate ->
+                val environment = PlanetEcologyEnvironment.environment(
+                    tile = this@PlanetTile,
+                    climate = climate,
+                    year = planet.historyTurn / 4.0,
+                    context = PlanetEcologyEnvironment.context(planet),
+                )
+                Habitat.entries
+                    .mapNotNull { habitat ->
+                        environment.habitatAvailability(habitat)
+                            .takeIf { availability -> availability > 0.0 }
+                            ?.let { availability ->
+                                "${habitat.displayName}=${availability.formatDigits(2)}"
+                            }
+                    }
+                    .joinToString(", ")
+            }
+            appendLine("species count: ${ecosystem.speciesCount}")
+            appendLine("total biomass: ${ecosystem.totalBiomassKg.scientific2()} kg")
+            appendLine("reef cover: ${(ecosystem.reefCover * 100.0).formatDigits(1)}%")
+            appendLine(
+                "available habitats: " +
+                    (habitatSummary?.ifEmpty { "none" } ?: "climate unavailable")
+            )
+            appendLine(
+                "resources: carrion=${ecosystem.resources.carrion.formatDigits(3)}, " +
+                    "detritus=${ecosystem.resources.detritus.formatDigits(3)}, " +
+                    "waste=${ecosystem.resources.waste.formatDigits(3)}, " +
+                    "marine snow=${ecosystem.resources.marineSnow.formatDigits(3)}, " +
+                    "fruit=${ecosystem.resources.fruit.formatDigits(3)}"
+            )
+            val speciesCount = ecosystem.populations.map { it.speciesId }.distinct().size
+            appendLine("populations ($speciesCount):")
+            if (ecosystem.populations.isEmpty()) {
+                appendLine("  none")
+            } else {
+                ecosystem.populations
+                    .sortedByDescending { it.activeBiomassKg + it.dormantBiomassKg }
+                    .forEach { population ->
+                        val species = PlanetEcology.compiled.species
+                            .firstOrNull { it.id == population.speciesId }
+                        val name = species?.displayName ?: population.speciesId
+                        val niche =
+                            "${population.habitat.displayName} " +
+                                population.strategy.displayName
+                        val biomassKg = population.activeBiomassKg + population.dormantBiomassKg
+                        val populationCount = species?.massKg?.let { biomassKg / it }
+                        appendLine(
+                            "  $name: ${biomassKg.scientific2()} kg, " +
+                                "population count: ${populationCount?.scientific2() ?: "unknown"} ($niche)"
+                        )
+                    }
+            }
+        }.trimEnd()
 
         "tectonics" -> """
             formation time: $formationTime My

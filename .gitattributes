@@ -8,3 +8,6 @@
 planet/save/*.json filter=lfs diff=lfs merge=lfs -text
 planet/save/*.json.gz filter=lfs diff=lfs merge=lfs -text
 
+# Jupyter notebooks are large generated/documentation artifacts.
+**/*.ipynb filter=lfs diff=lfs merge=lfs -text
+*.ipynb filter=lfs diff=lfs merge=lfs -text

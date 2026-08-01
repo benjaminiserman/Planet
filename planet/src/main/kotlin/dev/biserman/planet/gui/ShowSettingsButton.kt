@@ -40,10 +40,10 @@ class ShowSettingsButton() : OptionButton() {
     }
 
     private val toggles = mutableMapOf<String, Boolean>()
-    fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any) {
+    fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any): MapLayerCheckButton {
         val defaultValue = "default" in categories
         toggles[toggle] = defaultValue
-        mapLayerButtons += MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
+        val entry = MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
             toggles[toggle] = it
             onClick(it)
         }).also {
@@ -51,6 +51,17 @@ class ShowSettingsButton() : OptionButton() {
             it.setVisible(false)
             settingsOptionsList.addChild(it)
         }, categories)
+        mapLayerButtons += entry
+        return entry
+    }
+
+    fun setAvailable(entry: MapLayerCheckButton, available: Boolean) {
+        entry.available = available
+        entry.button.disabled = !available
+        if (!available && entry.button.isPressed()) {
+            entry.button.setPressed(false)
+            entry.button.onClick?.invoke(false)
+        }
     }
 
     fun resetToggles() {
@@ -78,7 +89,10 @@ class ShowSettingsButton() : OptionButton() {
             "biome",
             "climate",
             "tectonics",
-            "debug"
+            "debug",
+            "ecology",
+            "animal_ranges",
+            "sessile_ranges"
         ).forEachIndexed { index, category ->
             this.addItem("Settings: ${category.split("_").joinToString(" ") { it.capitalize() }}", index)
             categoriesIdMap[index] = category
