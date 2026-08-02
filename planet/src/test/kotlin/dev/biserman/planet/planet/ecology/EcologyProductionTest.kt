@@ -282,9 +282,10 @@ class EcologyProductionTest {
                 insolation = (month.insolation / 345.0).coerceIn(0.0, 1.0),
                 precipitationMm = month.precipitation,
                 isLand = !preset.ocean,
-                adjacentToOcean = coastal,
-                adjacentToLand = preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE,
-                adjacentToMajorRiver = majorRiver,
+                adjacentToOcean = if (coastal) 1.0 else 0.0,
+                adjacentToLand =
+                    if (preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE) 1.0 else 0.0,
+                adjacentToMajorRiver = if (majorRiver) 1.0 else 0.0,
                 elevationM = elevationM,
                 waterDepthM = waterDepth,
                 permanentSeaIce =

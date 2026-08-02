@@ -6,9 +6,9 @@ import kotlin.random.Random
 
 data class RandomEcosystemTile(
     val isLand: Boolean,
-    val adjacentToOcean: Boolean,
-    val adjacentToLand: Boolean,
-    val adjacentToMajorRiver: Boolean,
+    val adjacentToOcean: Double,
+    val adjacentToLand: Double,
+    val adjacentToMajorRiver: Double,
     val waterDepthM: Double,
     val usefulSunlightReachesWater: Boolean,
     val canopyCover: Double,
@@ -77,7 +77,7 @@ object RandomEcosystemExperiment {
             tile = tile,
             year = 0.5,
             resources = FunctionalResources(
-                marineSnow = if (!tile.isLand || tile.adjacentToOcean) 0.12 else 0.0,
+                marineSnow = if (!tile.isLand || tile.adjacentToOcean > 0.0) 0.12 else 0.0,
             ),
         )
         val annualEnvironments = List(12) { month ->
@@ -176,7 +176,7 @@ object RandomEcosystemExperiment {
                 previous = resources,
                 fluxes = fluxes,
                 areaKm2 = AREA_KM2,
-                hasMarineCompartment = !tile.isLand || tile.adjacentToOcean,
+                hasMarineCompartment = !tile.isLand || tile.adjacentToOcean > 0.0,
             )
 
             ecology.species.forEach { species ->
@@ -292,9 +292,9 @@ object RandomEcosystemExperiment {
         }
         return RandomEcosystemTile(
             isLand = land,
-            adjacentToOcean = coastal,
-            adjacentToLand = adjacentLand,
-            adjacentToMajorRiver = river,
+            adjacentToOcean = if (coastal) 1.0 else 0.0,
+            adjacentToLand = if (adjacentLand) 1.0 else 0.0,
+            adjacentToMajorRiver = if (river) 1.0 else 0.0,
             waterDepthM = depth,
             usefulSunlightReachesWater = sunlight,
             canopyCover = if (land) randomBetween(random, 0.0, 0.92) else 0.0,
@@ -329,8 +329,12 @@ object RandomEcosystemExperiment {
             add(InvariantSpecies.CARPET_PLANTS)
             add(InvariantSpecies.BUGS)
         }
-        if (!tile.isLand || tile.adjacentToOcean || tile.adjacentToMajorRiver) {
-            if (tile.usefulSunlightReachesWater || tile.adjacentToOcean || tile.adjacentToMajorRiver) {
+        if (!tile.isLand || tile.adjacentToOcean > 0.0 || tile.adjacentToMajorRiver > 0.0) {
+            if (
+                tile.usefulSunlightReachesWater ||
+                tile.adjacentToOcean > 0.0 ||
+                tile.adjacentToMajorRiver > 0.0
+            ) {
                 add(InvariantSpecies.PLANKTON)
             }
             add(InvariantSpecies.SMALL_AQUATIC_LIFE)

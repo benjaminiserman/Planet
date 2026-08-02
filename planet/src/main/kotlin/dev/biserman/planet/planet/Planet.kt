@@ -7,6 +7,7 @@ import dev.biserman.planet.geometry.*
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.climate.ClimateDatum
 import dev.biserman.planet.planet.climate.OceanCurrent
+import dev.biserman.planet.planet.ecology.PlanetEcologyEnvironment
 import dev.biserman.planet.planet.tectonics.ConvergenceZone
 import dev.biserman.planet.planet.tectonics.DivergenceZone
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.biotaDistributionCount
@@ -217,6 +218,18 @@ class Planet(val seed: Int, val size: Int) {
 
     val radiusMeters = 6378137.0
     var terrainChangeCount: ULong = 0uL
+
+    /**
+     * Shared ecology inputs derived from both climate and river topology.
+     * Keep this below its dependencies: [memo] snapshots them immediately
+     * when its delegate is constructed.
+     */
+    val planetEcologyEnvironmentContext by memo(
+        { climateMap },
+        { terrainChangeCount },
+    ) {
+        PlanetEcologyEnvironment.context(this)
+    }
 
     val oldestCrust by memo({ tectonicAge }) { planetTiles.values.minOf { it.formationTime } }
     val youngestCrust by memo({ tectonicAge }) { planetTiles.values.maxOf { it.formationTime } }

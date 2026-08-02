@@ -208,19 +208,12 @@ object PlanetEcology {
 
         val cache = worldCache(planet)
         val tiles = cache.tiles
-        val context = cache.context
-        val year = planet.historyTurn / 4.0
         val communities = Array(tiles.size) { index ->
             tiles[index].ecosystem.community(compiled)
         }
         val environments = Array(tiles.size) { index ->
             val tile = tiles[index]
-            PlanetEcologyEnvironment.environment(
-                tile,
-                planet.climateMap.getValue(tile.tileId),
-                year,
-                context,
-            )
+            SeasonalCellEnvironment.from(tile)
         }
         val neighbors = cache.neighbors
         val fluxes = CellTurnFluxes()

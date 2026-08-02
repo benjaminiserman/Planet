@@ -138,7 +138,7 @@ class EcologyWorldEcosystemHealthTest {
         )
         val runtime = EcologyRuntime(ecology)
         val initialMarineSnow =
-            if (!scenario.tile.isLand || scenario.tile.adjacentToOcean) 0.12 else 0.0
+            if (!scenario.tile.isLand || scenario.tile.adjacentToOcean > 0.0) 0.12 else 0.0
         val seedEnvironment = environmentAt(
             scenario.climate.sampleAt(0.5),
             scenario.climate.averageTemperature,
@@ -227,7 +227,7 @@ class EcologyWorldEcosystemHealthTest {
                 previous = resources,
                 fluxes = fluxes,
                 areaKm2 = 40_000.0,
-                hasMarineCompartment = !activeTile.isLand || activeTile.adjacentToOcean,
+                hasMarineCompartment = !activeTile.isLand || activeTile.adjacentToOcean > 0.0,
             )
             totals[season] = community.totalBiomass()
         }
@@ -355,7 +355,7 @@ class EcologyWorldEcosystemHealthTest {
             add(InvariantSpecies.CARPET_PLANTS)
             add(InvariantSpecies.BUGS)
         }
-        if (!tile.isLand || tile.adjacentToOcean || tile.adjacentToMajorRiver) {
+        if (!tile.isLand || tile.adjacentToOcean > 0.0 || tile.adjacentToMajorRiver > 0.0) {
             add(InvariantSpecies.PLANKTON)
             add(InvariantSpecies.SMALL_AQUATIC_LIFE)
         }

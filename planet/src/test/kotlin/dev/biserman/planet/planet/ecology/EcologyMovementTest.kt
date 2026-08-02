@@ -171,7 +171,7 @@ class EcologyMovementTest {
         insolation = 0.8,
         precipitationMm = 80.0,
         isLand = true,
-        adjacentToMajorRiver = majorRiver,
+        adjacentToMajorRiver = if (majorRiver) 1.0 else 0.0,
         resources = FunctionalResources(),
     )
 

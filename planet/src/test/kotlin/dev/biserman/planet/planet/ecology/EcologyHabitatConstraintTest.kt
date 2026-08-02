@@ -34,9 +34,9 @@ class EcologyHabitatConstraintTest {
 
     @Test
     fun `permanent sea ice is a distinct coastal surface habitat`() {
-        val withoutIce = ocean(depthM = 250.0, permanentSeaIce = false, adjacentToLand = true)
-        val offshoreIce = ocean(depthM = 250.0, permanentSeaIce = true, adjacentToLand = false)
-        val coastalIce = ocean(depthM = 250.0, permanentSeaIce = true, adjacentToLand = true)
+        val withoutIce = ocean(depthM = 250.0, permanentSeaIce = false, adjacentToLand = 1.0)
+        val offshoreIce = ocean(depthM = 250.0, permanentSeaIce = true, adjacentToLand = 0.0)
+        val coastalIce = ocean(depthM = 250.0, permanentSeaIce = true, adjacentToLand = 1.0)
         val penguin = catalogEcology.species.single { it.id == "emperor-penguin" }
         val polarBear = catalogEcology.species.single { it.id == "polar-bear" }
 
@@ -74,7 +74,7 @@ class EcologyHabitatConstraintTest {
         val manatee = catalogEcology.species.single { it.id == "west-indian-manatee" }
         val seaOtter = catalogEcology.species.single { it.id == "sea-otter" }
         val offshoreOcean = ocean(depthM = 250.0)
-        val coastalOcean = ocean(depthM = 45.0, adjacentToLand = true)
+        val coastalOcean = ocean(depthM = 45.0, adjacentToLand = 1.0)
 
         assertTrue(blueWhale.physiology.respiration.prolongedBreathHolding)
         assertFalse(blueWhale.physiology.respiration.underwaterBreathing)
@@ -144,7 +144,7 @@ class EcologyHabitatConstraintTest {
     private fun ocean(
         depthM: Double,
         permanentSeaIce: Boolean = false,
-        adjacentToLand: Boolean = false,
+        adjacentToLand: Double = 0.0,
     ) = SeasonalCellEnvironment.create(
         areaKm2 = 40_000.0,
         temperatureC = if (permanentSeaIce) -4.0 else 24.0,

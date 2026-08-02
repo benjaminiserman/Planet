@@ -18,9 +18,9 @@ data class AuthoredEcosystemScenario(
 
 data class AuthoredEcosystemTile(
     val isLand: Boolean,
-    val adjacentToOcean: Boolean = false,
-    val adjacentToLand: Boolean = false,
-    val adjacentToMajorRiver: Boolean = false,
+    val adjacentToOcean: Double = 0.0,
+    val adjacentToLand: Double = 0.0,
+    val adjacentToMajorRiver: Double = 0.0,
     val elevationM: Double = 0.0,
     val waterDepthM: Double = 0.0,
     val usefulSunlightReachesWater: Boolean = true,
@@ -81,7 +81,7 @@ object AuthoredEcosystems {
         climate(4, q(25, 24, 21, 27), q(275, 260, 240, 295), q(85, 120, 18, 55)),
         AuthoredEcosystemTile(
             isLand = true,
-            adjacentToMajorRiver = true,
+            adjacentToMajorRiver = 1.0,
             fertilityModifier = 0.25,
         ),
         "perennial-ryegrass", "common-sunflower", "blue-wildebeest", "plains-zebra",
@@ -128,8 +128,8 @@ object AuthoredEcosystems {
         climate(10, q(20, 29, 31, 27), q(190, 285, 250, 235), q(18, 70, 315, 120)),
         AuthoredEcosystemTile(
             isLand = true,
-            adjacentToOcean = true,
-            adjacentToMajorRiver = true,
+            adjacentToOcean = 1.0,
+            adjacentToMajorRiver = 1.0,
             canopyCover = 0.70,
             fertilityModifier = 0.25,
         ),
@@ -141,7 +141,7 @@ object AuthoredEcosystems {
         climate(11, q(27, 23, 17, 29), q(300, 245, 205, 310), q(105, 25, 2, 35)),
         AuthoredEcosystemTile(
             isLand = true,
-            adjacentToMajorRiver = true,
+            adjacentToMajorRiver = 1.0,
             fertilityModifier = 0.40,
         ),
         "white-water-lily", "hippopotamus", "nile-crocodile",
@@ -152,7 +152,7 @@ object AuthoredEcosystems {
         climate(12, q(0, 2, 12, 5), q(30, 175, 285, 100), q(15, 32, 65, 35)),
         AuthoredEcosystemTile(
             isLand = true,
-            adjacentToMajorRiver = true,
+            adjacentToMajorRiver = 1.0,
             fertilityModifier = -0.10,
         ),
         "atlantic-salmon",
@@ -175,7 +175,7 @@ object AuthoredEcosystems {
         climate(14, q(13, 14, 17, 15), q(135, 250, 280, 180), q(85, 30, 4, 25)),
         AuthoredEcosystemTile(
             isLand = false,
-            adjacentToLand = true,
+            adjacentToLand = 1.0,
             waterDepthM = 45.0,
             fertilityModifier = 0.35,
         ),
@@ -233,7 +233,7 @@ object AuthoredEcosystems {
     val ISLAND_PREY_COLLAPSE = scenario(
         "EXTINCTION - island prey collapse after predator introduction",
         climate(202, q(8, 16, 22, 13), q(170, 245, 275, 195), q(95, 120, 80, 110)),
-        AuthoredEcosystemTile(isLand = true, adjacentToOcean = true, fertilityModifier = 0.05),
+        AuthoredEcosystemTile(isLand = true, adjacentToOcean = 1.0, fertilityModifier = 0.05),
         "giant-bamboo", "giant-panda", "bengal-tiger",
         introductions = listOf(AuthoredSpeciesIntroduction("bengal-tiger", 45, 240_000.0)),
         populationRemovals = listOf(AuthoredPopulationRemoval("giant-panda", 60)),

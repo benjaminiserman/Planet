@@ -68,7 +68,7 @@ class EcologyRuntimeTest {
             precipitationMm = 100.0,
             surfaceFertilityModifier = 0.5,
             isLand = true,
-            adjacentToMajorRiver = true,
+            adjacentToMajorRiver = 1.0,
         )
 
         fun lilyBiomassAfterSeason(withPlankton: Boolean): Double {
@@ -421,7 +421,7 @@ class EcologyRuntimeTest {
             insolation = 0.8,
             precipitationMm = 90.0,
             isLand = true,
-            adjacentToMajorRiver = true,
+            adjacentToMajorRiver = 1.0,
         )
 
         EcologyRuntime(ecology).advanceSeason(community, riverEnvironment, fluxes)

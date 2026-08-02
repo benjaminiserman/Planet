@@ -292,7 +292,7 @@ class EcologyCompilerTest {
                 insolation = 0.8,
                 precipitationMm = 80.0,
                 isLand = true,
-                adjacentToMajorRiver = true,
+                adjacentToMajorRiver = 1.0,
             )
 
             assertEquals(0.0, species.niche.supportFor(Habitat.FRESHWATER))

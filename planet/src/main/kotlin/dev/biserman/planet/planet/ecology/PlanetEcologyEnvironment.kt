@@ -3,12 +3,13 @@ package dev.biserman.planet.planet.ecology
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateDatum
+import dev.biserman.planet.topology.Border
 import kotlin.math.max
 import kotlin.math.pow
 
 data class PlanetEcologyEnvironmentContext(
     val maximumInsolationWm2: Double,
-    val majorRiverTileIds: Set<Int>,
+    val majorRiverBorderIds: Set<Int>,
 )
 
 object PlanetEcologyEnvironment {
@@ -30,17 +31,16 @@ object PlanetEcologyEnvironment {
             .maxOfOrNull { it.insolation }
             ?.coerceAtLeast(1.0)
             ?: 340.0
-        val majorRiverTileIds = planet.riverUpstreamSegmentCounts
+        val majorRiverBorderIds = planet.riverUpstreamSegmentCounts
             .asSequence()
-            .filter { (_, upstreamSegments) ->
-                upstreamSegments >= MAJOR_RIVER_UPSTREAM_SEGMENTS
+            .filter { (_, upstreamSegments) -> upstreamSegments >= MAJOR_RIVER_UPSTREAM_SEGMENTS }
+            .mapNotNull { (segment, _) ->
+                segment.first.borders
+                    .firstOrNull { border -> segment.second in border.corners }
+                    ?.id
             }
-            .flatMap { (segment, _) ->
-                sequenceOf(segment.first, segment.second)
-            }
-            .flatMap { corner -> corner.tiles.asSequence() }
-            .mapTo(linkedSetOf()) { it.id }
-        return PlanetEcologyEnvironmentContext(maximumInsolation, majorRiverTileIds)
+            .toSet()
+        return PlanetEcologyEnvironmentContext(maximumInsolation, majorRiverBorderIds)
     }
 
     fun areaKm2(tile: PlanetTile): Double =
@@ -58,9 +58,25 @@ object PlanetEcologyEnvironment {
         val sample = climate.sampleAt(year)
         val anomaly = EcologyClimateVariability.anomaly(tile.tileId, year)
         val isLand = tile.isAboveWater
-        val adjacentToOcean = isLand && tile.neighbors.any { !it.isAboveWater }
-        val adjacentToLand = !isLand && tile.neighbors.any { it.isAboveWater }
-        val adjacentToMajorRiver = isLand && tile.tileId in context.majorRiverTileIds
+        val adjacentToOcean = if (isLand) {
+            sharedEdgeFraction(tile) { border ->
+                !tile.planet.getTile(border.oppositeTile(tile.tile)).isAboveWater
+            }
+        } else {
+            0.0
+        }
+        val adjacentToLand = if (!isLand) {
+            sharedEdgeFraction(tile) { border ->
+                tile.planet.getTile(border.oppositeTile(tile.tile)).isAboveWater
+            }
+        } else {
+            0.0
+        }
+        val adjacentToMajorRiver = if (isLand) {
+            sharedEdgeFraction(tile) { it.id in context.majorRiverBorderIds }
+        } else {
+            0.0
+        }
         val waterDepthM = if (isLand) 0.0 else (tile.planet.seaLevel - tile.elevation).coerceAtLeast(0.0)
         val stone = tile.stoneColumn.surface.stoneComponent
         return SeasonalCellEnvironment.create(
@@ -117,5 +133,15 @@ object PlanetEcologyEnvironment {
         val moisture = ((climate.annualPrecipitation - 350.0) / 1_900.0).coerceIn(0.0, 1.0)
         val warmth = (1.0 - ((climate.averageTemperature - 18.0) / 42.0).pow(2)).coerceIn(0.0, 1.0)
         return (moisture * warmth * 0.92).coerceIn(0.0, 0.92)
+    }
+
+    private fun sharedEdgeFraction(
+        tile: PlanetTile,
+        matches: (Border) -> Boolean,
+    ): Double {
+        val perimeter = tile.tile.borders.sumOf { it.length }
+        if (perimeter <= 0.0) return 0.0
+        return (tile.tile.borders.filter(matches).sumOf { it.length } / perimeter)
+            .coerceIn(0.0, 1.0)
     }
 }

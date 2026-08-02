@@ -13,12 +13,44 @@ class EcologyEnvironmentTest {
 
     @Test
     fun `major rivers expose freshwater and increase land water availability`() {
-        val dry = land(adjacentToMajorRiver = false)
-        val river = land(adjacentToMajorRiver = true)
+        val dry = land(adjacentToMajorRiver = 0.0)
+        val partialRiver = land(adjacentToMajorRiver = 0.25)
+        val river = land(adjacentToMajorRiver = 1.0)
 
         assertEquals(0.0, dry.habitatAvailability(Habitat.FRESHWATER))
-        assertTrue(river.habitatAvailability(Habitat.FRESHWATER) > 0.0)
+        assertEquals(0.105, partialRiver.habitatAvailability(Habitat.FRESHWATER), 1e-12)
+        assertEquals(0.42, river.habitatAvailability(Habitat.FRESHWATER), 1e-12)
         assertTrue(river.waterAvailability > dry.waterAvailability)
+        assertEquals(
+            (river.waterAvailability - dry.waterAvailability) * 0.25,
+            partialRiver.waterAvailability - dry.waterAvailability,
+            1e-12,
+        )
+    }
+
+    @Test
+    fun `shared coastline fraction scales coastal habitat`() {
+        val land = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 20.0,
+            insolation = 0.8,
+            precipitationMm = 35.0,
+            isLand = true,
+            adjacentToOcean = 0.25,
+        )
+        val ocean = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 20.0,
+            insolation = 0.8,
+            precipitationMm = 35.0,
+            isLand = false,
+            adjacentToLand = 0.25,
+        )
+
+        assertEquals(0.12, land.habitatAvailability(Habitat.COASTAL), 1e-12)
+        assertEquals(0.25, ocean.habitatAvailability(Habitat.COASTAL), 1e-12)
+        assertEquals(0.25, land.adjacentToOcean)
+        assertEquals(0.25, ocean.adjacentToLand)
     }
 
     @Test
@@ -488,7 +520,7 @@ class EcologyEnvironmentTest {
     }
 
     private fun land(
-        adjacentToMajorRiver: Boolean = false,
+        adjacentToMajorRiver: Double = 0.0,
         canopyCover: Double = 0.0,
         elevationM: Double = 0.0,
     ) = SeasonalCellEnvironment.create(

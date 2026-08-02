@@ -851,6 +851,7 @@ enum class CommonTrait(
         "Root membranes limit the uptake of dissolved salts while drawing water from coastal sediment.",
         listOf(
             TraitEffect.HabitatSupport(Habitat.COASTAL, 0.58),
+            TraitEffect.HabitatSupport(Habitat.LAND_SURFACE, -0.5),
             TraitEffect.ReproductionMultiplier(0.92),
             TraitEffect.MaintenanceCost(0.05),
         ),

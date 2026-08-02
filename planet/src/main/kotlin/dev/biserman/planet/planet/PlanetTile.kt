@@ -25,7 +25,7 @@ import dev.biserman.planet.planet.climate.monthRange
 import dev.biserman.planet.planet.ecology.TileEcosystem
 import dev.biserman.planet.planet.ecology.PlanetEcology
 import dev.biserman.planet.planet.ecology.Habitat
-import dev.biserman.planet.planet.ecology.PlanetEcologyEnvironment
+import dev.biserman.planet.planet.ecology.SeasonalCellEnvironment
 import dev.biserman.planet.planet.tectonics.StoneColumn
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
 import dev.biserman.planet.planet.tectonics.TectonicPlate
@@ -381,13 +381,8 @@ class PlanetTile(
 
         "ecology" -> buildString {
             fun Double.scientific2() = "%.1e".format(Locale.ROOT, this)
-            val habitatSummary = planet.climateMap[tileId]?.let { climate ->
-                val environment = PlanetEcologyEnvironment.environment(
-                    tile = this@PlanetTile,
-                    climate = climate,
-                    year = planet.historyTurn / 4.0,
-                    context = PlanetEcologyEnvironment.context(planet),
-                )
+            val habitatSummary = planet.climateMap[tileId]?.let {
+                val environment = SeasonalCellEnvironment.from(this@PlanetTile)
                 Habitat.entries
                     .mapNotNull { habitat ->
                         environment.habitatAvailability(habitat)

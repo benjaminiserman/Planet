@@ -151,7 +151,7 @@ class EcologyBiomassTest {
             precipitationMm = 900.0,
             surfaceFertilityModifier = 0.10,
             isLand = true,
-            adjacentToOcean = true,
+            adjacentToOcean = 1.0,
             waterDepthM = 40.0,
         )
         val community = TileCommunity()
