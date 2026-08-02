@@ -2,11 +2,12 @@ package dev.biserman.planet.rendering
 
 import dev.biserman.planet.gui.Gui
 import dev.biserman.planet.planet.PlanetTile
+import dev.biserman.planet.utils.UtilityExtensions.toTitleCase
 import godot.core.Color
 
 abstract class PlanetColorMode(val planetRenderer: PlanetRenderer) {
     abstract val name: String
-    open val displayName: String get() = name.split("_").joinToString(" ") { it.capitalize() }
+    open val displayName get() = name.toTitleCase()
 
     open val categories: List<String> = listOf()
     private lateinit var toggleEntry: Gui.MapLayerCheckButton
