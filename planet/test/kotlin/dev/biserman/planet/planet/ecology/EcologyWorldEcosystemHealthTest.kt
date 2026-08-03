@@ -34,12 +34,12 @@ class EcologyWorldEcosystemHealthTest {
             if (missingExpectedExtinctions.isNotEmpty()) {
                 failures +=
                     "${result.name} retained species expected to go extinct: " +
-                        missingExpectedExtinctions.joinToString()
+                    missingExpectedExtinctions.joinToString()
             }
             if (unexpectedExtinctions.isNotEmpty()) {
                 failures +=
                     "${result.name} unexpectedly lost: " +
-                        unexpectedExtinctions.joinToString()
+                    unexpectedExtinctions.joinToString()
             }
             if (result.intendedStable) {
                 if (result.tailCv >= 0.35) {
@@ -54,7 +54,8 @@ class EcologyWorldEcosystemHealthTest {
                     result.trophicBiomass.primaryConsumers +
                         result.trophicBiomass.predators +
                         result.trophicBiomass.apexPredators
-                if (result.isLand && animalBiomass > 0.0 &&
+                if (result.isLand &&
+                    animalBiomass > 0.0 &&
                     result.trophicBiomass.producers / animalBiomass < 3.0
                 ) {
                     failures += "${result.name} had less than a threefold terrestrial producer/animal pyramid"
@@ -65,7 +66,7 @@ class EcologyWorldEcosystemHealthTest {
                     if (plankton !in 1.0e8..1.0e11) {
                         failures +=
                             "${result.name} plankton biomass ${"%.3e".format(plankton)} kg " +
-                                "was outside the broad one-tile target"
+                            "was outside the broad one-tile target"
                     }
                     if (
                         plankton > 0.0 &&
@@ -87,7 +88,7 @@ class EcologyWorldEcosystemHealthTest {
                 if (result.poorClimateFits.isNotEmpty()) {
                     failures +=
                         "${result.name} retained species without a viable season: " +
-                            result.poorClimateFits.joinToString()
+                        result.poorClimateFits.joinToString()
                 }
             }
             when (result.name) {
@@ -242,8 +243,11 @@ class EcologyWorldEcosystemHealthTest {
             .map { year -> year.average() }
         val mean = tail.average()
         val cv =
-            if (mean > 0.0) sqrt(tail.sumOf { (it - mean) * (it - mean) } / tail.size) / mean
-            else Double.POSITIVE_INFINITY
+            if (mean > 0.0) {
+                sqrt(tail.sumOf { (it - mean) * (it - mean) } / tail.size) / mean
+            } else {
+                Double.POSITIVE_INFINITY
+            }
         val survivors = (0 until community.size).map { populationIndex ->
             ecology.species[community.speciesIndices[populationIndex]].displayName
         }

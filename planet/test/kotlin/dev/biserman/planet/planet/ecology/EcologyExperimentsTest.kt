@@ -160,8 +160,11 @@ class EcologyExperimentsTest {
 
     private fun biomassOf(community: TileCommunity, speciesIndex: Int): Double {
         val index = community.find(speciesIndex)
-        return if (index < 0) 0.0
-        else community.activeBiomass[index] + community.dormantBiomass[index]
+        return if (index < 0) {
+            0.0
+        } else {
+            community.activeBiomass[index] + community.dormantBiomass[index]
+        }
     }
 
     private fun dormantTotal(community: TileCommunity): Double {

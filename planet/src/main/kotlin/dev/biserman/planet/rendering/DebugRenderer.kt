@@ -68,7 +68,7 @@ abstract class DebugRenderer<T>(val parent: Node) {
     abstract fun generateMeshes(input: T): List<MeshData>
 }
 
-class SimpleDebugRenderer<T>(parent: Node, override val name: String, override val categories: List<String> = listOf(), val generateMesh: (T) -> List<MeshData>,) : DebugRenderer<T>(parent) {
+class SimpleDebugRenderer<T>(parent: Node, override val name: String, override val categories: List<String> = listOf(), val generateMesh: (T) -> List<MeshData>) : DebugRenderer<T>(parent) {
     override fun generateMeshes(input: T): List<MeshData> = generateMesh(input)
 }
 

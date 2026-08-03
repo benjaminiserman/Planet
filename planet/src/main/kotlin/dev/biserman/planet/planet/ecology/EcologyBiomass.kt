@@ -113,8 +113,11 @@ object EcologyBiomass {
             220.0 * species.sizeClass.densityScale
         }
         val fertility =
-            if (photosynthetic) 1.0
-            else environment.fertility
+            if (photosynthetic) {
+                1.0
+            } else {
+                environment.fertility
+            }
         val waterProductivity =
             if (
                 photosynthetic &&

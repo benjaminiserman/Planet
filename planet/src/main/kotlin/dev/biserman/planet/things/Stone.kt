@@ -1,12 +1,9 @@
 package dev.biserman.planet.things
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo
-import com.fasterxml.jackson.annotation.JsonIdentityReference
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.ObjectIdGenerators
-import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.utils.DedupeDuplicateIds
 import dev.biserman.planet.utils.DedupingObjectIdResolver
@@ -146,7 +143,9 @@ class Stone(
     colors: List<Color>,
     concepts: List<Concept>,
 ) : Resource(
-    components, colors, concepts
+    components,
+    colors,
+    concepts
 ) {
     @delegate:JsonIgnore
     val stoneComponent by lazy { components.get<StoneComponent>() ?: throw IllegalStateException("Stone has no stone component") }

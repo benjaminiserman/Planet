@@ -32,7 +32,6 @@ import java.io.File
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
-
 @Suppress("FunctionName", "unused")
 abstract class Vector3Mixin {
     @JsonIgnore
@@ -47,7 +46,6 @@ abstract class Vector3Mixin {
     @JsonIgnore
     abstract fun isNormalized(): Boolean
 }
-
 
 @Suppress("unused")
 abstract class Vector2Mixin {
@@ -66,9 +64,7 @@ class DedupingObjectIdResolver : SimpleObjectIdResolver() {
         _items[id] = ob
     }
 
-    override fun newForDeserialization(context: Any?): ObjectIdResolver {
-        return DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
-    }
+    override fun newForDeserialization(context: Any?): ObjectIdResolver = DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
 }
 
 @Target(AnnotationTarget.CLASS)

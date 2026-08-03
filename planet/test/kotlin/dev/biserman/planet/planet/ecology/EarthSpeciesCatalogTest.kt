@@ -420,9 +420,16 @@ class EarthSpeciesCatalogTest {
         )
 
         assertEquals(0.0, orca.niche.supportFor(Habitat.AERIAL))
-        assertEquals(-1, NicheSelection.choose(orca, EcologyCompiler.compile(
-            listOf(EarthSpeciesCatalog.MAMMALS.single { it.id == "orca" }),
-        ), land))
+        assertEquals(
+            -1,
+            NicheSelection.choose(
+                orca,
+                EcologyCompiler.compile(
+                    listOf(EarthSpeciesCatalog.MAMMALS.single { it.id == "orca" }),
+                ),
+                land
+            )
+        )
     }
 
     @Test

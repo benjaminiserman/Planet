@@ -20,8 +20,8 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcElevati
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcMaxContinentalFraction
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanOceanArcWidth
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.overridingElevationStrengthScale
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductionDensityThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductingElevationStrengthScale
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.subductionDensityThreshold
 import dev.biserman.planet.topology.Tile
 import godot.core.Vector3
 import kotlin.math.absoluteValue
@@ -132,7 +132,7 @@ class ConvergenceZone(
     companion object {
         val subductionZoneSearchRadius
             get() = Main.instance.planet.topology.averageRadius *
-                    max(1.25, oceanOceanArcDistance + oceanOceanArcWidth)
+                max(1.25, oceanOceanArcDistance + oceanOceanArcWidth)
 
         fun adjustElevation(
             planetTile: PlanetTile,
@@ -145,10 +145,12 @@ class ConvergenceZone(
             fun weightedAdjustment(adjustment: (ConvergenceZone) -> Double) =
                 nearbyZones.map { zone -> zone to adjustment(zone) }
                     .weightedAverage(planetTile.tile.position) { zone ->
-                        (1 - min(
-                            1.0,
-                            zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
-                        )).pow(
+                        (
+                            1 - min(
+                                1.0,
+                                zone.tile.position.distanceTo(planetTile.tile.position) / zone.speed
+                            )
+                            ).pow(
                             planetTile.movement.length()
                         )
                     }
@@ -227,14 +229,14 @@ class ConvergenceZone(
                 val normal = outward.normalized()
                 val penetration = (
                     1.0 - nearestTile.newPosition.distanceTo(tile.position) / searchRadius
-                ).coerceIn(0.0, 1.0)
+                    ).coerceIn(0.0, 1.0)
                 val relativeMovement = interaction.movement - overridingPlate.movement
                 val closingSpeed = max(0.0, -relativeMovement.dot(normal) / searchRadius)
                 val densityDifference = (interaction.density - overridingPlate.density).absoluteValue
                 val subductionBypass = (
                     (densityDifference - TectonicGlobals.collisionDensityBypassThreshold) /
                         (1.0 - TectonicGlobals.collisionDensityBypassThreshold)
-                ).coerceIn(0.0, 1.0)
+                    ).coerceIn(0.0, 1.0)
                 val collisionResistance = 1.0 -
                     subductionBypass * (1.0 - TectonicGlobals.minCollisionResistance)
                 val continentalContact =

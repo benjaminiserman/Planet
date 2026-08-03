@@ -58,14 +58,18 @@ object AuthoredEcosystems {
         "Arctic tundra",
         climate(1, q(-12, -6, 8, -2), q(15, 150, 280, 75), q(20, 25, 45, 30)),
         AuthoredEcosystemTile(isLand = true),
-        "snowshoe-hare", "gray-wolf",
+        "snowshoe-hare",
+        "gray-wolf",
     )
 
     val SOUTHERN_OCEAN = scenario(
         "Southern Ocean",
         climate(2, q(1.2, -10.2, -6.8, -4.2), q(290, 95, 8, 125), q(28, 24, 18, 24)),
         AuthoredEcosystemTile(isLand = false, waterDepthM = 3_000.0),
-        "antarctic-silverfish", "weddell-seal", "crabeater-seal", "orca",
+        "antarctic-silverfish",
+        "weddell-seal",
+        "crabeater-seal",
+        "orca",
     )
 
     val AMAZON_RAINFOREST = scenario(
@@ -92,7 +96,9 @@ object AuthoredEcosystems {
         "Sahel",
         climate(5, q(22, 30, 29, 26), q(260, 320, 270, 300), q(10, 15, 105, 20)),
         AuthoredEcosystemTile(isLand = true, fertilityModifier = -0.15),
-        "umbrella-thorn-acacia", "dromedary-camel", "african-lion",
+        "umbrella-thorn-acacia",
+        "dromedary-camel",
+        "african-lion",
     )
 
     val SONORAN_DESERT = scenario(
@@ -106,21 +112,29 @@ object AuthoredEcosystems {
         "Boreal forest",
         climate(7, q(-15, 3, 18, 4), q(25, 170, 285, 90), q(20, 35, 65, 45)),
         AuthoredEcosystemTile(isLand = true, canopyCover = 0.72, fertilityModifier = -0.05),
-        "scots-pine", "snowshoe-hare", "gray-wolf",
+        "scots-pine",
+        "snowshoe-hare",
+        "gray-wolf",
     )
 
     val APPALACHIAN_TEMPERATE_FOREST = scenario(
         "Appalachian temperate forest",
         climate(8, q(2, 14, 25, 13), q(85, 225, 285, 145), q(90, 105, 115, 95)),
         AuthoredEcosystemTile(isLand = true, canopyCover = 0.86, fertilityModifier = 0.30),
-        "english-oak", "house-mouse", "white-tailed-deer", "great-horned-owl", "red-fox",
+        "english-oak",
+        "house-mouse",
+        "white-tailed-deer",
+        "great-horned-owl",
+        "red-fox",
     )
 
     val HIMALAYAN_ALPINE_MEADOW = scenario(
         "Himalayan alpine meadow",
         climate(9, q(-8, 0, 10, 1), q(100, 230, 305, 170), q(8, 30, 105, 22)),
         AuthoredEcosystemTile(isLand = true, elevationM = 4_500.0, fertilityModifier = -0.20),
-        "himalayan-pika", "wild-yak", "snow-leopard",
+        "himalayan-pika",
+        "wild-yak",
+        "snow-leopard",
     )
 
     val SUNDARBANS_MANGROVE = scenario(
@@ -133,7 +147,9 @@ object AuthoredEcosystems {
             canopyCover = 0.70,
             fertilityModifier = 0.25,
         ),
-        "red-mangrove", "blue-crab", "common-octopus",
+        "red-mangrove",
+        "blue-crab",
+        "common-octopus",
     )
 
     val OKAVANGO_DELTA = scenario(
@@ -144,7 +160,9 @@ object AuthoredEcosystems {
             adjacentToMajorRiver = 1.0,
             fertilityModifier = 0.40,
         ),
-        "white-water-lily", "hippopotamus", "nile-crocodile",
+        "white-water-lily",
+        "hippopotamus",
+        "nile-crocodile",
     )
 
     val LAKE_BAIKAL = scenario(
@@ -167,7 +185,10 @@ object AuthoredEcosystems {
             reefCover = 0.78,
             fertilityModifier = 0.10,
         ),
-        "staghorn-coral", "bumphead-parrotfish", "ocellaris-clownfish", "coral-grouper",
+        "staghorn-coral",
+        "bumphead-parrotfish",
+        "ocellaris-clownfish",
+        "coral-grouper",
     )
 
     val CALIFORNIA_KELP_FOREST = scenario(
@@ -179,14 +200,20 @@ object AuthoredEcosystems {
             waterDepthM = 45.0,
             fertilityModifier = 0.35,
         ),
-        "giant-kelp", "eelgrass", "sea-otter", "great-white-shark",
+        "giant-kelp",
+        "eelgrass",
+        "sea-otter",
+        "great-white-shark",
     )
 
     val HUMBOLDT_CURRENT = scenario(
         "Humboldt Current",
         climate(15, q(19, 17, 14, 16), q(290, 220, 165, 255), q(1, 1, 2, 1)),
         AuthoredEcosystemTile(isLand = false, waterDepthM = 500.0, fertilityModifier = 0.45),
-        "peruvian-anchoveta", "giant-squid", "atlantic-bluefin-tuna", "harbor-seal",
+        "peruvian-anchoveta",
+        "giant-squid",
+        "atlantic-bluefin-tuna",
+        "harbor-seal",
     )
 
     val AEROPLANKTON_SKIES = scenario(
@@ -205,7 +232,9 @@ object AuthoredEcosystems {
         "CONTROL - climate maladaptation",
         climate(101, q(-32, -24, -16, -26), q(20, 75, 110, 45), q(2, 3, 5, 2)),
         AuthoredEcosystemTile(isLand = true, canopyCover = 0.80, fertilityModifier = -0.35),
-        "giant-bamboo", "three-toed-sloth", "bengal-tiger",
+        "giant-bamboo",
+        "three-toed-sloth",
+        "bengal-tiger",
         expectedExtinctions = setOf(
             "giant-bamboo",
             "three-toed-sloth",
@@ -220,7 +249,8 @@ object AuthoredEcosystems {
         "EXTINCTION - competitive drought",
         climate(201, q(18, 24, 27, 20), q(180, 270, 300, 210), q(85, 105, 75, 95)),
         AuthoredEcosystemTile(isLand = true, fertilityModifier = 0.10),
-        "common-sunflower", "saguaro",
+        "common-sunflower",
+        "saguaro",
         climateShifts = listOf(
             AuthoredClimateShift(
                 35,
@@ -244,7 +274,9 @@ object AuthoredEcosystems {
         "EXTINCTION - host-specialist coextinction",
         climate(203, q(16, 22, 26, 19), q(175, 255, 290, 205), q(70, 95, 65, 85)),
         AuthoredEcosystemTile(isLand = true, canopyCover = 0.60, fertilityModifier = 0.08),
-        "eucalyptus", "giant-bamboo", "koala",
+        "eucalyptus",
+        "giant-bamboo",
+        "koala",
         populationRemovals = listOf(AuthoredPopulationRemoval("eucalyptus", 40)),
         expectedExtinctions = setOf("eucalyptus", "koala"),
     )

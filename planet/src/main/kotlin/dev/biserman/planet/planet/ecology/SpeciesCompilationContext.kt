@@ -206,20 +206,20 @@ class SpeciesCompilationContext internal constructor(
                 insolationOptimum = insolationOptimum.coerceIn(0.05, 1.0),
                 canopyLightEfficiency = canopyLightEfficiency.coerceIn(0.0, 0.8),
                 denseCanopyForagingPenalty =
-                    denseCanopyForagingPenalty.coerceIn(0.0, 1.0),
+                denseCanopyForagingPenalty.coerceIn(0.0, 1.0),
                 pelagicAerialResident = pelagicAerialResident,
                 darkWaterAdapted = darkWaterAdapted,
                 requiresAdjacentLand = requiresAdjacentLand,
             ),
             lifeHistory = LifeHistoryProfile(
                 seasonalReproduction =
-                    definition.sizeClass.seasonalReproduction * reproductionMultiplier,
+                definition.sizeClass.seasonalReproduction * reproductionMultiplier,
                 reserveCapacity = reserveCapacity.coerceIn(0.0, 1.5),
                 nicheCompetitionSensitivity = nicheCompetitionSensitivity.coerceIn(0.0, 1.0),
                 dormancyKind = dormancyKind,
                 dormantSurvival = dormantSurvival,
                 dormantEntryBiomassRetention =
-                    dormantEntryBiomassRetention.coerceIn(0.0, 1.0),
+                dormantEntryBiomassRetention.coerceIn(0.0, 1.0),
                 dormantReactivationMultiplier = dormantReactivationMultiplier,
                 dispersalKind = dispersalKind,
             ),
@@ -229,8 +229,8 @@ class SpeciesCompilationContext internal constructor(
                 defense = defense.coerceIn(0.0, 1.5),
                 aposematicColoration = aposematicColoration,
                 dangerousWarningModel =
-                    CommonTrait.VENOMOUS_STINGER in commonTraits ||
-                        CommonTrait.TOXIC_SKIN in commonTraits,
+                CommonTrait.VENOMOUS_STINGER in commonTraits ||
+                    CommonTrait.TOXIC_SKIN in commonTraits,
                 reefUse = reefUse.coerceIn(0.0, 1.0),
                 reefBuilding = reefBuilding.coerceIn(0.0, 0.25),
                 fruitProduction = fruitProduction.coerceIn(0.0, 0.10),
@@ -272,7 +272,9 @@ class SpeciesCompilationContext internal constructor(
         strategySupport[strategy.ordinal] += amount
     }
 
-    fun shiftTemperature(degreesC: Double) { temperatureShift += degreesC }
+    fun shiftTemperature(degreesC: Double) {
+        temperatureShift += degreesC
+    }
     fun widenTemperatureTolerance(colderC: Double, hotterC: Double) {
         colderTolerance += colderC
         hotterTolerance += hotterC
@@ -284,13 +286,19 @@ class SpeciesCompilationContext internal constructor(
     fun requireMinimumActiveTemperature(temperatureC: Double) {
         minimumActiveTemperatureC = max(minimumActiveTemperatureC, temperatureC)
     }
-    fun multiplyFrozenDormantSurvival(fraction: Double) { frozenDormantSurvival *= fraction }
-    fun regulateTemperatureWith(strategy: ThermalStrategy) { thermalStrategy = strategy }
+    fun multiplyFrozenDormantSurvival(fraction: Double) {
+        frozenDormantSurvival *= fraction
+    }
+    fun regulateTemperatureWith(strategy: ThermalStrategy) {
+        thermalStrategy = strategy
+    }
     fun tolerateSeasonalCold(maximumBonusC: Double, triggerInsolation: Double) {
         seasonalColdTolerance += maximumBonusC
         seasonalColdTrigger = max(seasonalColdTrigger, triggerInsolation)
     }
-    fun changeWaterRequirement(change: Double) { waterRequirement += change }
+    fun changeWaterRequirement(change: Double) {
+        waterRequirement += change
+    }
     fun changeMaximumWaterTolerance(optimalChange: Double, absoluteChange: Double) {
         optimalMaximumWater += optimalChange
         maximumWater += absoluteChange
@@ -299,24 +307,60 @@ class SpeciesCompilationContext internal constructor(
         optimalMaximumWaterDepthM = minOf(optimalMaximumWaterDepthM, optimalMaximumM)
         absoluteMaximumWaterDepthM = minOf(absoluteMaximumWaterDepthM, absoluteMaximumM)
     }
-    fun shiftElevationTolerance(meters: Double) { elevationToleranceShiftM += meters }
-    fun hydrateFromSnow() { snowHydration = true }
-    fun shiftInsolationOptimum(change: Double) { insolationOptimum += change }
-    fun changeCanopyLightEfficiency(change: Double) { canopyLightEfficiency += change }
-    fun addDenseCanopyForagingPenalty(penalty: Double) { denseCanopyForagingPenalty += penalty }
-    fun changeCaptureAbility(change: Double) { captureAbility += change }
-    fun changePursuitSpeed(change: Double) { pursuitSpeed += change }
-    fun changeDefense(change: Double) { defense += change }
-    fun addCamouflage(habitat: Habitat, change: Double) { camouflage[habitat.ordinal] += change }
-    fun enableAposematicColoration() { aposematicColoration = true }
-    fun changeReefUse(change: Double) { reefUse += change }
-    fun changeReefBuilding(change: Double) { reefBuilding += change }
-    fun produceFruit(fractionPerSeason: Double) { fruitProduction += fractionPerSeason }
-    fun enableFlowering() { flowering = true }
-    fun produceNectar(fractionPerSeason: Double) { nectarProduction += fractionPerSeason }
-    fun changePollinationEfficiency(change: Double) { pollinationEfficiency += change }
-    fun changeWasteFertilization(change: Double) { wasteFertilization += change }
-    fun changeReserveCapacity(change: Double) { reserveCapacity += change }
+    fun shiftElevationTolerance(meters: Double) {
+        elevationToleranceShiftM += meters
+    }
+    fun hydrateFromSnow() {
+        snowHydration = true
+    }
+    fun shiftInsolationOptimum(change: Double) {
+        insolationOptimum += change
+    }
+    fun changeCanopyLightEfficiency(change: Double) {
+        canopyLightEfficiency += change
+    }
+    fun addDenseCanopyForagingPenalty(penalty: Double) {
+        denseCanopyForagingPenalty += penalty
+    }
+    fun changeCaptureAbility(change: Double) {
+        captureAbility += change
+    }
+    fun changePursuitSpeed(change: Double) {
+        pursuitSpeed += change
+    }
+    fun changeDefense(change: Double) {
+        defense += change
+    }
+    fun addCamouflage(habitat: Habitat, change: Double) {
+        camouflage[habitat.ordinal] += change
+    }
+    fun enableAposematicColoration() {
+        aposematicColoration = true
+    }
+    fun changeReefUse(change: Double) {
+        reefUse += change
+    }
+    fun changeReefBuilding(change: Double) {
+        reefBuilding += change
+    }
+    fun produceFruit(fractionPerSeason: Double) {
+        fruitProduction += fractionPerSeason
+    }
+    fun enableFlowering() {
+        flowering = true
+    }
+    fun produceNectar(fractionPerSeason: Double) {
+        nectarProduction += fractionPerSeason
+    }
+    fun changePollinationEfficiency(change: Double) {
+        pollinationEfficiency += change
+    }
+    fun changeWasteFertilization(change: Double) {
+        wasteFertilization += change
+    }
+    fun changeReserveCapacity(change: Double) {
+        reserveCapacity += change
+    }
     fun multiplyNicheCompetitionSensitivity(multiplier: Double) {
         nicheCompetitionSensitivity *= multiplier
     }
@@ -327,31 +371,51 @@ class SpeciesCompilationContext internal constructor(
         dormancyKind = kind
         dormantSurvival = survivalPerSeason
     }
-    fun multiplyDormantEntryRetention(fraction: Double) { dormantEntryBiomassRetention *= fraction }
-    fun multiplyDormantReactivation(multiplier: Double) { dormantReactivationMultiplier *= multiplier }
+    fun multiplyDormantEntryRetention(fraction: Double) {
+        dormantEntryBiomassRetention *= fraction
+    }
+    fun multiplyDormantReactivation(multiplier: Double) {
+        dormantReactivationMultiplier *= multiplier
+    }
     fun enableDispersal(kind: DispersalKind) {
         if (kind.rangeClass > dispersalKind.rangeClass) dispersalKind = kind
     }
-    fun multiplyReproduction(multiplier: Double) { reproductionMultiplier *= multiplier }
-    fun multiplyMetabolicDemand(multiplier: Double) { metabolicDemandMultiplier *= multiplier }
-    fun enableFreshwaterOsmoregulation() { freshwaterAdapted = true }
-    fun enableBroadSalinityTolerance() { broadSalinityTolerance = true }
+    fun multiplyReproduction(multiplier: Double) {
+        reproductionMultiplier *= multiplier
+    }
+    fun multiplyMetabolicDemand(multiplier: Double) {
+        metabolicDemandMultiplier *= multiplier
+    }
+    fun enableFreshwaterOsmoregulation() {
+        freshwaterAdapted = true
+    }
+    fun enableBroadSalinityTolerance() {
+        broadSalinityTolerance = true
+    }
     fun enableAquaticRespiration(mode: AquaticRespirationMode) {
         when (mode) {
             AquaticRespirationMode.UNDERWATER -> underwaterBreathing = true
             AquaticRespirationMode.BREATH_HOLDING -> prolongedBreathHolding = true
         }
     }
-    fun enablePelagicAerialResidency() { pelagicAerialResident = true }
-    fun adaptToDarkWater() { darkWaterAdapted = true }
+    fun enablePelagicAerialResidency() {
+        pelagicAerialResident = true
+    }
+    fun adaptToDarkWater() {
+        darkWaterAdapted = true
+    }
     fun requireResidentHabitat(habitat: Habitat) {
         require(obligateResidentHabitat == null || obligateResidentHabitat == habitat) {
             "$speciesDisplayName requires multiple exclusive resident habitats"
         }
         obligateResidentHabitat = habitat
     }
-    fun requireAdjacentLand() { requiresAdjacentLand = true }
-    fun addMaintenanceCost(fraction: Double) { maintenanceCost += fraction * maintenanceCostScale }
+    fun requireAdjacentLand() {
+        requiresAdjacentLand = true
+    }
+    fun addMaintenanceCost(fraction: Double) {
+        maintenanceCost += fraction * maintenanceCostScale
+    }
 
     private companion object {
         const val GENERALIST_MINIMUM_METHOD_SUPPORT = 0.20

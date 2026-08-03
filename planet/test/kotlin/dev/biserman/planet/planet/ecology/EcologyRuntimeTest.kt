@@ -73,8 +73,11 @@ class EcologyRuntimeTest {
 
         fun lilyBiomassAfterSeason(withPlankton: Boolean): Double {
             val ecology = EcologyCompiler.compile(
-                if (withPlankton) listOf(waterLily, InvariantSpecies.PLANKTON)
-                else listOf(waterLily),
+                if (withPlankton) {
+                    listOf(waterLily, InvariantSpecies.PLANKTON)
+                } else {
+                    listOf(waterLily)
+                },
             )
             val lily = ecology.species.single { it.id == waterLily.id }
             val lilyNiche = NicheSelection.choose(lily, ecology, environment)

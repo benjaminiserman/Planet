@@ -182,17 +182,24 @@ class BrushTool(private val gui: Gui) {
             Target.ELEVATION -> {
                 val elevation = elevationValue.value
                 val smoothness = elevationSmoothnessValue.value / 100.0
-                val strength = if (maxDistance == 0) 1.0
-                else 1.0 - smoothness * distance / (maxDistance + 1.0)
+                val strength = if (maxDistance == 0) {
+                    1.0
+                } else {
+                    1.0 - smoothness * distance / (maxDistance + 1.0)
+                }
                 val adjustedElevation = planetTile.elevation + (elevation - planetTile.elevation) * strength
-                if (planetTile.elevation == adjustedElevation) false else {
+                if (planetTile.elevation == adjustedElevation) {
+                    false
+                } else {
                     planetTile.elevation = adjustedElevation
                     true
                 }
             }
             Target.TECTONIC_PLATE -> {
                 val plate = plates.getOrNull(plateValue.selected)
-                if (planetTile.tectonicPlate == plate) false else {
+                if (planetTile.tectonicPlate == plate) {
+                    false
+                } else {
                     planetTile.tectonicPlate = plate
                     true
                 }

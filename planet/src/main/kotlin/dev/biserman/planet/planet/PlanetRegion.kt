@@ -1,14 +1,12 @@
 package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import dev.biserman.planet.geometry.tangent
 import dev.biserman.planet.topology.Border
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.utils.TrackedMutableSet
 import dev.biserman.planet.utils.TrackedMutableSet.Companion.toTracked
 import dev.biserman.planet.utils.memo
-import godot.core.Plane
 import godot.core.Vector3
 import kotlin.math.PI
 import kotlin.math.absoluteValue
@@ -111,7 +109,8 @@ class PlanetRegion(
     }
 
     fun <T> floodFillGroupBy(
-        planetTileFn: ((Tile) -> PlanetTile) = { planet.getTile(it) }, keyFn: (PlanetTile) -> T
+        planetTileFn: ((Tile) -> PlanetTile) = { planet.getTile(it) },
+        keyFn: (PlanetTile) -> T
     ): Map<T, List<PlanetRegion>> {
         val visited = mutableSetOf<PlanetTile>()
         val results = mutableMapOf<T, MutableList<PlanetRegion>>()

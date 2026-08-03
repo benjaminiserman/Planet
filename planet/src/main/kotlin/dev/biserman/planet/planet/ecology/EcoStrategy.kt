@@ -97,6 +97,7 @@ enum class EcoStrategy(
         "absorption",
         setOf(Habitat.LAND_SURFACE, Habitat.FRESHWATER, Habitat.COASTAL, Habitat.DARK_WATER),
     ),
+
     // Keep new strategies at the end: niche indices are persisted in saved
     // tile communities and therefore depend on enum order.
     NECTAR_FEEDING(
@@ -119,7 +120,7 @@ enum class EcoStrategy(
             AMBUSH_PREDATION,
             PURSUIT_PREDATION,
             PARASITISM,
-                -> true
+            -> true
 
             else -> false
         }
@@ -152,5 +153,4 @@ enum class EcoStrategy(
         PARASITISM -> 0.15
         ABSORPTION -> environment.fertility * environment.waterAvailability
     }.coerceIn(0.0, 1.0)
-
 }

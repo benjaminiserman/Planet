@@ -182,8 +182,11 @@ object RandomEcosystemExperiment {
             ecology.species.forEach { species ->
                 val population = community.find(species.index)
                 val biomass =
-                    if (population < 0) 0.0
-                    else community.activeBiomass[population] + community.dormantBiomass[population]
+                    if (population < 0) {
+                        0.0
+                    } else {
+                        community.activeBiomass[population] + community.dormantBiomass[population]
+                    }
                 biomassHistory.getValue(species.id) += biomass
             }
             resourceHistory.getValue("Carrion") += resources.carrion
@@ -197,8 +200,11 @@ object RandomEcosystemExperiment {
         val finalBiomass = ecology.species.associate { species ->
             val population = community.find(species.index)
             displayNames.getValue(species.id) to
-                if (population < 0) 0.0
-                else community.activeBiomass[population] + community.dormantBiomass[population]
+                if (population < 0) {
+                    0.0
+                } else {
+                    community.activeBiomass[population] + community.dormantBiomass[population]
+                }
         }
         val unsupportedConsumers = ecology.species
             .filter { it.kind == SpeciesKind.EVOLVING }
@@ -236,8 +242,11 @@ object RandomEcosystemExperiment {
         val tail = totalHistory.copyOfRange(tailStart, seasons)
         val tailMean = tail.average()
         val tailCv =
-            if (tailMean <= 0.0) Double.POSITIVE_INFINITY
-            else sqrt(tail.sumOf { (it - tailMean) * (it - tailMean) } / tail.size) / tailMean
+            if (tailMean <= 0.0) {
+                Double.POSITIVE_INFINITY
+            } else {
+                sqrt(tail.sumOf { (it - tailMean) * (it - tailMean) } / tail.size) / tailMean
+            }
 
         return RandomEcosystemResult(
             seed = seed,
@@ -402,9 +411,7 @@ object RandomEcosystemExperiment {
             adjacentToMajorRiver = tile.adjacentToMajorRiver,
             waterDepthM = tile.waterDepthM,
             usefulSunlightReachesWater = tile.usefulSunlightReachesWater,
-            permanentSeaIce =
-                !tile.isLand &&
-                    PlanetEcologyEnvironment.supportsSeaIceHabitat(climate),
+            permanentSeaIce = !tile.isLand && PlanetEcologyEnvironment.supportsSeaIceHabitat(climate),
             canopyCover = tile.canopyCover,
             reefCover = tile.reefCover,
             starLight = StarLight.entries[Math.floorMod(climate.tileId, StarLight.entries.size)],

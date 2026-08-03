@@ -16,18 +16,13 @@ import dev.biserman.planet.planet.tectonics.Tectonics
 import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.topology.Topology
 import dev.biserman.planet.topology.toTopology
-import dev.biserman.planet.utils.AStar
 import dev.biserman.planet.utils.UtilityExtensions.contains
-import dev.biserman.planet.utils.memo
-import kotlin.random.Random
 import dev.biserman.planet.utils.VectorWarpNoise
 import dev.biserman.planet.utils.floodFillPartitionForest
-import godot.core.Vector3
+import dev.biserman.planet.utils.memo
 import kotlin.collections.average
 import kotlin.math.PI
-import kotlin.math.absoluteValue
-import kotlin.math.pow
-import kotlin.math.sqrt
+import kotlin.random.Random
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator::class, property = "id")
 class Planet(val seed: Int, val size: Int) {

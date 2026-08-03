@@ -7,21 +7,14 @@ import dev.biserman.planet.geometry.toPoint
 import dev.biserman.planet.geometry.toRTree
 import dev.biserman.planet.geometry.toVector2
 import dev.biserman.planet.geometry.toVector3
-import dev.biserman.planet.geometry.weightedAverageInverse
 import godot.core.Color
 import godot.core.Vector2
 import godot.core.Vector3
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
-import kotlin.math.abs
-import kotlin.math.absoluteValue
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 
 class MapProjection(val forward: (GeoPoint) -> Vector2, val backward: (Vector2) -> GeoPoint)
 

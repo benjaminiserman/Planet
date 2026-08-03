@@ -18,18 +18,18 @@ object NicheSelection {
             .filter { nicheIndex ->
                 val habitat = ecology.niches[nicheIndex].habitat
                 environment.habitatAvailability(habitat) > 0.0 &&
-                        EcologyFitness.habitat(species, environment, habitat) > 0.0 &&
-                        !(
-                                !environment.isLand &&
-                                        habitat == Habitat.AERIAL &&
-                                        !species.environment.pelagicAerialResident
-                                ) &&
-                        !(
-                                !environment.isLand &&
-                                        species.environment.pelagicAerialResident &&
-                                        habitat != Habitat.AERIAL
-                                ) &&
-                        !(habitat == Habitat.DARK_WATER && !species.environment.darkWaterAdapted)
+                    EcologyFitness.habitat(species, environment, habitat) > 0.0 &&
+                    !(
+                        !environment.isLand &&
+                            habitat == Habitat.AERIAL &&
+                            !species.environment.pelagicAerialResident
+                        ) &&
+                    !(
+                        !environment.isLand &&
+                            species.environment.pelagicAerialResident &&
+                            habitat != Habitat.AERIAL
+                        ) &&
+                    !(habitat == Habitat.DARK_WATER && !species.environment.darkWaterAdapted)
             }
             .maxOfOrNull { species.niche.fitFor(it) }
             ?: 0.0
@@ -71,13 +71,13 @@ object NicheSelection {
                 max(0.01, environment.resourceSupport(niche, species.sizeClass))
             val score =
                 species.niche.fitFor(nicheIndex) *
-                        environment.habitatAvailability(niche.habitat) *
-                        establishmentResource /
-                        if (competitionAffectsSelection) {
-                            1.0 + competitionByNiche[nicheIndex]
-                        } else {
-                            1.0
-                        }
+                    environment.habitatAvailability(niche.habitat) *
+                    establishmentResource /
+                    if (competitionAffectsSelection) {
+                        1.0 + competitionByNiche[nicheIndex]
+                    } else {
+                        1.0
+                    }
             if (score > bestScore) {
                 bestScore = score
                 bestIndex = nicheIndex

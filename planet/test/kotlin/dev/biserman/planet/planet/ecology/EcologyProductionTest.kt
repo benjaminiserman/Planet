@@ -284,20 +284,20 @@ class EcologyProductionTest {
                 isLand = !preset.ocean,
                 adjacentToOcean = if (coastal) 1.0 else 0.0,
                 adjacentToLand =
-                    if (preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE) 1.0 else 0.0,
+                if (preset == HersfeldtClimatePresets.PERMANENT_SEA_ICE) 1.0 else 0.0,
                 adjacentToMajorRiver = if (majorRiver) 1.0 else 0.0,
                 elevationM = elevationM,
                 waterDepthM = waterDepth,
                 permanentSeaIce =
-                    preset.ocean &&
-                        PlanetEcologyEnvironment.supportsSeaIceHabitat(
-                            preset.climateDatum(tileId = 1),
-                        ),
+                preset.ocean &&
+                    PlanetEcologyEnvironment.supportsSeaIceHabitat(
+                        preset.climateDatum(tileId = 1),
+                    ),
                 usefulSunlightReachesWater =
-                    preset != HersfeldtClimatePresets.DEEP_OCEAN,
+                preset != HersfeldtClimatePresets.DEEP_OCEAN,
                 canopyCover = canopy,
                 reefCover =
-                    if (preset == HersfeldtClimatePresets.TROPICAL_REEF) 0.75 else 0.0,
+                if (preset == HersfeldtClimatePresets.TROPICAL_REEF) 0.75 else 0.0,
             )
         }
     }

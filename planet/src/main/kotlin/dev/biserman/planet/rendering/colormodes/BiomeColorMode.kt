@@ -6,13 +6,9 @@ import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.rendering.PlanetColorMode
 import dev.biserman.planet.rendering.PlanetRenderer
 import dev.biserman.planet.topology.Corner
-import dev.biserman.planet.utils.VectorWarpNoise
-import dev.biserman.planet.utils.memo
 import godot.common.util.lerp
 import godot.core.Color
 import kotlin.jvm.optionals.getOrNull
-import kotlin.math.absoluteValue
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -39,8 +35,11 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: Li
 
     fun slopeScale(tile: PlanetTile): Double {
         val contiguousSlope = tile.prominence
-        return if (contiguousSlope.isNaN()) 0.0
-        else contiguousSlope.scaleAndCoerceIn(0.0..2500.0, 0.0..1.0).pow(1.0)
+        return if (contiguousSlope.isNaN()) {
+            0.0
+        } else {
+            contiguousSlope.scaleAndCoerceIn(0.0..2500.0, 0.0..1.0).pow(1.0)
+        }
     }
 
     fun hue(tile: PlanetTile) = when (getMode(tile)) {
@@ -57,7 +56,9 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: Li
                 0.15..0.9
             ),
             0.8,
-            if (tile.nonContiguousSlope.isNaN()) 0.0 else {
+            if (tile.nonContiguousSlope.isNaN()) {
+                0.0
+            } else {
                 1 - tile.nonContiguousSlope.scaleAndCoerceIn(
                     0.0..200.0,
                     0.0..1.0
@@ -65,8 +66,9 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: Li
             },
         )
         RenderMode.SNOW -> 1.0
-        RenderMode.WATER -> tile.elevation
-            .adjustRange(-6000.0..planetRenderer.planet.seaLevel, 0.05..0.2)
+        RenderMode.WATER ->
+            tile.elevation
+                .adjustRange(-6000.0..planetRenderer.planet.seaLevel, 0.05..0.2)
     }
 
     fun saturation(tile: PlanetTile) = when (getMode(tile)) {
@@ -105,7 +107,8 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: Li
 
         yield(color)
 
-        yieldAll((0..<tile.corners.size).map {
+        yieldAll(
+            (0..<tile.corners.size).map {
 //            val corner = tile.corners[it]
 //            val color = Color.fromHsv(
 //                averageAroundPoint(corner, planetTile) { tile -> hue(tile) },
@@ -114,7 +117,8 @@ class BiomeColorMode(planetRenderer: PlanetRenderer, override val categories: Li
 //                1.0
 //            )
 
-            color
-        })
+                color
+            }
+        )
     }
 }

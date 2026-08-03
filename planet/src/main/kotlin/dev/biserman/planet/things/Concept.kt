@@ -147,7 +147,6 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
     class ToRelationship(name: String, addReverse: Relationship.() -> Unit) :
         RelationshipType(name, "to", addReverse = addReverse)
 
-
     private val child: OfRelationship =
         OfRelationship("child") { other += Relationship(parent, other, origin, via) }
     private val parent: OfRelationship =
@@ -186,7 +185,6 @@ enum class Concept(val body: (Concept).() -> Unit = {}) {
         OfRelationship("consumer") { other += Relationship(consumed, other, origin, via) }
     private val consumed: ByRelationship =
         ByRelationship("consumed") { other += Relationship(consumer, other, origin, via) }
-
 
     private fun makeRelationship(type: RelationshipType, keyword: String, vararg others: Concept) {
         val concept = this@Concept

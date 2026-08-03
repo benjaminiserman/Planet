@@ -2,13 +2,10 @@ package dev.biserman.planet.planet.tectonics
 
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.tectonics.Geology.getLayerFor
+import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxMeteorElevationChange
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.meteorImpactChance
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.minMeteorElevationChange
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.maxMeteorElevationChange
 import dev.biserman.planet.things.StonePlacementType
-import dev.biserman.planet.things.StoneType
-import godot.global.GD
-import kotlin.math.min
 
 object Meteor {
     fun impactMeteor(planet: Planet) {

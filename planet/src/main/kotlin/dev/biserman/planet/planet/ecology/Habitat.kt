@@ -49,7 +49,7 @@ enum class Habitat(
             LAND_SURFACE -> when (color) {
                 BiologicalColor.BROWN -> 0.24
                 BiologicalColor.PALE -> if (canopyCover < 0.35) 0.24 else 0.15
-                BiologicalColor.GREEN -> if(canopyCover > 0.2) 0.2 else 0.15
+                BiologicalColor.GREEN -> if (canopyCover > 0.2) 0.2 else 0.15
                 BiologicalColor.WHITE -> if (canopyCover < 0.35) 0.1 else 0.0
                 else -> 0.05
             }

@@ -391,7 +391,9 @@ object DebugNameGenerator {
     Maldives
     Nicobar
     Andaman
-    """.trimIndent().split("\n").map { it.trim() }.filter { it.isNotBlank() }
+    """.trimIndent().split("\n").map {
+        it.trim()
+    }.filter { it.isNotBlank() }
 
     private val generatedNames = mutableMapOf<String, Int>()
 

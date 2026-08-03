@@ -335,7 +335,6 @@ fun runClimateTuner(args: Array<String>) {
         options.apply -> println("No improvement; ${options.configFile.name} was left unchanged")
         else -> println("Input config was left unchanged; pass --apply to apply an improving winner")
     }
-
 }
 
 private fun applyClimateConfig(config: ObjectNode) {
@@ -474,7 +473,7 @@ private fun climateTuningObjectiveLoss(
         val lossRegression = max(0.0, score.loss - baselineScore.loss)
         val forbiddenRegression =
             max(0, confusionCount(score, "CTf", "CDb") - confusionCount(baselineScore, "CTf", "CDb")) +
-                    max(0, confusionCount(score, "CDb", "CEb") - confusionCount(baselineScore, "CDb", "CEb"))
+                max(0, confusionCount(score, "CDb", "CEb") - confusionCount(baselineScore, "CDb", "CEb"))
         if (lossRegression > IMPROVEMENT_EPSILON || forbiddenRegression > 0) {
             1000.0 + lossRegression * 1000.0 + forbiddenRegression
         } else {
