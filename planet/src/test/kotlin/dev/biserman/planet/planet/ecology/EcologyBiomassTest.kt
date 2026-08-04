@@ -52,6 +52,31 @@ class EcologyBiomassTest {
     }
 
     @Test
+    fun `dry climates support much less terrestrial producer biomass`() {
+        val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.CARPET_PLANTS))
+        val producer = ecology.species.single()
+        fun environment(precipitationMm: Double) = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 24.0,
+            insolation = 0.8,
+            precipitationMm = precipitationMm,
+            isLand = true,
+        )
+        val dry = environment(10.0)
+        val temperate = environment(80.0)
+        val nicheIndex = NicheSelection.choose(producer, ecology, temperate)
+        val niche = ecology.niches[nicheIndex]
+        val dryCapacity = EcologyBiomass.carryingCapacityKg(producer, niche, dry)
+        val temperateCapacity = EcologyBiomass.carryingCapacityKg(producer, niche, temperate)
+
+        assertTrue(dry.waterAvailability < temperate.waterAvailability)
+        assertTrue(
+            dryCapacity < temperateCapacity * 0.20,
+            "dry=${"%.3e".format(dryCapacity)} temperate=${"%.3e".format(temperateCapacity)}",
+        )
+    }
+
+    @Test
     fun `modeled prey consumers receive a trophic ceiling without background food`() {
         val ecology = EcologyCompiler.compile(listOf(InvariantSpecies.BUGS))
         val bugs = ecology.species.single()

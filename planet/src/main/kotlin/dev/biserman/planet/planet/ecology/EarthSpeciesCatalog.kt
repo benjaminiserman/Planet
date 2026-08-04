@@ -83,6 +83,7 @@ object EarthSpeciesCatalog {
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.COOPERATIVE_HUNTING,
             CommonTrait.PREY_DERIVED_WATER,
+            CommonTrait.THIN_FUR,
             camouflage = BiologicalColor.BROWN
         ),
         animal(
@@ -510,6 +511,7 @@ object EarthSpeciesCatalog {
             CommonTrait.ENDOTHERMY,
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.GRAZING_MOUTHPARTS,
+            CommonTrait.THIN_FUR,
             camouflage = BiologicalColor.PALE
         ),
         animal(
@@ -1480,6 +1482,7 @@ object EarthSpeciesCatalog {
             CommonTrait.AQUATIC_FLIPPERS,
             CommonTrait.AMBUSH_MUSCULATURE,
             CommonTrait.REEF_CAMOUFLAGE,
+            CommonTrait.REEF_SHELTER_DEPENDENCE,
             camouflage = BiologicalColor.RED
         ),
         animal(

@@ -660,8 +660,8 @@ class EcologyRuntime(
             if (!producer.interactions.flowering || producer.interactions.nectarProduction <= 0.0) continue
             val supply =
                 effectiveActive[producerPopulation] *
-                    producer.interactions.nectarProduction *
-                    fitness[producerPopulation]
+                        producer.interactions.nectarProduction *
+                        fitness[producerPopulation]
             nectarSupply[producerPopulation] = supply
             if (supply > 0.0) {
                 hasNectar = true
@@ -697,9 +697,9 @@ class EcologyRuntime(
             val demand = min(
                 accessibleSupply,
                 active *
-                    config.maximumConsumedBiomassFraction *
-                    methodSupport *
-                    sqrt(fitness[consumerPopulation]),
+                        config.maximumConsumedBiomassFraction *
+                        methodSupport *
+                        sqrt(fitness[consumerPopulation]),
             )
             nectarAccessibleSupply[consumerPopulation] = accessibleSupply
             nectarDemand[consumerPopulation] = demand
@@ -750,8 +750,8 @@ class EcologyRuntime(
                 (pollinationService[producerPopulation] / supply).coerceIn(0.0, 1.0)
             val pollinationBenefit =
                 effectiveActive[producerPopulation] *
-                    config.maximumPollinationBenefitFraction *
-                    serviceFraction
+                        config.maximumPollinationBenefitFraction *
+                        serviceFraction
             relationshipBenefits[producerPopulation] += pollinationBenefit
             fluxes?.let { it.pollinationBenefitBiomass += pollinationBenefit }
         }
@@ -759,9 +759,9 @@ class EcologyRuntime(
 
     private fun canVisitFlowers(visitor: Habitat, producer: Habitat): Boolean =
         visitor == producer ||
-            (visitor == Habitat.AERIAL &&
-                (producer == Habitat.LAND_SURFACE || producer == Habitat.CANOPY)) ||
-            (visitor == Habitat.CANOPY && producer == Habitat.LAND_SURFACE)
+                (visitor == Habitat.AERIAL &&
+                        (producer == Habitat.LAND_SURFACE || producer == Habitat.CANOPY)) ||
+                (visitor == Habitat.CANOPY && producer == Habitat.LAND_SURFACE)
 
     private fun updatePopulations(
         community: TileCommunity,
@@ -979,9 +979,14 @@ class EcologyRuntime(
                 if (species.motile) {
                     // Carrion is dead motile tissue. Living motile organisms
                     // also return a fraction of assimilated food as waste.
-                    it.carrionBiomass += deaths *
-                            if (niche.habitat in EcologyFitness.aquaticHabitats) 0.20 else 0.35
-                    it.wasteBiomass += grossAssimilation * 0.08
+                    if (species.sizeClass >= SizeClass.SMALL) {
+                        it.carrionBiomass += deaths *
+                                if (niche.habitat in EcologyFitness.aquaticHabitats) 0.20 else 0.35
+                    }
+
+                    if (species.sizeClass >= SizeClass.TINY) {
+                        it.wasteBiomass += grossAssimilation * 0.08
+                    }
                 } else {
                     // Dead sessile tissue enters the detritus pool rather than
                     // being treated as an animal carcass.

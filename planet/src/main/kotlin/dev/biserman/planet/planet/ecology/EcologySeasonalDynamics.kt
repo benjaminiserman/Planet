@@ -89,14 +89,15 @@ object FunctionalResourceDynamics {
             previous.carrion,
             fluxes.carrionBiomass,
             fluxes.carrionConsumedBiomass,
-            areaKm2 * 10.0,
+            areaKm2 * EcologyGlobals.carrionFullLevelBiomassKgKm2,
             0.55,
+            maximumAccessibleFraction = 0.90,
         ),
         detritus = OrganicPoolDynamics.update(
             previous.detritus,
             fluxes.detritusBiomass,
             fluxes.detritusConsumedBiomass,
-            areaKm2 * 12.0,
+            areaKm2 * EcologyGlobals.detritusFullLevelBiomassKgKm2,
             0.68,
             maximumAccessibleFraction = 0.75,
         ),
@@ -104,7 +105,7 @@ object FunctionalResourceDynamics {
             previous.waste,
             fluxes.wasteBiomass,
             fluxes.wasteConsumedBiomass,
-            areaKm2 * 10.0,
+            areaKm2 * EcologyGlobals.wasteFullLevelBiomassKgKm2,
             0.60,
             maximumAccessibleFraction = 0.80,
         ),
@@ -113,8 +114,9 @@ object FunctionalResourceDynamics {
                 previous.marineSnow,
                 fluxes.marineSnowBiomass,
                 fluxes.marineSnowConsumedBiomass,
-                areaKm2 * 15.0,
+                areaKm2 * EcologyGlobals.marineSnowFullLevelBiomassKgKm2,
                 0.72,
+                maximumAccessibleFraction = 0.90,
             )
         } else {
             0.0

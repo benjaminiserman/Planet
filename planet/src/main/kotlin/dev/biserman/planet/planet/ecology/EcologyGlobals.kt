@@ -48,6 +48,24 @@ object EcologyGlobals {
     /** Maximum share of flowering producer biomass added as seasonal growth by complete pollination service. */
     var maximumPollinationBenefitFraction = 0.04
 
+    /** Exponent relating terrestrial water availability to producer carrying capacity. */
+    var terrestrialProducerWaterExponent = 1.25
+
+    /** Minimum productivity retained by extremely drought-adapted terrestrial producers. */
+    var minimumTerrestrialProducerWaterProductivity = 0.03
+
+    /** Carrion from SMALL-or-larger animals per km² represented by a resource level of one. */
+    var carrionFullLevelBiomassKgKm2 = 100.0
+
+    /** Sessile detritus biomass per km² represented by a resource level of one. */
+    var detritusFullLevelBiomassKgKm2 = 100_000.0
+
+    /** Waste from TINY-or-larger animals per km² represented by a resource level of one. */
+    var wasteFullLevelBiomassKgKm2 = 100.0
+
+    /** Marine-snow biomass per km² represented by a resource level of one. */
+    var marineSnowFullLevelBiomassKgKm2 = 50_000.0
+
     /** Fitness below which a dormancy-capable species begins becoming dormant. */
     var dormantEntryFitness = 0.35
 
@@ -121,6 +139,12 @@ object EcologyGlobals {
         require(maximumConsumedBiomassFraction in 0.0..1.0)
         require(nectarAssimilationEfficiency in 0.0..1.0)
         require(maximumPollinationBenefitFraction in 0.0..1.0)
+        require(terrestrialProducerWaterExponent > 0.0)
+        require(minimumTerrestrialProducerWaterProductivity in 0.0..1.0)
+        require(carrionFullLevelBiomassKgKm2 > 0.0)
+        require(detritusFullLevelBiomassKgKm2 > 0.0)
+        require(wasteFullLevelBiomassKgKm2 > 0.0)
+        require(marineSnowFullLevelBiomassKgKm2 > 0.0)
         require(dormantEntryFitness in 0.0..1.0)
         require(dormantExitFitness in 0.0..1.0)
         require(dormantEntryFraction in 0.0..1.0)
