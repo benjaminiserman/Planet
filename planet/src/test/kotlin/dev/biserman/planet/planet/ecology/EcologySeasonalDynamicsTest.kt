@@ -24,6 +24,28 @@ class EcologySeasonalDynamicsTest {
     }
 
     @Test
+    fun `ordinary organic fluxes produce graded resource levels`() {
+        val fluxes = CellTurnFluxes().apply {
+            // Carrion and waste exclude the smallest motile guilds, so their
+            // ordinary seasonal fluxes are much smaller than detrital fluxes.
+            carrionBiomass = 800_000.0
+            detritusBiomass = 400_000_000.0
+            wasteBiomass = 800_000.0
+            marineSnowBiomass = 400_000_000.0
+        }
+
+        val updated = FunctionalResourceDynamics.update(
+            previous = FunctionalResources(),
+            fluxes = fluxes,
+            areaKm2 = 40_000.0,
+            hasMarineCompartment = true,
+        )
+
+        listOf(updated.carrion, updated.detritus, updated.waste, updated.marineSnow)
+            .forEach { level -> assertTrue(level in 0.05..0.30, "resource level was $level") }
+    }
+
+    @Test
     fun `climate anomalies are deterministic and remain within authored bounds`() {
         val first = EcologyClimateVariability.anomaly(tileId = 42, year = 17.25)
         val repeated = EcologyClimateVariability.anomaly(tileId = 42, year = 17.25)

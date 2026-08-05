@@ -6,6 +6,25 @@ import kotlin.test.assertTrue
 
 class EarthSpeciesCatalogTest {
     @Test
+    fun `coral grouper depends on living reef cover`() {
+        val grouperDefinition = EarthSpeciesCatalog.ALL.single { it.id == "coral-grouper" }
+        val grouper = EcologyCompiler.compile(listOf(grouperDefinition)).species.single()
+        fun environment(reefCover: Double) = SeasonalCellEnvironment.create(
+            areaKm2 = 40_000.0,
+            temperatureC = 27.0,
+            insolation = 0.8,
+            precipitationMm = 0.0,
+            isLand = false,
+            waterDepthM = 40.0,
+            reefCover = reefCover,
+        )
+
+        assertEquals(1.0, grouper.interactions.reefUse)
+        assertEquals(0.0, EcologyFitness.reefAssociationMultiplier(grouper, environment(0.0)))
+        assertTrue(EcologyFitness.reefAssociationMultiplier(grouper, environment(0.75)) > 1.0)
+    }
+
+    @Test
     fun `bees use nectar feeding and return pollination to flowering producers`() {
         val ecology = EcologyCompiler.compile(EarthSpeciesCatalog.ALL + InvariantSpecies.ALL)
         val bee = ecology.species.single { it.id == "western-honey-bee" }
