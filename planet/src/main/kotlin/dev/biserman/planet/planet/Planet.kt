@@ -129,6 +129,13 @@ class Planet(val seed: Int, val size: Int) {
     var climateMap: Map<Int, ClimateDatum> = mapOf()
     var itczDistanceMap: Map<Int, Int> = mapOf()
 
+    /**
+     * The current climate sample's air temperature after wind transport.  This is
+     * derived state, so it must not be saved with the planet.
+     */
+    @get:JsonIgnore
+    var advectedTemperatureByTile: DoubleArray? = null
+
     val warpNoise by memo({ tectonicAge }) {
         VectorWarpNoise(
             tectonicAge,

@@ -74,6 +74,7 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxOceanCurre
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxOceanCurrentTemperatureContinentiality
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxStartingMoisture
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxWindBlocking
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.maxWindTemperatureBlocking
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minPrecipitation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minStartingMoisture
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.minUpslopeMoisture
@@ -112,6 +113,10 @@ import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTe
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureInsolationExp
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.warmCurrentTemperatureStrength
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windBlockingSlope
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windTemperatureAdvectionFraction
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windTemperatureAdvectionSteps
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windTemperatureBlockingSlope
+import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.windTemperatureRadiativeRelaxation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals.yearLength
 import dev.biserman.planet.planet.climate.OceanCurrents.updateCurrentDistanceMap
 import dev.biserman.planet.utils.AStar
@@ -141,6 +146,7 @@ object ClimateSimulation {
         val moistureFraction: Double,
         val upslopePrecipitation: Double
     )
+    private data class TemperatureRoute(val neighborId: Int, val fraction: Double)
 
     @Suppress("UnusedUnaryOperator")
     val bands = listOf(
@@ -182,6 +188,7 @@ object ClimateSimulation {
     }
 
     fun updatePlanetClimate(planet: Planet) {
+        planet.advectedTemperatureByTile = null
         lateinit var oceanCurrents: List<OceanCurrent>
         val generateOceanCurrentsTime = measureTime {
             oceanCurrents = OceanCurrents.viaEarthlikeHeuristic(planet, 7)
@@ -210,6 +217,9 @@ object ClimateSimulation {
         val simulateMoistureTime = measureTime {
             simulateMoisture(planet)
         }
+        val simulateTemperatureAdvectionTime = measureTime {
+            simulateTemperatureAdvection(planet)
+        }
 
         GD.print("climate update breakdown:")
         GD.print(" - generateOceanCurrents: ${generateOceanCurrentsTime.inWholeMilliseconds}ms")
@@ -218,6 +228,7 @@ object ClimateSimulation {
         GD.print(" - calculateItcz: ${calculateItczTime.inWholeMilliseconds}ms")
         GD.print(" - calculateItczDistanceMap: ${itczDistanceMapTime.inWholeMilliseconds}ms")
         GD.print(" - simulateMoisture: ${simulateMoistureTime.inWholeMilliseconds}ms")
+        GD.print(" - simulateTemperatureAdvection: ${simulateTemperatureAdvectionTime.inWholeMilliseconds}ms")
     }
 
     fun (PlanetTile).calculatePrevailingWind(): Vector3 {
@@ -500,7 +511,79 @@ object ClimateSimulation {
         GD.print(" - smoothMoisture: ${smoothMoistureTime.inWholeMilliseconds}ms")
     }
 
+    /**
+     * Moves air temperature downwind while continually restoring it toward the
+     * tile's locally forced temperature.  The transport part conserves the
+     * unweighted sum of temperatures; radiative relaxation represents local
+     * insolation, moisture, terrain, and ocean-current forcing.
+     */
+    fun simulateTemperatureAdvection(planet: Planet) {
+        val tiles = planet.planetTiles.values.toList()
+        val localTemperature = DoubleArray(planet.topology.tiles.size) { Double.NaN }
+        for (tile in tiles) {
+            localTemperature[tile.tileId] = tile.localAverageTemperature
+        }
+
+        val transportFraction = windTemperatureAdvectionFraction.coerceIn(0.0..1.0)
+        val steps = windTemperatureAdvectionSteps.coerceAtLeast(0)
+        if (transportFraction == 0.0 || steps == 0) {
+            planet.advectedTemperatureByTile = localTemperature
+            return
+        }
+
+        val routes = Array<List<TemperatureRoute>>(planet.topology.tiles.size) { emptyList() }
+        for (tile in tiles) {
+            val neighbors = tile.neighbors
+            val weights = DoubleArray(neighbors.size)
+            val wind = tile.prevailingWind
+            var totalWeight = 0.0
+            for (index in neighbors.indices) {
+                val neighbor = neighbors[index]
+                val rawWeight = if (wind == Vector3.ZERO) {
+                    1.0
+                } else {
+                    val direction = (neighbor.tile.position - tile.tile.position).normalized()
+                    wind.dot(direction) + ClimateRuntimeConfig.backwardsWind
+                }
+                if (rawWeight <= 0.0) continue
+
+                val upslope = max(0.0, tile.slopeAboveWaterTo(neighbor))
+                val terrainFactor = (1 - upslope / windTemperatureBlockingSlope)
+                    .coerceIn(1 - maxWindTemperatureBlocking..1.0)
+                val weight = rawWeight * terrainFactor * tile.tile.borderFor(neighbor.tile).length.pow(0.1)
+                weights[index] = weight
+                totalWeight += weight
+            }
+            routes[tile.tileId] = neighbors.indices.mapNotNull { index ->
+                weights[index].takeIf { it > 0.0 }?.let {
+                    TemperatureRoute(neighbors[index].tileId, it / totalWeight)
+                }
+            }
+        }
+
+        val current = localTemperature.copyOf()
+        val next = DoubleArray(current.size)
+        val relaxation = windTemperatureRadiativeRelaxation.coerceIn(0.0..1.0)
+        repeat(steps) {
+            next.fill(0.0)
+            for (tile in tiles) {
+                val temperature = current[tile.tileId]
+                next[tile.tileId] += temperature * (1 - transportFraction)
+                for (route in routes[tile.tileId]) {
+                    next[route.neighborId] += temperature * transportFraction * route.fraction
+                }
+            }
+            for (tile in tiles) {
+                current[tile.tileId] = lerp(next[tile.tileId], localTemperature[tile.tileId], relaxation)
+            }
+        }
+        planet.advectedTemperatureByTile = current
+    }
+
     val (PlanetTile).averageTemperature: Double
+        get() = planet.advectedTemperatureByTile?.getOrNull(tileId) ?: localAverageTemperature
+
+    private val (PlanetTile).localAverageTemperature: Double
         get() {
             val greenhouseOffset = ClimateRuntimeConfig.greenhouseTemperatureOffset
             val insolationTemperatureSign = ClimateRuntimeConfig.insolationTemperatureSign

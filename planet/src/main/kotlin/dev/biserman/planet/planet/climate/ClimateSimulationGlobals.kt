@@ -77,6 +77,17 @@ object ClimateSimulationGlobals {
     var maxWindBlocking = 0.9999
     var backwardsWind = 0.02
 
+    // WIND TEMPERATURE ADVECTION
+
+    // Fraction of a tile's air temperature transported downwind per step.
+    var windTemperatureAdvectionFraction = 0.10
+    var windTemperatureAdvectionSteps = 3
+
+    // Fraction restored toward each tile's local radiative equilibrium per step.
+    var windTemperatureRadiativeRelaxation = 0.20
+    var windTemperatureBlockingSlope = 1500.0
+    var maxWindTemperatureBlocking = 0.40
+
     // TEMPERATURE
 
     var landNowVsAnnualInsolationLerp = 0.0
