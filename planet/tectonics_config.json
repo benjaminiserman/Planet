@@ -65,7 +65,7 @@
   "plateTorqueScalar": 0.1,
   "prominenceErosion": 0.15,
   "ridgePushStrength": 0.003,
-  "riftCutoff": 0.4,
+  "riftCutoff": 0.35,
   "riftSeparationStrength": 0.1,
   "searchMaxResults": 7,
   "slabPullStrength": 0.03,
