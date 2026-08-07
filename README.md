@@ -1,6 +1,6 @@
-# Planet
+# Gaiasis
 
-Planet is a work-in-progress procedural planet simulator built with Godot and Kotlin/JVM. It models tectonic plates, geology, erosion, climate, ocean currents, biomes, and related world-generation systems on a distorted spherical grid.
+Gaiasis is a work-in-progress procedural planet simulator built with Godot and Kotlin/JVM. It models tectonic plates, geology, erosion, climate, ocean currents, biomes, and related world-generation systems on a distorted spherical grid.
 
 ## Requirements
 
