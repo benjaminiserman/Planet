@@ -33,7 +33,10 @@ object MapPorter {
         constructor(prop: KMutableProperty1<Color, T>) : this(
             prop.name,
             { prop.get(it) },
-            { color, value -> prop.set(color, value); color }
+            { color, value ->
+                prop.set(color, value)
+                color
+            }
         )
     }
 
@@ -47,7 +50,10 @@ object MapPorter {
         "h" to Channel(Color::h),
         "s" to Channel(Color::s),
         "v" to Channel(Color::v),
-        "l" to Channel("l", { it.l }, { color, value -> color.l = value; color })
+        "l" to Channel("l", { it.l }, { color, value ->
+            color.l = value
+            color
+        })
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -81,7 +87,6 @@ object MapPorter {
     }
 
     fun export(planet: Planet, filename: String) {
-
     }
 
     fun hslToHsv(h: RealT, s: RealT, l: RealT, a: Double = 1.0): Color {

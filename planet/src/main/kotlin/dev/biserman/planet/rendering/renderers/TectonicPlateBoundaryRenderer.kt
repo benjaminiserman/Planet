@@ -19,7 +19,8 @@ class TectonicPlateBoundaryRenderer(parent: Node, val lift: Double, override val
             }
 
             MeshData(
-                borderMesh.toWireframe(), StandardMaterial3D().apply {
+                borderMesh.toWireframe(),
+                StandardMaterial3D().apply {
                     this.setAlbedo(plate.debugColor)
                 }
             )

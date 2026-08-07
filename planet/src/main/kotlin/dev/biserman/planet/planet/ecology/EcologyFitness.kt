@@ -4,7 +4,6 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
 
-
 object EcologyFitness {
     fun reefAssociationMultiplier(
         species: CompiledSpecies,

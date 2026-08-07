@@ -38,40 +38,40 @@ class WorldKinds {
         stonePlacements = workingStonePlacements
         defaultSurfaceStone = stonePlacements[StonePlacementType.Primordial]!!.defaultOption
         defaultDeepStone = stonePlacements[StonePlacementType.MetamorphicPrimordial]!!.defaultOption
-        GD.print(stonePlacements.values.flatMap {
-            listOf(
-                it.defaultOption,
-                *it.specialOptions.map { specialOption -> specialOption.stone }.toTypedArray()
-            )
-        })
-    }
-
-    fun generateStone(planet: Planet, placementType: StonePlacementType, ordinal: Int): Stone {
-        return Stone(
-            mutableComponentSetOf(
-                StoneComponent(
-                    placementType.name + " $ordinal",
-                    planet.random.nextDouble(-1.0, 1.0),
-                    planet.random.nextDouble(
-                        -1.0,
-                        1.0
-                    ) + if (placementType.stoneType == StoneType.Igneous) 0.5 else 0.0,
-                    planet.random.nextDouble(
-                        0.8,
-                        1.2
-                    ) + if (placementType.stoneType == StoneType.Sedimentary) 0.2 else 0.0,
-                    placementType
+        GD.print(
+            stonePlacements.values.flatMap {
+                listOf(
+                    it.defaultOption,
+                    *it.specialOptions.map { specialOption -> specialOption.stone }.toTypedArray()
                 )
-            ),
-            listOf(
-                Color.fromHsv(
-                    planet.random.nextDouble(0.0, 1.0),
-                    planet.random.nextDouble(0.05, 0.25),
-                    planet.random.nextDouble(0.1, 0.9),
-                    1.0
-                )
-            ),
-            placementType.concepts,
+            }
         )
     }
+
+    fun generateStone(planet: Planet, placementType: StonePlacementType, ordinal: Int): Stone = Stone(
+        mutableComponentSetOf(
+            StoneComponent(
+                placementType.name + " $ordinal",
+                planet.random.nextDouble(-1.0, 1.0),
+                planet.random.nextDouble(
+                    -1.0,
+                    1.0
+                ) + if (placementType.stoneType == StoneType.Igneous) 0.5 else 0.0,
+                planet.random.nextDouble(
+                    0.8,
+                    1.2
+                ) + if (placementType.stoneType == StoneType.Sedimentary) 0.2 else 0.0,
+                placementType
+            )
+        ),
+        listOf(
+            Color.fromHsv(
+                planet.random.nextDouble(0.0, 1.0),
+                planet.random.nextDouble(0.05, 0.25),
+                planet.random.nextDouble(0.1, 0.9),
+                1.0
+            )
+        ),
+        placementType.concepts,
+    )
 }

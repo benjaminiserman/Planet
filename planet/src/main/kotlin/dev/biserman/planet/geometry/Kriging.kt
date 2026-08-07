@@ -60,8 +60,12 @@ object Kriging {
             for (j in i + 1 until n) {
                 if (kotlin.math.abs(M[j][i]) > kotlin.math.abs(M[max][i])) max = j
             }
-            val tmpRow = M[i]; M[i] = M[max]; M[max] = tmpRow
-            val tmpVal = x[i]; x[i] = x[max]; x[max] = tmpVal
+            val tmpRow = M[i]
+            M[i] = M[max]
+            M[max] = tmpRow
+            val tmpVal = x[i]
+            x[i] = x[max]
+            x[max] = tmpVal
 
             // Normalize pivot row
             val pivot = M[i][i]

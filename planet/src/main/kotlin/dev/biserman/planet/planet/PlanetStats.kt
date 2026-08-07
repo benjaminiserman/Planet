@@ -1,10 +1,6 @@
 package dev.biserman.planet.planet
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import dev.biserman.planet.things.Stone
-import dev.biserman.planet.things.StonePlacementType
-import dev.biserman.planet.planet.tectonics.StonePlacement
-import dev.biserman.planet.things.Resource
 import dev.biserman.planet.things.StoneType
 import godot.core.Color
 import godot.core.Vector2

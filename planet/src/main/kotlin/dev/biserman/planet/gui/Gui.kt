@@ -10,11 +10,11 @@ import dev.biserman.planet.history.HistoryCalendar
 import dev.biserman.planet.planet.MapProjections
 import dev.biserman.planet.planet.MapProjections.applyValueTo
 import dev.biserman.planet.planet.MapProjections.projectTiles
-import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.PlanetTile
 import dev.biserman.planet.planet.climate.ClimateClassifier
 import dev.biserman.planet.planet.climate.ClimateSimulation
 import dev.biserman.planet.planet.climate.ClimateSimulationGlobals
+import dev.biserman.planet.planet.climate.OceanCurrents
 import dev.biserman.planet.planet.ecology.EcologyGlobals
 import dev.biserman.planet.planet.ecology.PlanetEcology
 import dev.biserman.planet.planet.tectonics.TectonicGlobals
@@ -29,9 +29,9 @@ import godot.core.Color
 import godot.core.PackedByteArray
 import godot.core.connect
 import godot.global.GD
-import java.awt.image.BufferedImage
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
+import java.awt.image.BufferedImage
 import java.io.File
 import java.util.Locale.getDefault
 import kotlin.random.Random
@@ -100,7 +100,9 @@ class Gui() : Node() {
                         .apply {
                             this.verts.forEach { it.position *= 1.001 }
                         }
-                        .toWireframe(), selectedTileMaterial)
+                        .toWireframe(),
+                    selectedTileMaterial
+                )
             }
         )
     }
@@ -109,8 +111,12 @@ class Gui() : Node() {
         infoboxContainer.getChildren().forEach { tab ->
             val label = tab.findChild("Label") as? Label
             if (tab is ScrollContainer && label is Label) {
-                label.text = if (selectedTile == null) "" else Main.instance.planet.getTile(selectedTile!!)
-                    .getInfoText(tab.name.toString().lowercase())
+                label.text = if (selectedTile == null) {
+                    ""
+                } else {
+                    Main.instance.planet.getTile(selectedTile!!)
+                        .getInfoText(tab.name.toString().lowercase())
+                }
             }
         }
     }
@@ -342,11 +348,16 @@ class Gui() : Node() {
             simulationOptionButton.addItem(
                 "Run ${
                     simulationName.replaceFirstChar {
-                        if (it.isLowerCase()) it.titlecase(
-                            getDefault()
-                        ) else it.toString()
+                        if (it.isLowerCase()) {
+                            it.titlecase(
+                                getDefault()
+                            )
+                        } else {
+                            it.toString()
+                        }
                     }
-                } Simulation")
+                } Simulation"
+            )
             simulationOptions[index] = simulationName
         }
         simulationOptionButton.select(0)

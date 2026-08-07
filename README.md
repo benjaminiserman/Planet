@@ -12,11 +12,12 @@ Planet is a work-in-progress procedural planet simulator built with Godot and Ko
 
 Clone the repository, fetch the save fixtures, and build the Kotlin project:
 
-```powershell
+```bash
 git lfs install
 git lfs pull
 cd planet
-.\gradlew.bat build
+./gradlew addKtlintFormatGitPreCommitHook
+./gradlew build
 ```
 
 Open `planet/project.godot` in the matching Godot Kotlin/JVM editor. The application starts with a seed prompt and generates the planet after the seed is submitted.
@@ -25,9 +26,13 @@ Open `planet/project.godot` in the matching Godot Kotlin/JVM editor. The applica
 
 Run the JVM tests from the `planet` directory:
 
-```powershell
-.\gradlew.bat test
+```bash
+./gradlew test
 ```
+
+## Linting
+
+Use `./gradlew ktlintCheck` to check the code or use `./gradlew ktlintFormat` to fix any issues.
 
 ## Configuration
 

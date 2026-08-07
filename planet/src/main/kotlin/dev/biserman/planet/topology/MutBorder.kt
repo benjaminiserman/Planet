@@ -13,7 +13,6 @@ interface Border {
     fun oppositeTile(tile: Tile) = if (tile == tiles[0]) tiles[1] else tiles[0]
 
     companion object {
-
     }
 }
 

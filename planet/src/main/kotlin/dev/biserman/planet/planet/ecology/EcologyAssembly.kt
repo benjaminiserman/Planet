@@ -46,12 +46,13 @@ object EcologyAssembly {
         community: TileCommunity,
     ): Boolean {
         val required = requiredTargetIndices(ecology, consumerSpeciesIndex)
-        return required.isEmpty() || required.any { targetIndex ->
-            val populationIndex = community.find(targetIndex)
-            populationIndex >= 0 &&
-                community.activeBiomass[populationIndex] +
-                community.dormantBiomass[populationIndex] > 0.0
-        }
+        return required.isEmpty() ||
+            required.any { targetIndex ->
+                val populationIndex = community.find(targetIndex)
+                populationIndex >= 0 &&
+                    community.activeBiomass[populationIndex] +
+                    community.dormantBiomass[populationIndex] > 0.0
+            }
     }
 
     private fun requiredTargetIndices(

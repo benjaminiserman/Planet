@@ -31,13 +31,12 @@ object BiotaDistributionTerrestrial : BiotaDistributionMethod {
     override fun isValid(tile: PlanetTile) = tile.isAboveWater
     override fun canSpread(from: PlanetTile, to: PlanetTile) =
         super.canSpread(from, to) &&
-                (to.elevation - from.elevation).absoluteValue < biotaDistributionTerrestrialMaxSlope
+            (to.elevation - from.elevation).absoluteValue < biotaDistributionTerrestrialMaxSlope
 }
 
 object BiotaDistributionAquatic : BiotaDistributionMethod {
     override fun isValid(tile: PlanetTile) = !tile.isAboveWater
 }
-
 
 class BiotaDistribution(val method: BiotaDistributionMethod, val region: PlanetRegion) {
     fun spread() {

@@ -44,8 +44,11 @@ class DivergenceZone(
             val towardPlateCenter = divergingPlate.region.center - tile.position
             PointForce(
                 tile.position,
-                if (towardPlateCenter.lengthSquared() == 0.0) Vector3.ZERO
-                else towardPlateCenter.normalized() * tile.tectonicArea() * TectonicGlobals.ridgePushStrength
+                if (towardPlateCenter.lengthSquared() == 0.0) {
+                    Vector3.ZERO
+                } else {
+                    towardPlateCenter.normalized() * tile.tectonicArea() * TectonicGlobals.ridgePushStrength
+                }
             )
         }
 
@@ -93,9 +96,11 @@ class DivergenceZone(
                     )
                 } else {
                     newPlanetTile.stoneColumn =
-                        (tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
-                            ?.stoneColumn
-                            ?: newPlanetTile.stoneColumn).copy()
+                        (
+                            tile.tiles.mapNotNull { newTileMap[it] }.minByOrNull { it.formationTime }
+                                ?.stoneColumn
+                                ?: newPlanetTile.stoneColumn
+                            ).copy()
                     newPlanetTile.formationTime =
                         tile.tiles.map { newTileMap[it]?.formationTime }
                             .groupBy { it }

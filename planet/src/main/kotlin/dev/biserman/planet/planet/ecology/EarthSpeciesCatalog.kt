@@ -2152,7 +2152,7 @@ object EarthSpeciesCatalog {
 
     val ALL: List<SpeciesDefinition> =
         MAMMALS /*+ EXTINCT_SPECIES*/ + BIRDS + REPTILES_AND_AMPHIBIANS + FISH +
-                INVERTEBRATES + PRODUCERS_AND_FUNGI
+            INVERTEBRATES + PRODUCERS_AND_FUNGI
 
     private fun animal(
         id: String,
@@ -2192,7 +2192,7 @@ object EarthSpeciesCatalog {
     ) = TargetedRelationshipTrait(
         displayName = displayName,
         description =
-            "Digestive and feeding anatomy is specialized around one locally available producer lineage.",
+        "Digestive and feeding anatomy is specialized around one locally available producer lineage.",
         relationships = listOf(
             RelationshipEffect.ObligateFood(
                 target = SpeciesSelector.ExactSpecies(foodSpeciesId),
@@ -2202,5 +2202,4 @@ object EarthSpeciesCatalog {
         ),
         maintenanceCost = 0.04,
     )
-
 }

@@ -33,7 +33,7 @@ object ClimateSimulationGlobals {
 
     // AIR PRESSURE
 
-    var airPressureSolarDeclinationScalar = -0.33 //-0.85
+    var airPressureSolarDeclinationScalar = -0.33 // -0.85
 
     // the furthest away in tiles from the shore that warm currents can affect air pressure
     var warmCurrentAirPressureMaxContinentiality = 5.0

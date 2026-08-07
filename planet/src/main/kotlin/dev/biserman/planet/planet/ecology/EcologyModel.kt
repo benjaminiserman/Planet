@@ -292,6 +292,7 @@ sealed interface SpeciesSelector {
 
 sealed interface RelationshipEffect {
     fun compile(context: RelationshipCompilationContext)
+
     /**
      * All ordinary feeding edges are replaced by the selected food taxa. At
      * least one selected target must be locally present for the consumer to

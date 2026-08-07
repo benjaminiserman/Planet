@@ -1,6 +1,5 @@
 package dev.biserman.planet.planet.tectonics
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo
 import com.fasterxml.jackson.annotation.JsonIdentityReference
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.planet.PlanetTile
@@ -10,13 +9,10 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.accruedErosionThresh
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionContinentialityThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.orogenicMetamorphosisThreshold
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicVolcanismThreshold
-import dev.biserman.planet.things.Concept
 import dev.biserman.planet.things.Stone
 import dev.biserman.planet.things.StonePlacementCondition
 import dev.biserman.planet.things.StonePlacementType
-import dev.biserman.planet.utils.weightedBagOf
 import kotlin.math.absoluteValue
-import kotlin.random.Random
 
 data class StonePlacement(
     val type: StonePlacementType,
@@ -90,8 +86,11 @@ object Geology {
                     if (tile.neighbors.map { it.continentiality }
                             .plus(tile.continentiality)
                             .average() >= depositionContinentialityThreshold
-                    ) StonePlacementType.AlluvialDeposition
-                    else StonePlacementType.OceanicDeposition
+                    ) {
+                        StonePlacementType.AlluvialDeposition
+                    } else {
+                        StonePlacementType.OceanicDeposition
+                    }
                 tile.stoneColumn.accreteLayer(tile, layer)
                 tile.accruedDeposit = 0.0
             } else if (tile.accruedDeposit < accruedErosionThreshold) {
@@ -100,16 +99,20 @@ object Geology {
             }
 
             // orogenic metamorphosis
-            if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrengths[tile.tectonicPlate?.id]
-                    ?.absoluteValue ?: 0.0) > orogenicMetamorphosisThreshold
+            if ((
+                    tile.planet.convergenceZones[tile.tileId]
+                        ?.subductionStrengths[tile.tectonicPlate?.id]
+                        ?.absoluteValue ?: 0.0
+                    ) > orogenicMetamorphosisThreshold
             ) {
                 tile.stoneColumn.tryTransmuteDeep(tile)
             }
 
             // tectonic volcanism
-            if ((tile.planet.convergenceZones[tile.tileId]
-                    ?.subductionStrength ?: 0.0) > tectonicVolcanismThreshold
+            if ((
+                    tile.planet.convergenceZones[tile.tileId]
+                        ?.subductionStrength ?: 0.0
+                    ) > tectonicVolcanismThreshold
             ) {
                 tile.stoneColumn.accreteLayer(tile, StonePlacementType.SubductionVolcanic)
             }

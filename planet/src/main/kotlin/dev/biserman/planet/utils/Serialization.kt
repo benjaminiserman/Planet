@@ -17,7 +17,9 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMember
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
+import com.fasterxml.jackson.module.kotlin.jacksonMapperBuilder
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import dev.biserman.planet.planet.Planet
 import dev.biserman.planet.things.ComponentSet
@@ -29,7 +31,6 @@ import godot.core.Vector3
 import java.io.File
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
-
 
 @Suppress("FunctionName", "unused")
 abstract class Vector3Mixin {
@@ -45,7 +46,6 @@ abstract class Vector3Mixin {
     @JsonIgnore
     abstract fun isNormalized(): Boolean
 }
-
 
 @Suppress("unused")
 abstract class Vector2Mixin {
@@ -64,9 +64,7 @@ class DedupingObjectIdResolver : SimpleObjectIdResolver() {
         _items[id] = ob
     }
 
-    override fun newForDeserialization(context: Any?): ObjectIdResolver {
-        return DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
-    }
+    override fun newForDeserialization(context: Any?): ObjectIdResolver = DedupingObjectIdResolver().also { it._items = HashMap<ObjectIdGenerator.IdKey, Any?>() }
 }
 
 @Target(AnnotationTarget.CLASS)
@@ -155,16 +153,16 @@ object Serialization {
             it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
         }
 
-    val configMapper: ObjectMapper = jacksonObjectMapper()
-        .registerKotlinModule { enable(KotlinFeature.SingletonSupport) }
+    val configMapper: ObjectMapper = jacksonMapperBuilder()
+        .addModule(kotlinModule { enable(KotlinFeature.SingletonSupport) })
         .addMixIn(Vector3::class.java, Vector3Mixin::class.java)
         .addMixIn(Vector2::class.java, Vector2Mixin::class.java)
         .enable(SerializationFeature.INDENT_OUTPUT)
         .enable(SerializationFeature.WRAP_EXCEPTIONS)
         .enable(MapperFeature.SORT_CREATOR_PROPERTIES_BY_DECLARATION_ORDER)
-        .enable(DeserializationFeature.WRAP_EXCEPTIONS).also {
-            it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature())
-        }
+        .enable(DeserializationFeature.WRAP_EXCEPTIONS)
+        .build()
+        .also { it.factory.enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION.mappedFeature()) }
 
     fun save(filename: String, value: Any) {
         GZIPOutputStream(File(filename).outputStream()).use { gzipOut ->

@@ -581,18 +581,20 @@ object Hersfeldt : ClimateClassifier {
     fun linearGraph(vararg points: Pair<Double, Double>): (Double) -> Double {
         val sorted = points.sortedBy { it.first }
 
-        return ({ value ->
-            when {
-                value <= sorted.first().first -> sorted.first().second
-                value >= sorted.last().first -> sorted.last().second
-                else -> {
-                    val index = sorted.indexOfFirst { it.first > value }
-                    val (x1, y1) = sorted[index - 1]
-                    val (x2, y2) = sorted[index]
-                    lerp(y1, y2, (value - x1) / (x2 - x1))
+        return (
+            { value ->
+                when {
+                    value <= sorted.first().first -> sorted.first().second
+                    value >= sorted.last().first -> sorted.last().second
+                    else -> {
+                        val index = sorted.indexOfFirst { it.first > value }
+                        val (x1, y1) = sorted[index - 1]
+                        val (x2, y2) = sorted[index]
+                        lerp(y1, y2, (value - x1) / (x2 - x1))
+                    }
                 }
             }
-        })
+            )
     }
 
     val gddGraph = linearGraph(5.0 to 0.0, 25.0 to 20.0, 40.0 to 20.0, 50.0 to 0.0)
@@ -671,9 +673,9 @@ object Hersfeldt : ClimateClassifier {
     ): Double {
         val insolationMegajoules = insolation * 0.0864
         return 0.0135 *
-                (averageTemperature + 17.8) *
-                insolationMegajoules *
-                (238.8 / (595.5 - 0.55 * averageTemperature))
+            (averageTemperature + 17.8) *
+            insolationMegajoules *
+            (238.8 / (595.5 - 0.55 * averageTemperature))
     }
 
     fun koppenlikePet(averageTemperature: Double) = max(0.0, 7 * averageTemperature)
@@ -696,8 +698,11 @@ object Hersfeldt : ClimateClassifier {
                     aet[i] = pet[i]
                 } else {
                     val soilEvaporation =
-                        if (soilMoisture < 250) min(soilMoisture, (pet[i] - precipitation) * soilMoisture / 250.0)
-                        else pet[i] - precipitation
+                        if (soilMoisture < 250) {
+                            min(soilMoisture, (pet[i] - precipitation) * soilMoisture / 250.0)
+                        } else {
+                            pet[i] - precipitation
+                        }
                     soilMoisture = max(soilMoisture - soilEvaporation, 0.0)
                     aet[i] = precipitation + soilEvaporation
                 }
@@ -900,41 +905,65 @@ object Hersfeldt : ClimateClassifier {
                 // Rainforest
                 aridityFactor >= 0.9 -> {
                     if (isEutropical) {
-                        if (evaporationRatio < 0.4) HYPERPLUVIAL_TROPICAL_RAINFOREST
-                        else TROPICAL_RAINFOREST
+                        if (evaporationRatio < 0.4) {
+                            HYPERPLUVIAL_TROPICAL_RAINFOREST
+                        } else {
+                            TROPICAL_RAINFOREST
+                        }
                     } else {
-                        if (evaporationRatio < 0.45) QUASITROPICAL_MONSOON_FOREST
-                        else QUASITROPICAL_FOREST
+                        if (evaporationRatio < 0.45) {
+                            QUASITROPICAL_MONSOON_FOREST
+                        } else {
+                            QUASITROPICAL_FOREST
+                        }
                     }
                 }
                 // Forest
                 aridityFactor >= 0.75 -> {
                     if (isEutropical) {
-                        if (evaporationRatio < 0.45) TROPICAL_MONSOON_FOREST
-                        else TROPICAL_FOREST
+                        if (evaporationRatio < 0.45) {
+                            TROPICAL_MONSOON_FOREST
+                        } else {
+                            TROPICAL_FOREST
+                        }
                     } else {
-                        if (evaporationRatio < 0.45) QUASITROPICAL_MONSOON_FOREST
-                        else QUASITROPICAL_FOREST
+                        if (evaporationRatio < 0.45) {
+                            QUASITROPICAL_MONSOON_FOREST
+                        } else {
+                            QUASITROPICAL_FOREST
+                        }
                     }
                 }
                 // Moist savanna
                 growthAridityFactor >= 0.5 -> {
                     if (isEutropical) {
-                        if (evaporationRatio < 0.45) TROPICAL_MOIST_MONSOON_SAVANNA
-                        else TROPICAL_MOIST_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            TROPICAL_MOIST_MONSOON_SAVANNA
+                        } else {
+                            TROPICAL_MOIST_SAVANNA
+                        }
                     } else {
-                        if (evaporationRatio < 0.45) QUASITROPICAL_MOIST_MONSOON_SAVANNA
-                        else QUASITROPICAL_MOIST_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            QUASITROPICAL_MOIST_MONSOON_SAVANNA
+                        } else {
+                            QUASITROPICAL_MOIST_SAVANNA
+                        }
                     }
                 }
                 // Dry savanna
                 else -> {
                     if (isEutropical) {
-                        if (evaporationRatio < 0.45) TROPICAL_DRY_MONSOON_SAVANNA
-                        else TROPICAL_DRY_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            TROPICAL_DRY_MONSOON_SAVANNA
+                        } else {
+                            TROPICAL_DRY_SAVANNA
+                        }
                     } else {
-                        if (evaporationRatio < 0.45) QUASITROPICAL_DRY_MONSOON_SAVANNA
-                        else QUASITROPICAL_DRY_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            QUASITROPICAL_DRY_MONSOON_SAVANNA
+                        } else {
+                            QUASITROPICAL_DRY_SAVANNA
+                        }
                     }
                 }
             }
@@ -968,14 +997,23 @@ object Hersfeldt : ClimateClassifier {
                 // Dry savanna / Steppe
                 return when (summerType) {
                     SummerType.HOT ->
-                        if (evaporationRatio < 0.45) HOT_DRY_MONSOON_SAVANNA
-                        else HOT_DRY_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            HOT_DRY_MONSOON_SAVANNA
+                        } else {
+                            HOT_DRY_SAVANNA
+                        }
                     SummerType.TORRID ->
-                        if (evaporationRatio < 0.45) TORRID_PLUVIAL_STEPPE
-                        else TORRID_STEPPE
+                        if (evaporationRatio < 0.45) {
+                            TORRID_PLUVIAL_STEPPE
+                        } else {
+                            TORRID_STEPPE
+                        }
                     SummerType.BOILING ->
-                        if (evaporationRatio < 0.45) BOILING_PLUVIAL_STEPPE
-                        else BOILING_STEPPE
+                        if (evaporationRatio < 0.45) {
+                            BOILING_PLUVIAL_STEPPE
+                        } else {
+                            BOILING_STEPPE
+                        }
                     else -> throw Error("Invalid summer type")
                 }
             }
@@ -994,11 +1032,17 @@ object Hersfeldt : ClimateClassifier {
             if (gddResults.totalGint <= 1250 && growthSupply >= 0.8) {
                 return when {
                     summerType == SummerType.HOT && aridityFactor >= 0.75 ->
-                        if (evaporationRatio < 0.45) SUPERTROPICAL_MONSOON_FOREST
-                        else SUPERTROPICAL_FOREST
+                        if (evaporationRatio < 0.45) {
+                            SUPERTROPICAL_MONSOON_FOREST
+                        } else {
+                            SUPERTROPICAL_FOREST
+                        }
                     aridityFactor <= 0.75 ->
-                        if (evaporationRatio < 0.45) SUPERTROPICAL_MOIST_MONSOON_SAVANNA
-                        else SUPERTROPICAL_MOIST_SAVANNA
+                        if (evaporationRatio < 0.45) {
+                            SUPERTROPICAL_MOIST_MONSOON_SAVANNA
+                        } else {
+                            SUPERTROPICAL_MOIST_SAVANNA
+                        }
                     else -> throw Error("Invalid summer type")
                 }
             }
@@ -1006,14 +1050,23 @@ object Hersfeldt : ClimateClassifier {
             // Swelter
             return when (summerType) {
                 SummerType.HOT ->
-                    if (evaporationRatio < 0.45) HOT_PLUVIAL_SWELTER
-                    else HOT_SWELTER
+                    if (evaporationRatio < 0.45) {
+                        HOT_PLUVIAL_SWELTER
+                    } else {
+                        HOT_SWELTER
+                    }
                 SummerType.TORRID ->
-                    if (evaporationRatio < 0.45) TORRID_PLUVIAL_SWELTER
-                    else TORRID_SWELTER
+                    if (evaporationRatio < 0.45) {
+                        TORRID_PLUVIAL_SWELTER
+                    } else {
+                        TORRID_SWELTER
+                    }
                 SummerType.BOILING ->
-                    if (evaporationRatio < 0.45) BOILING_PLUVIAL_SWELTER
-                    else BOILING_SWELTER
+                    if (evaporationRatio < 0.45) {
+                        BOILING_PLUVIAL_SWELTER
+                    } else {
+                        BOILING_SWELTER
+                    }
                 else -> throw Error("Invalid summer type")
             }
         }
@@ -1024,8 +1077,12 @@ object Hersfeldt : ClimateClassifier {
         ) {
             if (gddResults.totalGddz < 50) return EXTRASEASONAL_BARREN
 
-            val isHyperseasonal = (summerType == SummerType.TORRID || summerType == SummerType.BOILING ||
-                    winterType == WinterType.COLD || winterType == WinterType.FRIGID)
+            val isHyperseasonal = (
+                summerType == SummerType.TORRID ||
+                    summerType == SummerType.BOILING ||
+                    winterType == WinterType.COLD ||
+                    winterType == WinterType.FRIGID
+                )
 
             if (gddResults.totalGdd < 350) {
                 return if (isHyperseasonal) HYPERSEASONAL_PULSE else SUPERSEASONAL_PULSE
@@ -1035,45 +1092,69 @@ object Hersfeldt : ClimateClassifier {
             if (growthAridityFactor < 0.5) {
                 // Extramediterranean
                 if (growthSupply < 0.8) {
-                    return if (isHyperseasonal) HYPERSEASONAL_EXTRAMEDITERRANEAN
-                    else SUPERSEASONAL_EXTRAMEDITERRANEAN
+                    return if (isHyperseasonal) {
+                        HYPERSEASONAL_EXTRAMEDITERRANEAN
+                    } else {
+                        SUPERSEASONAL_EXTRAMEDITERRANEAN
+                    }
                 }
 
                 // Dry savanna / Steppe
                 return if (isHyperseasonal) {
-                    if (evaporationRatio < 0.45) HYPERSEASONAL_PLUVIAL_STEPPE
-                    else HYPERSEASONAL_STEPPE
+                    if (evaporationRatio < 0.45) {
+                        HYPERSEASONAL_PLUVIAL_STEPPE
+                    } else {
+                        HYPERSEASONAL_STEPPE
+                    }
                 } else {
-                    if (evaporationRatio < 0.45) SUPERSEASONAL_DRY_MONSOON_SAVANNA
-                    else SUPERSEASONAL_DRY_SAVANNA
+                    if (evaporationRatio < 0.45) {
+                        SUPERSEASONAL_DRY_MONSOON_SAVANNA
+                    } else {
+                        SUPERSEASONAL_DRY_SAVANNA
+                    }
                 }
             }
 
             // Subextramediterranean
             if (growthSupply < 0.8 && growthAridityFactor >= 0.5) {
-                return if (isHyperseasonal) HYPERSEASONAL_SUBEXTRAMEDITERRANEAN
-                else SUPERSEASONAL_SUBEXTRAMEDITERRANEAN
+                return if (isHyperseasonal) {
+                    HYPERSEASONAL_SUBEXTRAMEDITERRANEAN
+                } else {
+                    SUPERSEASONAL_SUBEXTRAMEDITERRANEAN
+                }
             }
 
             // Extratropical
             if (gddResults.totalGint < gintThreshold && growthAridityFactor >= 0.5 && !isHyperseasonal) {
                 return if (aridityFactor >= 0.75) {
-                    if (evaporationRatio < 0.45) EXTRATROPICAL_MONSOON_FOREST
-                    else EXTRATROPICAL_FOREST
+                    if (evaporationRatio < 0.45) {
+                        EXTRATROPICAL_MONSOON_FOREST
+                    } else {
+                        EXTRATROPICAL_FOREST
+                    }
                 } else {
-                    if (evaporationRatio < 0.45) EXTRATROPICAL_MOIST_MONSOON_SAVANNA
-                    else EXTRATROPICAL_MOIST_SAVANNA
+                    if (evaporationRatio < 0.45) {
+                        EXTRATROPICAL_MOIST_MONSOON_SAVANNA
+                    } else {
+                        EXTRATROPICAL_MOIST_SAVANNA
+                    }
                 }
             }
 
             // Extracontinental
             if (growthAridityFactor >= 0.5) {
                 return if (isHyperseasonal) {
-                    if (evaporationRatio < 0.45) HYPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
-                    else HYPERSEASONAL_EXTRACONTINENTAL
+                    if (evaporationRatio < 0.45) {
+                        HYPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
+                    } else {
+                        HYPERSEASONAL_EXTRACONTINENTAL
+                    }
                 } else {
-                    if (evaporationRatio < 0.45) SUPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
-                    else SUPERSEASONAL_EXTRACONTINENTAL
+                    if (evaporationRatio < 0.45) {
+                        SUPERSEASONAL_EXTRACONTINENTAL_RAINFOREST
+                    } else {
+                        SUPERSEASONAL_EXTRACONTINENTAL
+                    }
                 }
             }
         }
@@ -1116,36 +1197,57 @@ object Hersfeldt : ClimateClassifier {
             // Subtropical
             if (gddResults.totalGint < gintThreshold && isOceanic) {
                 return if (aridityFactor >= 0.75) {
-                    if (evaporationRatio < 0.45) SUBTROPICAL_MONSOON_FOREST
-                    else SUBTROPICAL_FOREST
+                    if (evaporationRatio < 0.45) {
+                        SUBTROPICAL_MONSOON_FOREST
+                    } else {
+                        SUBTROPICAL_FOREST
+                    }
                 } else {
-                    if (evaporationRatio < 0.45) SUBTROPICAL_MOIST_MONSOON_SAVANNA
-                    else SUBTROPICAL_MOIST_SAVANNA
+                    if (evaporationRatio < 0.45) {
+                        SUBTROPICAL_MOIST_MONSOON_SAVANNA
+                    } else {
+                        SUBTROPICAL_MOIST_SAVANNA
+                    }
                 }
             }
 
             // Temperate
             if (gddResults.totalGint >= gintThreshold && gddResults.totalGdd >= 1300) {
                 return if (isOceanic) {
-                    if (evaporationRatio < 0.45) OCEANIC_TEMPERATE_RAINFOREST
-                    else OCEANIC_TEMPERATE
+                    if (evaporationRatio < 0.45) {
+                        OCEANIC_TEMPERATE_RAINFOREST
+                    } else {
+                        OCEANIC_TEMPERATE
+                    }
                 } else {
-                    if (evaporationRatio < 0.45) CONTINENTAL_TEMPERATE_RAINFOREST
-                    else CONTINENTAL_TEMPERATE
+                    if (evaporationRatio < 0.45) {
+                        CONTINENTAL_TEMPERATE_RAINFOREST
+                    } else {
+                        CONTINENTAL_TEMPERATE
+                    }
                 }
             }
 
             // Boreal
             return when (winterType) {
                 WinterType.COOL ->
-                    if (evaporationRatio < 0.45) OCEANIC_BOREAL_RAINFOREST
-                    else OCEANIC_BOREAL
+                    if (evaporationRatio < 0.45) {
+                        OCEANIC_BOREAL_RAINFOREST
+                    } else {
+                        OCEANIC_BOREAL
+                    }
                 WinterType.COLD ->
-                    if (evaporationRatio < 0.45) CONTINENTAL_BOREAL_RAINFOREST
-                    else CONTINENTAL_BOREAL
+                    if (evaporationRatio < 0.45) {
+                        CONTINENTAL_BOREAL_RAINFOREST
+                    } else {
+                        CONTINENTAL_BOREAL
+                    }
                 WinterType.FRIGID ->
-                    if (evaporationRatio < 0.45) PERCONTINENTAL_BOREAL_RAINFOREST
-                    else PERCONTINENTAL_BOREAL
+                    if (evaporationRatio < 0.45) {
+                        PERCONTINENTAL_BOREAL_RAINFOREST
+                    } else {
+                        PERCONTINENTAL_BOREAL
+                    }
                 else -> throw Error("Invalid winter type")
             }
         }

@@ -162,7 +162,8 @@ private class PredationGraph(
 ) {
     fun dietsOverlap(firstIndex: Int, secondIndex: Int): Boolean =
         potentialPredation.indices.any { preyIndex ->
-            preyIndex != firstIndex && preyIndex != secondIndex &&
+            preyIndex != firstIndex &&
+                preyIndex != secondIndex &&
                 potentialPredation[firstIndex][preyIndex] &&
                 potentialPredation[secondIndex][preyIndex]
         }
@@ -226,7 +227,7 @@ internal object FoodWebCompiler {
         return CompiledInteraction(
             kind = InteractionKind.FILTER_FEEDING,
             consumerGainRate =
-                attack * EcologyBiomass.filterFeedingEfficiency(pair.consumer.sizeClass),
+            attack * EcologyBiomass.filterFeedingEfficiency(pair.consumer.sizeClass),
             targetLossRate = attack,
         )
     }
@@ -353,9 +354,9 @@ internal object FoodWebCompiler {
                 val pair = SpeciesPair(consumer, target, definitions[target.index])
                 potentialPredation[consumer.index][target.index] =
                     consumer.index != target.index &&
-                        target.motile &&
-                        pair.sharedFeedingHabitat &&
-                        sizeCompatiblePredation(pair)
+                    target.motile &&
+                    pair.sharedFeedingHabitat &&
+                    sizeCompatiblePredation(pair)
             }
         }
         return PredationGraph(potentialPredation)
@@ -410,9 +411,11 @@ internal object FoodWebCompiler {
         idToIndex: Map<String, Int>,
     ): List<Int> = when (selector) {
         is SpeciesSelector.ExactSpecies ->
-            listOf(requireNotNull(idToIndex[selector.speciesId]) {
-                "Unknown targeted species: ${selector.speciesId}"
-            })
+            listOf(
+                requireNotNull(idToIndex[selector.speciesId]) {
+                    "Unknown targeted species: ${selector.speciesId}"
+                }
+            )
         is SpeciesSelector.DescendantsOf -> {
             require(selector.ancestorSpeciesId in idToIndex) {
                 "Unknown targeted ancestor: ${selector.ancestorSpeciesId}"

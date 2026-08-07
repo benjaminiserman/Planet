@@ -251,8 +251,8 @@ class EcologyRuntime(
     private val normalizedBiomassByNicheSizeAndProducerLayer =
         DoubleArray(
             ecology.niches.size *
-                    SizeClass.entries.size *
-                    ProducerCompetitionLayer.entries.size,
+                SizeClass.entries.size *
+                ProducerCompetitionLayer.entries.size,
         )
     private val populationCountByHabitat = IntArray(Habitat.entries.size)
     private val bestCompetitiveStandingByHabitat = DoubleArray(Habitat.entries.size)
@@ -343,8 +343,8 @@ class EcologyRuntime(
             val intrinsicFit = species.niche.fitFor(nicheIndex).coerceIn(0.0, 1.0)
             val standing =
                 fitness[populationIndex] *
-                        (0.55 + intrinsicFit * 0.45) *
-                        (0.25 + sqrt(relativeAbundance) * 0.75)
+                    (0.55 + intrinsicFit * 0.45) *
+                    (0.25 + sqrt(relativeAbundance) * 0.75)
             competitiveStanding[populationIndex] = standing
             bestCompetitiveStandingByHabitat[habitatIndex] =
                 max(bestCompetitiveStandingByHabitat[habitatIndex], standing)
@@ -360,7 +360,7 @@ class EcologyRuntime(
             val niche = ecology.niches[community.nicheIndices[populationIndex]]
             val habitatPresent =
                 species.niche.fitFor(community.nicheIndices[populationIndex]) > 0.0 &&
-                        environment.habitatAvailability(niche.habitat) > 0.0
+                    environment.habitatAvailability(niche.habitat) > 0.0
             val requiredTargetPresent =
                 EcologyAssembly.requiredTargetPresent(ecology, species.index, community)
             val populationFitness =
@@ -368,9 +368,9 @@ class EcologyRuntime(
                     0.0
                 } else {
                     (
-                            EcologyFitness.combined(species, environment, niche.habitat) *
-                                    EcologyFitness.reefAssociationMultiplier(species, environment)
-                            ).coerceIn(0.0, 1.0)
+                        EcologyFitness.combined(species, environment, niche.habitat) *
+                            EcologyFitness.reefAssociationMultiplier(species, environment)
+                        ).coerceIn(0.0, 1.0)
                 }
             fitness[populationIndex] = populationFitness
 
@@ -388,24 +388,24 @@ class EcologyRuntime(
                 // grant tropical and subtropical animals polar physiology.
                 val degreesBeyondProtection =
                     species.physiology.thermal.outerLowC -
-                            config.seasonalTorporColdBufferC -
-                            environment.temperatureC
+                        config.seasonalTorporColdBufferC -
+                        environment.temperatureC
                 val lethalColdLoss =
                     (
-                            0.35 +
-                                    degreesBeyondProtection /
-                                    config.seasonalTorporLethalRampC *
-                                    0.60
-                            ).coerceIn(0.35, 0.95)
+                        0.35 +
+                            degreesBeyondProtection /
+                            config.seasonalTorporLethalRampC *
+                            0.60
+                        ).coerceIn(0.35, 0.95)
                 dormant *= 1.0 - lethalColdLoss
             }
             if (
                 species.lifeHistory.dormancyKind == DormancyKind.COLD_DARK_LEAF_DORMANCY &&
                 (
-                        environment.temperatureC <=
-                                species.physiology.thermal.outerLowC - config.dormantLeafColdProtectionC ||
-                                environment.temperatureC >= species.physiology.thermal.outerHighC
-                        )
+                    environment.temperatureC <=
+                        species.physiology.thermal.outerLowC - config.dormantLeafColdProtectionC ||
+                        environment.temperatureC >= species.physiology.thermal.outerHighC
+                    )
             ) {
                 // Dormant buds and woody tissues tolerate substantially more
                 // cold than active foliage, but dormancy is not immunity to an
@@ -414,25 +414,27 @@ class EcologyRuntime(
             }
             val canEnterDormancy =
                 species.lifeHistory.dormancyKind != DormancyKind.NONE &&
-                        !(species.lifeHistory.dormancyKind == DormancyKind.WHOLE_BODY_DESICCATION &&
-                                niche.habitat in EcologyFitness.aquaticHabitats)
+                    !(
+                        species.lifeHistory.dormancyKind == DormancyKind.WHOLE_BODY_DESICCATION &&
+                            niche.habitat in EcologyFitness.aquaticHabitats
+                        )
             val dormancyCondition = when (species.lifeHistory.dormancyKind) {
                 DormancyKind.COLD_DARK_LEAF_DORMANCY ->
                     environment.temperatureC >
-                            species.physiology.thermal.outerLowC - config.dormantLeafColdProtectionC &&
-                            (
-                                    environment.temperatureC < species.physiology.thermal.optimalLowC ||
-                                            environment.insolation < 0.45
-                                    )
+                        species.physiology.thermal.outerLowC - config.dormantLeafColdProtectionC &&
+                        (
+                            environment.temperatureC < species.physiology.thermal.optimalLowC ||
+                                environment.insolation < 0.45
+                            )
 
                 DormancyKind.DROUGHT_DECIDUOUS ->
                     EcologyFitness.thermal(species, environment) > 0.0 &&
-                            EcologyFitness.water(species, environment, niche.habitat) <
-                            config.dormantEntryFitness
+                        EcologyFitness.water(species, environment, niche.habitat) <
+                        config.dormantEntryFitness
 
                 DormancyKind.SEASONAL_TORPOR ->
                     environment.temperatureC >
-                            species.physiology.thermal.outerLowC - config.seasonalTorporColdBufferC
+                        species.physiology.thermal.outerLowC - config.seasonalTorporColdBufferC
 
                 else -> true
             }
@@ -471,14 +473,14 @@ class EcologyRuntime(
             val species = ecology.species[community.speciesIndices[populationIndex]]
             val offset =
                 (
-                        community.nicheIndices[populationIndex] * SizeClass.entries.size +
-                                species.sizeClass.ordinal
-                        ) * ProducerCompetitionLayer.entries.size +
-                        species.niche.producerCompetitionLayer.ordinal
+                    community.nicheIndices[populationIndex] * SizeClass.entries.size +
+                        species.sizeClass.ordinal
+                    ) * ProducerCompetitionLayer.entries.size +
+                    species.niche.producerCompetitionLayer.ordinal
             normalizedBiomassByNicheSizeAndProducerLayer[offset] +=
                 effectiveActive[populationIndex] /
-                        species.sizeClass.densityScale *
-                        species.lifeHistory.nicheCompetitionSensitivity
+                species.sizeClass.densityScale *
+                species.lifeHistory.nicheCompetitionSensitivity
         }
     }
 
@@ -530,13 +532,13 @@ class EcologyRuntime(
                     }
                 val lossRate =
                     ecology.interactions.targetLossAt(offset) *
-                            (1.0 - concealment) *
-                            warningMultiplier
+                        (1.0 - concealment) *
+                        warningMultiplier
                 val accessibilityCoefficient = kind.lowDensityAccessibilityCoefficient
                 val lowDensityAccessibility =
                     if (accessibilityCoefficient > 0.0) {
                         targetBiomass /
-                                (targetBiomass + consumerBiomass * accessibilityCoefficient)
+                            (targetBiomass + consumerBiomass * accessibilityCoefficient)
                     } else {
                         1.0
                     }
@@ -556,8 +558,8 @@ class EcologyRuntime(
                         consumer.niche.supportFor(EcoStrategy.FILTER_FEEDING) > 0.0
                     val predator =
                         consumer.niche.supportFor(EcoStrategy.AMBUSH_PREDATION) > 0.0 ||
-                                consumer.niche.supportFor(EcoStrategy.PURSUIT_PREDATION) > 0.0 ||
-                                consumer.niche.supportFor(EcoStrategy.COLONY_RAIDING) > 0.0
+                            consumer.niche.supportFor(EcoStrategy.PURSUIT_PREDATION) > 0.0 ||
+                            consumer.niche.supportFor(EcoStrategy.COLONY_RAIDING) > 0.0
                     val metabolicThroughput = when {
                         predator && consumer.physiology.thermal.regulation == ThermalStrategy.ENDOTHERMY -> 1.50
                         predator && consumer.physiology.thermal.regulation == ThermalStrategy.HETEROTHERMY -> 1.25
@@ -567,9 +569,9 @@ class EcologyRuntime(
                     min(
                         1.0,
                         consumerBiomass *
-                                config.maximumConsumedBiomassFraction *
-                                metabolicThroughput /
-                                potentialConsumption,
+                            config.maximumConsumedBiomassFraction *
+                            metabolicThroughput /
+                            potentialConsumption,
                     )
                 } else {
                     1.0
@@ -609,13 +611,13 @@ class EcologyRuntime(
                     }
                 val lossRate =
                     ecology.interactions.targetLossAt(offset) *
-                            (1.0 - concealment) *
-                            warningMultiplier
+                        (1.0 - concealment) *
+                        warningMultiplier
                 val accessibilityCoefficient = kind.lowDensityAccessibilityCoefficient
                 val lowDensityAccessibility =
                     if (accessibilityCoefficient > 0.0) {
                         targetBiomass /
-                                (targetBiomass + consumerBiomass * accessibilityCoefficient)
+                            (targetBiomass + consumerBiomass * accessibilityCoefficient)
                     } else {
                         1.0
                     }
@@ -626,8 +628,11 @@ class EcologyRuntime(
                 // at low density, providing the refuge needed to avoid deterministic
                 // prey extinction in this coarse one-tile model.
                 val edgeConsumptionScale =
-                    if (kind == InteractionKind.SUPPLEMENTAL_FEEDING) 1.0
-                    else consumptionScale
+                    if (kind == InteractionKind.SUPPLEMENTAL_FEEDING) {
+                        1.0
+                    } else {
+                        consumptionScale
+                    }
                 val targetLoss =
                     targetBiomass * lossRate * lowDensityAccessibility * edgeConsumptionScale
                 if (targetLoss <= 0.0) continue
@@ -660,8 +665,8 @@ class EcologyRuntime(
             if (!producer.interactions.flowering || producer.interactions.nectarProduction <= 0.0) continue
             val supply =
                 effectiveActive[producerPopulation] *
-                        producer.interactions.nectarProduction *
-                        fitness[producerPopulation]
+                    producer.interactions.nectarProduction *
+                    fitness[producerPopulation]
             nectarSupply[producerPopulation] = supply
             if (supply > 0.0) {
                 hasNectar = true
@@ -697,9 +702,9 @@ class EcologyRuntime(
             val demand = min(
                 accessibleSupply,
                 active *
-                        config.maximumConsumedBiomassFraction *
-                        methodSupport *
-                        sqrt(fitness[consumerPopulation]),
+                    config.maximumConsumedBiomassFraction *
+                    methodSupport *
+                    sqrt(fitness[consumerPopulation]),
             )
             nectarAccessibleSupply[consumerPopulation] = accessibleSupply
             nectarDemand[consumerPopulation] = demand
@@ -750,8 +755,8 @@ class EcologyRuntime(
                 (pollinationService[producerPopulation] / supply).coerceIn(0.0, 1.0)
             val pollinationBenefit =
                 effectiveActive[producerPopulation] *
-                        config.maximumPollinationBenefitFraction *
-                        serviceFraction
+                    config.maximumPollinationBenefitFraction *
+                    serviceFraction
             relationshipBenefits[producerPopulation] += pollinationBenefit
             fluxes?.let { it.pollinationBenefitBiomass += pollinationBenefit }
         }
@@ -759,9 +764,11 @@ class EcologyRuntime(
 
     private fun canVisitFlowers(visitor: Habitat, producer: Habitat): Boolean =
         visitor == producer ||
-                (visitor == Habitat.AERIAL &&
-                        (producer == Habitat.LAND_SURFACE || producer == Habitat.CANOPY)) ||
-                (visitor == Habitat.CANOPY && producer == Habitat.LAND_SURFACE)
+            (
+                visitor == Habitat.AERIAL &&
+                    (producer == Habitat.LAND_SURFACE || producer == Habitat.CANOPY)
+                ) ||
+            (visitor == Habitat.CANOPY && producer == Habitat.LAND_SURFACE)
 
     private fun updatePopulations(
         community: TileCommunity,
@@ -782,15 +789,15 @@ class EcologyRuntime(
             val baseResource = environment.resourceSupport(niche, species.sizeClass)
             val canUseWasteAsFertilizer =
                 species.niche.supportFor(EcoStrategy.PHOTOSYNTHESIS) > 0.0 ||
-                        species.niche.supportFor(EcoStrategy.ABSORPTION) > 0.0
+                    species.niche.supportFor(EcoStrategy.ABSORPTION) > 0.0
             val resource =
                 if (canUseWasteAsFertilizer && species.interactions.wasteFertilization > 0.0) {
                     (
-                            baseResource +
-                                    species.interactions.wasteFertilization *
-                                    environment.resources.waste *
-                                    (1.0 - baseResource)
-                            ).coerceIn(0.0, 1.0)
+                        baseResource +
+                            species.interactions.wasteFertilization *
+                            environment.resources.waste *
+                            (1.0 - baseResource)
+                        ).coerceIn(0.0, 1.0)
                 } else {
                     baseResource
                 }
@@ -798,8 +805,8 @@ class EcologyRuntime(
                 EcologyBiomass.carryingCapacityKg(species, niche, environment)
             val nicheSizeOffset =
                 community.nicheIndices[populationIndex] *
-                        SizeClass.entries.size *
-                        ProducerCompetitionLayer.entries.size
+                    SizeClass.entries.size *
+                    ProducerCompetitionLayer.entries.size
             var normalizedNicheBiomass = 0.0
             for (otherSize in SizeClass.entries) {
                 val sizeDistance = abs(otherSize.ordinal - species.sizeClass.ordinal)
@@ -814,7 +821,7 @@ class EcologyRuntime(
                     val layerOverlap = when {
                         otherLayer == species.niche.producerCompetitionLayer -> 1.0
                         otherLayer == ProducerCompetitionLayer.NONE ||
-                                species.niche.producerCompetitionLayer == ProducerCompetitionLayer.NONE -> 0.0
+                            species.niche.producerCompetitionLayer == ProducerCompetitionLayer.NONE -> 0.0
                         // Suspended producers use water-column space while
                         // rooted and holdfast-bearing producers use substrate.
                         // Their shared climate resource is already represented
@@ -825,32 +832,32 @@ class EcologyRuntime(
                     normalizedNicheBiomass +=
                         normalizedBiomassByNicheSizeAndProducerLayer[
                             nicheSizeOffset +
-                                    otherSize.ordinal * ProducerCompetitionLayer.entries.size +
-                                    otherLayer.ordinal
+                                otherSize.ordinal * ProducerCompetitionLayer.entries.size +
+                                otherLayer.ordinal
                         ] * overlap * layerOverlap
                 }
             }
             val normalizedActive =
                 active /
-                        species.sizeClass.densityScale *
-                        species.lifeHistory.nicheCompetitionSensitivity
+                    species.sizeClass.densityScale *
+                    species.lifeHistory.nicheCompetitionSensitivity
             val competingBiomass =
                 active +
-                        max(0.0, normalizedNicheBiomass - normalizedActive) *
-                        species.sizeClass.densityScale *
-                        config.interspecificNicheCompetition *
-                        species.lifeHistory.nicheCompetitionSensitivity
+                    max(0.0, normalizedNicheBiomass - normalizedActive) *
+                    species.sizeClass.densityScale *
+                    config.interspecificNicheCompetition *
+                    species.lifeHistory.nicheCompetitionSensitivity
             val crowding = competingBiomass /
-                    max(1.0, carryingBiomass)
+                max(1.0, carryingBiomass)
             // The denominator offset controls saturation; it must not act as
             // food when both background resources and modeled prey are absent.
             val resourceFactor = resource / (resource + 0.08 + crowding)
             val environmentalFitness = fitness[populationIndex]
             val backgroundAssimilation =
                 active *
-                        (0.30 + species.lifeHistory.seasonalReproduction) *
-                        environmentalFitness *
-                        resourceFactor
+                    (0.30 + species.lifeHistory.seasonalReproduction) *
+                    environmentalFitness *
+                    resourceFactor
             // Below the viable-activity threshold an organism may endure for a
             // while, but cannot turn captured food into growth. This prevents
             // abundant prey from making a profoundly climate-mismatched animal
@@ -861,12 +868,12 @@ class EcologyRuntime(
                 (1.0 - active / max(1.0, carryingBiomass)).coerceIn(0.0, 1.0)
             val grossAssimilation =
                 backgroundAssimilation +
-                        (
-                                interactionGains[populationIndex] +
-                                        relationshipBenefits[populationIndex]
-                                ) *
-                        physiologicalAssimilation *
-                        interactionCapacityRemaining
+                    (
+                        interactionGains[populationIndex] +
+                            relationshipBenefits[populationIndex]
+                        ) *
+                    physiologicalAssimilation *
+                    interactionCapacityRemaining
             val maintenanceFraction = species.physiology.maintenanceDemand / species.physiology.massKg
             val maintenance = active * maintenanceFraction
             val stress = 1.0 - environmentalFitness
@@ -895,7 +902,7 @@ class EcologyRuntime(
                 max(
                     0.0,
                     populationCountByHabitat[niche.habitat.ordinal] -
-                            softDiversityCapacity,
+                        softDiversityCapacity,
                 )
             val diversityPressure =
                 if (softDiversityCapacity <= 0.0 || excessDiversity <= 0.0) {
@@ -907,17 +914,20 @@ class EcologyRuntime(
             val bestStanding =
                 bestCompetitiveStandingByHabitat[niche.habitat.ordinal]
             val relativeStanding =
-                if (bestStanding <= 0.0) 0.0
-                else (competitiveStanding[populationIndex] / bestStanding).coerceIn(0.0, 1.0)
+                if (bestStanding <= 0.0) {
+                    0.0
+                } else {
+                    (competitiveStanding[populationIndex] / bestStanding).coerceIn(0.0, 1.0)
+                }
             val competitiveDisadvantage =
                 config.strongestCompetitorMortalityFraction +
-                        (1.0 - config.strongestCompetitorMortalityFraction) *
-                        (1.0 - relativeStanding)
+                    (1.0 - config.strongestCompetitorMortalityFraction) *
+                    (1.0 - relativeStanding)
             val diversityLoss =
                 active *
-                        config.maximumHabitatDiversityMortality *
-                        diversityPressure *
-                        competitiveDisadvantage
+                    config.maximumHabitatDiversityMortality *
+                    diversityPressure *
+                    competitiveDisadvantage
 
             var reserves = community.reserves[populationIndex]
             var energyBalance = grossAssimilation - maintenance
@@ -947,10 +957,10 @@ class EcologyRuntime(
             val totalLoss = min(
                 active + growth,
                 stressLoss +
-                        backgroundLoss +
-                        predationLoss +
-                        starvationLoss +
-                        diversityLoss,
+                    backgroundLoss +
+                    predationLoss +
+                    starvationLoss +
+                    diversityLoss,
             )
             val updatedActive = max(0.0, active + growth - totalLoss)
             nextActive[populationIndex] = updatedActive
@@ -981,7 +991,7 @@ class EcologyRuntime(
                     // also return a fraction of assimilated food as waste.
                     if (species.sizeClass >= SizeClass.SMALL) {
                         it.carrionBiomass += deaths *
-                                if (niche.habitat in EcologyFitness.aquaticHabitats) 0.20 else 0.35
+                            if (niche.habitat in EcologyFitness.aquaticHabitats) 0.20 else 0.35
                     }
 
                     if (species.sizeClass >= SizeClass.TINY) {
@@ -1003,9 +1013,9 @@ class EcologyRuntime(
                 if (species.interactions.reefBuilding > 0.0 && niche.habitat in EcologyFitness.aquaticHabitats) {
                     it.reefCoverDelta +=
                         species.interactions.reefBuilding *
-                                environmentalFitness *
-                                (updatedActive / max(1.0, carryingBiomass)) *
-                                (1.0 - environment.reefCover)
+                        environmentalFitness *
+                        (updatedActive / max(1.0, carryingBiomass)) *
+                        (1.0 - environment.reefCover)
                 }
             }
         }
@@ -1023,7 +1033,7 @@ class EcologyRuntime(
             val species = ecology.species[community.speciesIndices[populationIndex]]
             val individuals =
                 (community.activeBiomass[populationIndex] + community.dormantBiomass[populationIndex]) /
-                        species.physiology.massKg
+                    species.physiology.massKg
             if (individuals < config.minimumViableIndividuals) {
                 community.removeAt(populationIndex)
             }
@@ -1042,14 +1052,13 @@ class EcologyRuntime(
             InteractionKind.NONE,
             InteractionKind.SUPPLEMENTAL_FEEDING,
             InteractionKind.PARASITISM,
-                -> 0.0
+            -> 0.0
         }
-
 }
 
 fun isGloballyExtinct(speciesIndex: Int, communities: Iterable<TileCommunity>): Boolean =
     communities.none { community ->
         val index = community.find(speciesIndex)
         index >= 0 &&
-                community.activeBiomass[index] + community.dormantBiomass[index] > 0.0
+            community.activeBiomass[index] + community.dormantBiomass[index] > 0.0
     }

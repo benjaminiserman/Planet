@@ -25,7 +25,7 @@ object EcologyClimateVariability {
         return ClimateAnomaly(
             temperatureC = seasonalTemperature * 1.25 + decadalTemperature * 0.75,
             precipitationMultiplier =
-                1.0 + seasonalPrecipitation * 0.15 + decadalPrecipitation * 0.10,
+            1.0 + seasonalPrecipitation * 0.15 + decadalPrecipitation * 0.10,
         )
     }
 

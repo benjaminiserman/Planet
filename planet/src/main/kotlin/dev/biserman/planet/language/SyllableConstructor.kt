@@ -19,53 +19,56 @@ data class Glide(
     val manner: Manner,
     val isOnGlide: Boolean,
 ) {
-    fun display(segment: Segment): String {
-        return when (segment.data.type) {
-            SegmentType.CONSONANT -> when (manner) {
-                Manner.SEMIVOWEL -> when (place) {
-                    Place.PALATAL, Place.ALVEOLAR -> "ʲ"
-                    Place.LABIAL, Place.LABIOVELAR -> "ʷ"
-                    Place.VELAR -> "ˠ"
-                    else -> "?s"
-                }
-                Manner.LIQUID -> when (place) {
-                    Place.ALVEOLAR -> "ˡ"
-                    Place.RETROFLEX -> "ʳ"
-                    else -> "?l"
-                }
-                Manner.FRICATIVE -> "͡" + SyllableConstructor.segments.values
-                    .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
-                    .display
-                else -> "?f"
-            }
-            SegmentType.VOWEL -> when {
-                manner != Manner.SEMIVOWEL -> "?"
-                place == Place.PALATAL -> "i"
-                place == Place.LABIAL ->
-                    if (isOnGlide) "u"
-                    else "o"
-                else -> "?v"
-            } + "̯"
-        }
-    }
-
-    fun symbol(segment: Segment) = when (manner) {
+    fun display(segment: Segment): String = when (segment.data.type) {
+        SegmentType.CONSONANT -> when (manner) {
             Manner.SEMIVOWEL -> when (place) {
-                Place.PALATAL, Place.ALVEOLAR -> "j"
-                Place.LABIAL, Place.LABIOVELAR -> "w"
-                Place.VELAR -> "ɰ"
+                Place.PALATAL, Place.ALVEOLAR -> "ʲ"
+                Place.LABIAL, Place.LABIOVELAR -> "ʷ"
+                Place.VELAR -> "ˠ"
                 else -> "?s"
             }
             Manner.LIQUID -> when (place) {
-                Place.ALVEOLAR -> "l"
-                Place.RETROFLEX -> "r"
+                Place.ALVEOLAR -> "ˡ"
+                Place.RETROFLEX -> "ʳ"
                 else -> "?l"
             }
-            Manner.FRICATIVE -> SyllableConstructor.segments.values
-                .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
-                .symbol
+            Manner.FRICATIVE ->
+                "͡" + SyllableConstructor.segments.values
+                    .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                    .display
             else -> "?f"
         }
+        SegmentType.VOWEL -> when {
+            manner != Manner.SEMIVOWEL -> "?"
+            place == Place.PALATAL -> "i"
+            place == Place.LABIAL ->
+                if (isOnGlide) {
+                    "u"
+                } else {
+                    "o"
+                }
+            else -> "?v"
+        } + "̯"
+    }
+
+    fun symbol(segment: Segment) = when (manner) {
+        Manner.SEMIVOWEL -> when (place) {
+            Place.PALATAL, Place.ALVEOLAR -> "j"
+            Place.LABIAL, Place.LABIOVELAR -> "w"
+            Place.VELAR -> "ɰ"
+            else -> "?s"
+        }
+        Manner.LIQUID -> when (place) {
+            Place.ALVEOLAR -> "l"
+            Place.RETROFLEX -> "r"
+            else -> "?l"
+        }
+        Manner.FRICATIVE ->
+            SyllableConstructor.segments.values
+                .first { it.data.manner == manner && it.data.place == place && it.data.voiced == segment.data.voiced }
+                .symbol
+        else -> "?f"
+    }
 
     companion object {
         fun from(data: SegmentData, isOnGlide: Boolean): Glide = Glide(data.place!!, data.manner!!, isOnGlide)
@@ -216,7 +219,7 @@ object SyllableConstructor {
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
-        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
+        } // .filter { it.symbol in languageSettings.complexity_tiers[0].allowedConsonants }
 
         val vowels = phonemeJson.vowels.map { (symbol, data) ->
             Segment(
@@ -239,7 +242,7 @@ object SyllableConstructor {
                 ),
                 prevalence = data.prevalence ?: 0.0
             )
-        } //.filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
+        } // .filter { it.symbol in languageSettings.complexity_tiers[0].allowedVowels }
 
         (consonants + vowels).associateBy { it.symbol }
     }
@@ -278,7 +281,8 @@ object SyllableConstructor {
         "NB" to { it.data.depth == Depth.NEAR_BACK },
         "BA" to { it.data.depth == Depth.BACK },
         "R" to { it.data.rounded == true },
-        "NR" to { it.data.rounded == false })
+        "NR" to { it.data.rounded == false }
+    )
 
     val symbolResults: (String) -> List<String> = memoize { symbol ->
         segments.values.filter { topLevelSymbolsFilters[symbol[0]]!!(it) }.map { it.symbol }

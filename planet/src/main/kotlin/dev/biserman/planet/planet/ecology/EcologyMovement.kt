@@ -133,7 +133,7 @@ object EcologyMovement {
                         environments[candidate],
                         scratch.competitionByNiche,
                         minimumRelativeIntrinsicFit =
-                            config.minimumRelativeRadiationNicheFit,
+                        config.minimumRelativeRadiationNicheFit,
                         competitionAffectsSelection = false,
                     )
                     if (candidateNiche < 0) continue
@@ -230,8 +230,11 @@ object EcologyMovement {
                     DispersalKind.NONE -> -1
                     DispersalKind.NEIGHBOR -> {
                         val adjacent = neighbors[originTile]
-                        if (adjacent.isEmpty()) -1
-                        else adjacent[Math.floorMod(speciesIndex + seasonIndex, adjacent.size)]
+                        if (adjacent.isEmpty()) {
+                            -1
+                        } else {
+                            adjacent[Math.floorMod(speciesIndex + seasonIndex, adjacent.size)]
+                        }
                     }
                     else -> movementPlan.destination(speciesIndex, seasonIndex, originTile)
                 }

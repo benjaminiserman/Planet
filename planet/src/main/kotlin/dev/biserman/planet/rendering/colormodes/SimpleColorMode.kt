@@ -15,8 +15,10 @@ class SimpleColorMode(
         val tileColor = getFn(planetTile)
         yield(tileColor)
 
-        yieldAll((0..<planetTile.tile.corners.size).map {
-            tileColor
-        })
+        yieldAll(
+            (0..<planetTile.tile.corners.size).map {
+                tileColor
+            }
+        )
     }
 }

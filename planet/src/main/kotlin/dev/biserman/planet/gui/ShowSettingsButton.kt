@@ -2,6 +2,7 @@ package dev.biserman.planet.gui
 
 import dev.biserman.planet.gui.Gui.Companion.instance
 import dev.biserman.planet.gui.Gui.MapLayerCheckButton
+import dev.biserman.planet.utils.UtilityExtensions.toTitleCase
 import godot.annotation.RegisterClass
 import godot.annotation.RegisterFunction
 import godot.api.Control
@@ -11,7 +12,7 @@ import godot.api.VBoxContainer
 import godot.core.connect
 
 @RegisterClass
-class ShowSettingsButton() : OptionButton() {
+class ShowSettingsButton : OptionButton() {
     val mapLayerButtons = mutableListOf<MapLayerCheckButton>()
     val categoriesIdMap = mutableMapOf<Int, String>()
     var settingsCategory = "none"
@@ -43,14 +44,17 @@ class ShowSettingsButton() : OptionButton() {
     fun addToggle(toggle: String, categories: List<String>, onClick: (Boolean) -> Any): MapLayerCheckButton {
         val defaultValue = "default" in categories
         toggles[toggle] = defaultValue
-        val entry = MapLayerCheckButton(ToggleButton(default = defaultValue, onClick = {
-            toggles[toggle] = it
-            onClick(it)
-        }).also {
-            it.text = toggle
-            it.setVisible(false)
-            settingsOptionsList.addChild(it)
-        }, categories)
+        val entry = MapLayerCheckButton(
+            ToggleButton(default = defaultValue, onClick = {
+                toggles[toggle] = it
+                onClick(it)
+            }).also {
+                it.text = toggle
+                it.setVisible(false)
+                settingsOptionsList.addChild(it)
+            },
+            categories,
+        )
         mapLayerButtons += entry
         return entry
     }
@@ -92,9 +96,9 @@ class ShowSettingsButton() : OptionButton() {
             "debug",
             "ecology",
             "animal_ranges",
-            "sessile_ranges"
+            "sessile_ranges",
         ).forEachIndexed { index, category ->
-            this.addItem("Settings: ${category.split("_").joinToString(" ") { it.capitalize() }}", index)
+            this.addItem("Settings: ${category.toTitleCase()}", index)
             categoriesIdMap[index] = category
         }
     }

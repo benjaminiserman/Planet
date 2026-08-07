@@ -85,10 +85,10 @@ object PlanetEcologyEnvironment {
             annualAverageTemperatureC = climate.averageTemperature,
             insolation = (sample.insolation / context.maximumInsolationWm2).coerceIn(0.0, 1.0),
             precipitationMm =
-                (sample.precipitation * anomaly.precipitationMultiplier).coerceAtLeast(0.0),
+            (sample.precipitation * anomaly.precipitationMultiplier).coerceAtLeast(0.0),
             surfaceFertilityModifier = stone.fertilityModifier,
             surfaceMoistureCapacityMultiplier =
-                stone.moistureCapacityMultiplier.coerceAtLeast(0.05),
+            stone.moistureCapacityMultiplier.coerceAtLeast(0.05),
             surfaceAcidityModifier = stone.acidityModifier,
             isLand = isLand,
             adjacentToOcean = adjacentToOcean,
@@ -101,11 +101,11 @@ object PlanetEcologyEnvironment {
             // therefore exposes both, while a dark hemisphere may expose only
             // dark water.
             usefulSunlightReachesWater =
-                !isLand &&
-                    sample.insolation / context.maximumInsolationWm2 > 0.02,
+            !isLand &&
+                sample.insolation / context.maximumInsolationWm2 > 0.02,
             permanentSeaIce =
-                !isLand &&
-                    supportsSeaIceHabitat(climate),
+            !isLand &&
+                supportsSeaIceHabitat(climate),
             canopyCover = estimatedCanopyCover(climate, isLand),
             reefCover = tile.ecosystem.reefCover.coerceIn(0.0, 1.0),
             starLight = EcologyGlobals.starLight,

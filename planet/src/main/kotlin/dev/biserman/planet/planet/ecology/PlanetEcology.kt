@@ -230,7 +230,7 @@ object PlanetEcology {
                 fluxes = fluxes,
                 areaKm2 = environments[index].areaKm2,
                 hasMarineCompartment =
-                    !tile.isAboveWater || tile.neighbors.any { !it.isAboveWater },
+                !tile.isAboveWater || tile.neighbors.any { !it.isAboveWater },
             )
             tile.ecosystem.reefCover =
                 (tile.ecosystem.reefCover + fluxes.reefCoverDelta).coerceIn(0.0, 1.0)
@@ -464,9 +464,9 @@ object PlanetEcology {
             context = PlanetEcologyEnvironment.context(planet),
             neighbors = neighbors,
             knownSuitabilityHabitats =
-                ByteArray(tiles.size * compiled.species.size),
+            ByteArray(tiles.size * compiled.species.size),
             suitableHabitats =
-                ByteArray(tiles.size * compiled.species.size),
+            ByteArray(tiles.size * compiled.species.size),
         ).also {
             cachedPlanet = planet
             cachedWorld = it

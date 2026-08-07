@@ -16,12 +16,14 @@ class SimpleDoubleColorMode(
         val color = colorFn(getFn(planetTile))
         yield(color)
 
-        yieldAll((0..<planetTile.tile.corners.size).map {
+        yieldAll(
+            (0..<planetTile.tile.corners.size).map {
 //            val validTilesValues =
 //                planetTile.tile.corners[it].tiles.mapNotNull { tile -> getFn(planetTile.planet.getTile(tile)) }
 //            colorFn(validTilesValues.average())
-            color
-        })
+                color
+            }
+        )
     }
 
     companion object {

@@ -4,10 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import dev.biserman.planet.geometry.Kriging
 import dev.biserman.planet.geometry.sigmoid
 import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.topology.Tile
 import dev.biserman.planet.things.StonePlacementType
+import dev.biserman.planet.topology.Tile
 import godot.common.util.lerp
-import godot.global.GD
 import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -31,6 +30,7 @@ object TectonicGlobals {
     var tectonicSimulationStop = 100000
 
     var plateTorqueScalar = 0.1
+
     // Least-squares fit of corrected degree-35 tile inertia tensors to the legacy area
     // calculation across representative 10-14 plate partitions. Apply it to every
     // area-weighted tectonic term so forces and inertia remain in the same calibrated units.
@@ -103,6 +103,7 @@ object TectonicGlobals {
     var biotaDistributionTerrestrialMaxSlope = 750.0
 
     var estimatedAverageRadius = 0.020775855876950022
+
     @JsonIgnore
     val tectonicElevationVariogram = Kriging.variogram(estimatedAverageRadius * 0.001, 10.0, 1000.0)
 

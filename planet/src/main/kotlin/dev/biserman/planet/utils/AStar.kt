@@ -1,8 +1,5 @@
 package dev.biserman.planet.utils
 
-import dev.biserman.planet.planet.PlanetTile
-import dev.biserman.planet.utils.UtilityExtensions.formatDigits
-import godot.global.GD
 import java.util.PriorityQueue
 
 data class Path<T>(val nodes: List<T>, val distance: Double)
