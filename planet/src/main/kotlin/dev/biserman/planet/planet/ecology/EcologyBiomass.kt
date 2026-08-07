@@ -1,5 +1,7 @@
 package dev.biserman.planet.planet.ecology
 
+import kotlin.math.pow
+
 /**
  * Broad standing-live-biomass scales, expressed per square kilometre before
  * local habitat and productivity modifiers.
@@ -113,7 +115,30 @@ object EcologyBiomass {
         val fertility =
             if (photosynthetic) 1.0
             else environment.fertility
-        return environment.areaKm2 * density * fertility * habitat * resource
+        val waterProductivity =
+            if (
+                photosynthetic &&
+                niche.habitat !in EcologyFitness.aquaticHabitats &&
+                niche.habitat != Habitat.AERIAL
+            ) {
+                // Drought-adapted plants can remain fit in dry climates, but
+                // physiological survival does not create enough water to
+                // support grassland-scale standing biomass. Below freezing,
+                // seasonal precipitation is a poor proxy for retained
+                // meltwater, and the existing thermal/light model already
+                // constrains production, so water limitation ramps in across
+                // the 0-10 C annual-mean band.
+                val warmWaterLimitation =
+                    (environment.annualAverageTemperatureC / 10.0).coerceIn(0.0, 1.0)
+                val fullyWaterLimitedProductivity =
+                    environment.waterAvailability
+                        .pow(EcologyGlobals.terrestrialProducerWaterExponent)
+                        .coerceAtLeast(EcologyGlobals.minimumTerrestrialProducerWaterProductivity)
+                1.0 - warmWaterLimitation * (1.0 - fullyWaterLimitedProductivity)
+            } else {
+                1.0
+            }
+        return environment.areaKm2 * density * fertility * habitat * resource * waterProductivity
     }
 
     fun grazingAccessibility(species: CompiledSpecies): Double {

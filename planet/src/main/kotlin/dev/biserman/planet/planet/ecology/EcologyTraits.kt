@@ -1006,6 +1006,15 @@ enum class CommonTrait(
             TraitEffect.MaintenanceCost(0.04),
         ),
     ),
+    REEF_SHELTER_DEPENDENCE(
+        "reef shelter dependence",
+        "Feeding, refuge, and daily activity depend on the dense cavities and broken sight-lines of a living reef.",
+        listOf(
+            TraitEffect.ReefUse(1.0),
+            TraitEffect.ReproductionMultiplier(0.96),
+            TraitEffect.MaintenanceCost(0.05),
+        ),
+    ),
     REEF_BORING(
         "reef-boring mouthparts",
         "Hard scraping or drilling structures open cavities and expose food within reef material.",
