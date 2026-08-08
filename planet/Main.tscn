@@ -446,6 +446,106 @@ layout_mode = 2
 focus_mode = 0
 text = "Reset to Defaults"
 
+[node name="TectonicConfigPanel" type="PanelContainer" parent="GUI"]
+visible = false
+layout_mode = 0
+offset_left = 458.0
+offset_top = 90.0
+offset_right = 908.0
+offset_bottom = 360.0
+
+[node name="Margin" type="MarginContainer" parent="GUI/TectonicConfigPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="Content" type="VBoxContainer" parent="GUI/TectonicConfigPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Tectonic Overrides"
+
+[node name="GeothermalActivityRow" type="HBoxContainer" parent="GUI/TectonicConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/GeothermalActivityRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Geothermal activity"
+
+[node name="GeothermalActivitySlider" type="HSlider" parent="GUI/TectonicConfigPanel/Margin/Content/GeothermalActivityRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Scales the mantle-convection force driving tectonic plates"
+max_value = 2.0
+step = 0.01
+value = 1.0
+
+[node name="GeothermalActivityValue" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/GeothermalActivityRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "100%"
+horizontal_alignment = 2
+
+[node name="RiftCutoffRow" type="HBoxContainer" parent="GUI/TectonicConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/RiftCutoffRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Rift cutoff"
+
+[node name="RiftCutoffSlider" type="HSlider" parent="GUI/TectonicConfigPanel/Margin/Content/RiftCutoffRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "A plate rifts once it exceeds this fraction of the planet's tiles"
+min_value = 0.05
+max_value = 0.95
+step = 0.01
+value = 0.4
+
+[node name="RiftCutoffValue" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/RiftCutoffRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "40%"
+horizontal_alignment = 2
+
+[node name="DesiredLandRow" type="HBoxContainer" parent="GUI/TectonicConfigPanel/Margin/Content"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/DesiredLandRow"]
+custom_minimum_size = Vector2(155, 0)
+layout_mode = 2
+text = "Desired land"
+
+[node name="DesiredLandSlider" type="HSlider" parent="GUI/TectonicConfigPanel/Margin/Content/DesiredLandRow"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Target proportion of tiles above sea level"
+min_value = 0.05
+max_value = 0.95
+step = 0.01
+value = 0.3
+
+[node name="DesiredLandValue" type="Label" parent="GUI/TectonicConfigPanel/Margin/Content/DesiredLandRow"]
+custom_minimum_size = Vector2(66, 0)
+layout_mode = 2
+text = "30%"
+horizontal_alignment = 2
+
+[node name="ResetTectonicConfigButton" type="Button" parent="GUI/TectonicConfigPanel/Margin/Content"]
+layout_mode = 2
+focus_mode = 0
+text = "Reset to Defaults"
+
 [node name="TectonicAge" type="Label" parent="GUI"]
 layout_mode = 1
 anchors_preset = 1
@@ -647,6 +747,13 @@ tooltip_text = "Show or hide runtime climate settings"
 focus_mode = 0
 toggle_mode = true
 text = "Climate"
+
+[node name="ShowTectonicConfigButton" type="Button" parent="GUI/MenuButtons"]
+layout_mode = 2
+tooltip_text = "Show or hide runtime tectonic settings"
+focus_mode = 0
+toggle_mode = true
+text = "Tectonics"
 
 [node name="SimulationOptionButton" type="OptionButton" parent="GUI/MenuButtons"]
 clip_contents = true

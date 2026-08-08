@@ -19,7 +19,6 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositLoss
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositMultiplier
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.depositionStartHeight
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.desiredLandPercent
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.divergenceContinuityStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.edgeInteractionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.elevationErosion
@@ -35,7 +34,6 @@ import dev.biserman.planet.planet.tectonics.TectonicGlobals.oceanicSubsidence
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateMergeCutoff
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.plateTorqueScalar
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.prominenceErosion
-import dev.biserman.planet.planet.tectonics.TectonicGlobals.riftCutoff
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.searchMaxResults
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.springPlateContributionStrength
 import dev.biserman.planet.planet.tectonics.TectonicGlobals.tectonicElevationVariogram
@@ -186,7 +184,7 @@ object Tectonics {
                             planet.noise.mantleConvection.sample4d(
                                 tile.tile.position,
                                 planet.tectonicAge.toDouble()
-                            ) * mantleConvectionStrength
+                            ) * mantleConvectionStrength * TectonicRuntimeConfig.geothermalActivity
                         )
                     }
                 )
@@ -663,7 +661,9 @@ object Tectonics {
         planet.tectonicPlates.forEach { it.clean() }
         planet.tectonicPlates.removeIf { it.tiles.isEmpty() }
 
-        val oversizedPlate = planet.tectonicPlates.firstOrNull { it.tiles.size > planet.planetTiles.size * riftCutoff }
+        val oversizedPlate = planet.tectonicPlates.firstOrNull {
+            it.tiles.size > planet.planetTiles.size * TectonicRuntimeConfig.riftCutoff
+        }
         oversizedPlate?.rift()
 
         val internalPlates = planet.tectonicPlates.associateWith { it.calculateNeighborLengths() }
@@ -692,7 +692,7 @@ object Tectonics {
         val currentLandPercent =
             planet.planetTiles.values.count { it.isAboveWater }.toDouble() / planet.planetTiles.size
         val landPercentDepositScale =
-            (desiredLandPercent.coerceIn(0.0, 1.0) / currentLandPercent.coerceIn(0.01, 1.0))
+            (TectonicRuntimeConfig.desiredLandPercent.coerceIn(0.0, 1.0) / currentLandPercent.coerceIn(0.01, 1.0))
                 .coerceIn(0.25, 4.0)
         val effectiveDepositMultiplier = depositMultiplier * landPercentDepositScale
 
@@ -820,14 +820,14 @@ object Tectonics {
             planet.planetTiles.values.filter { it.isAboveWater }.size / planet.planetTiles.size.toFloat()
 
         if (averageContinentalHeight <= minAverageContinentalHeightGuardrail &&
-            percentContinental <= max(0.03, desiredLandPercent - guardrailStrictness)
+            percentContinental <= max(0.03, TectonicRuntimeConfig.desiredLandPercent - guardrailStrictness)
         ) {
             GD.print("raising elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation += 100 }
         }
 
         if (averageContinentalHeight >= maxAverageContinentalHeightGuardrail &&
-            percentContinental >= min(0.97, desiredLandPercent + guardrailStrictness)
+            percentContinental >= min(0.97, TectonicRuntimeConfig.desiredLandPercent + guardrailStrictness)
         ) {
             GD.print("lowering elevation — ${averageContinentalHeight}m & ${(percentContinental * 100).formatDigits()}%")
             planet.planetTiles.values.forEach { it.elevation -= 100 }

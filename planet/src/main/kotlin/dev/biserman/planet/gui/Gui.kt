@@ -57,6 +57,7 @@ class Gui() : Node() {
     val refreshConfigButton by lazy { findChild("RefreshConfigButton") as Button }
     val calculateClimateButton by lazy { findChild("CalculateClimateButton") as Button }
     val showClimateConfigButton by lazy { findChild("ShowClimateConfigButton") as Button }
+    val showTectonicConfigButton by lazy { findChild("ShowTectonicConfigButton") as Button }
     val playButton by lazy { findChild("PlayButton") as Button }
     val modeToggleButton by lazy { findChild("ModeToggleButton") as Button }
     val nextTurnButton by lazy { findChild("NextTurnButton") as Button }
@@ -64,6 +65,7 @@ class Gui() : Node() {
     val historyYearLabel by lazy { findChild("HistoryYearLabel") as Label }
     val historySeasonLabel by lazy { findChild("HistorySeasonLabel") as Label }
     val climateConfigPanel by lazy { findChild("ClimateConfigPanel") as Control }
+    val tectonicConfigPanel by lazy { findChild("TectonicConfigPanel") as Control }
     val mapPreviewContainer by lazy { findChild("MapPreviewContainer") as PanelContainer }
     val mapPreview by lazy { findChild("MapPreview") as TextureRect }
     val recenterMapPreviewButton by lazy { findChild("RecenterMapPreviewButton") as Button }
@@ -83,6 +85,7 @@ class Gui() : Node() {
     val generatePlanetButton by lazy { findChild("GeneratePlanetButton") as Button }
     val brushTool by lazy { BrushTool(this) }
     val climateConfigTool by lazy { ClimateCalibrationControls(this) }
+    val tectonicConfigTool by lazy { TectonicCalibrationControls(this) }
 
     var mode = Mode.EDIT
         private set
@@ -295,6 +298,7 @@ class Gui() : Node() {
         seedInput.textSubmitted.connect { submitSeed() }
         brushTool.initialize()
         climateConfigTool.initialize()
+        tectonicConfigTool.initialize()
 
         modeToggleButton.pressed.connect {
             setMode(if (modeToggleButton.buttonPressed) Mode.PLAY else Mode.EDIT)

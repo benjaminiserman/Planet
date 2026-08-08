@@ -35,7 +35,7 @@ object TectonicGlobals {
     // calculation across representative 10-14 plate partitions. Apply it to every
     // area-weighted tectonic term so forces and inertia remain in the same calibrated units.
     var tectonicAreaScale = 0.11513827487177024
-    var riftCutoff = 0.4
+    var riftCutoff = 0.25
     var riftSeparationStrength = 0.1
     var minElevation = -12000.0
     var maxElevation = 12000.0
@@ -74,7 +74,7 @@ object TectonicGlobals {
 
     var depositStrength = 0.6
     var depositLoss = 0.01
-    var depositMultiplier = 1.4
+    var depositMultiplier = 1.1
     var desiredLandPercent = 0.3
     var prominenceErosion = 0.15
     var elevationErosion = 1e-06
@@ -85,13 +85,13 @@ object TectonicGlobals {
     var accruedDepositThreshold = 800.0
     var accruedErosionThreshold = -400.0
     var orogenicMetamorphosisThreshold = 0.05
-    var tectonicVolcanismThreshold = 0.6
+    var tectonicVolcanismThreshold = 0.9
     var hotspotEruptionAccretionThreshold = 200.0
     var intrusionStrengthAccretionThreshold = 200.0
     var depositionContinentialityThreshold = -0.4
 
     var minAverageContinentalHeightGuardrail = 750.0
-    var maxAverageContinentalHeightGuardrail = 1000.0
+    var maxAverageContinentalHeightGuardrail = 1250.0
     var guardrailStrictness = 0.15
 
     var meteorImpactChance = 0.2
