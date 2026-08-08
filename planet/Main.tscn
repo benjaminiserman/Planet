@@ -1,21 +1,25 @@
-[gd_scene load_steps=9 format=3 uid="uid://bqaovyiqpfql0"]
+[gd_scene load_steps=10 format=3 uid="uid://bqaovyiqpfql0"]
 
 [ext_resource type="Script" uid="uid://bmkocv3nkrkyu" path="res://src/main/kotlin/dev/biserman/planet/Main.kt" id="1_fos0i"]
 [ext_resource type="Script" uid="uid://dmx2lv8h3dueu" path="res://src/main/kotlin/dev/biserman/planet/CameraGimbal.kt" id="2_3dxm6"]
+[ext_resource type="Shader" uid="uid://btkv6gpr8s625" path="res://environment/BackgroundStars.gdshader" id="3_3dxm6"]
 [ext_resource type="Script" uid="uid://b7nsjxx3youtc" path="res://src/main/kotlin/dev/biserman/planet/gui/Gui.kt" id="3_lgr22"]
 [ext_resource type="Script" uid="uid://wubsouopi724" path="res://src/main/kotlin/dev/biserman/planet/gui/StatsGraphPlot.kt" id="4_trn2v"]
 [ext_resource type="Script" uid="uid://bes5fsy1wcg2t" path="res://src/main/kotlin/dev/biserman/planet/gui/ShowSettingsButton.kt" id="5_03owx"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_m7jmp"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_fos0i"]
+shader = ExtResource("3_3dxm6")
+shader_parameter/star_density = 400.0
+shader_parameter/star_threshold = 0.997
+shader_parameter/star_brightness = 1.5
+shader_parameter/max_star_size = 0.3
 
-[sub_resource type="Sky" id="Sky_y2354"]
-sky_material = SubResource("ProceduralSkyMaterial_m7jmp")
+[sub_resource type="Sky" id="Sky_3dxm6"]
+sky_material = SubResource("ShaderMaterial_fos0i")
 
-[sub_resource type="Environment" id="Environment_ni31j"]
-background_mode = 1
-background_color = Color(0.00820202, 0.00820202, 0.00820202, 1)
-background_energy_multiplier = 0.0
-sky = SubResource("Sky_y2354")
+[sub_resource type="Environment" id="Environment_lgr22"]
+background_mode = 2
+sky = SubResource("Sky_3dxm6")
 ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.75
@@ -30,8 +34,10 @@ script = ExtResource("2_3dxm6")
 
 [node name="Camera3D" type="Camera3D" parent="CameraGimbal/InnerGimbal"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.54772)
-environment = SubResource("Environment_ni31j")
 current = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_lgr22")
 
 [node name="GUI" type="Control" parent="."]
 layout_mode = 3
